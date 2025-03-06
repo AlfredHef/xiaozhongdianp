@@ -11,6 +11,7 @@
 	<groupId>com.fudan</groupId>
 	<artifactId>xiaozhong_dianping</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
 	<name>xiaozhong_dianping</name>
 	<description>xiaozhong_dianping</description>
 	<url/>
@@ -20,6 +21,10 @@
 	<developers>
 		<developer/>
 	</developers>
+	<modules>
+		<module>common</module>
+		<module>server</module>
+	</modules>
 	<scm>
 		<connection/>
 		<developerConnection/>
