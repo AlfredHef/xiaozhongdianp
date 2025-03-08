@@ -5,8 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.fudan</groupId>
-        <artifactId>server</artifactId>
+        <artifactId>xiaozhong_dianping</artifactId>
         <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <artifactId>server-customer</artifactId>
@@ -15,137 +16,6 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- 定义依赖版本 -->
-        <spring-boot.version>2.7.12</spring-boot.version>
-        <poi.version>5.2.3</poi.version>
-        <mysql-connector.version>8.0.32</mysql-connector.version>
-        <mybatis-plus.version>3.5.3.1</mybatis-plus.version>
-        <lombok.version>1.18.24</lombok.version>
-        <fastjson.version>2.0.25</fastjson.version>
-        <druid.version>1.2.15</druid.version>
-        <pagehelper.version>1.4.3</pagehelper.version>
-        <aspectj.version>1.9.7</aspectj.version>
-        <knife4j.version>4.0.0</knife4j.version>
-        <jaxb-api.version>2.3.1</jaxb-api.version>
     </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
-                <!-- Spring Boot 核心依赖 -->
-                <dependency>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-web</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-test</artifactId>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-websocket</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-data-redis</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-cache</artifactId>
-                </dependency>
-
-                <!-- 数据库相关依赖 -->
-                <dependency>
-                    <groupId>mysql</groupId>
-                    <artifactId>mysql-connector-java</artifactId>
-                    <version>${mysql-connector.version}</version>
-                    <scope>runtime</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.mybatis.spring.boot</groupId>
-                    <artifactId>mybatis-spring-boot-starter</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>com.baomidou</groupId>
-                    <artifactId>mybatis-plus-boot-starter</artifactId>
-                    <version>${mybatis-plus.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>com.alibaba</groupId>
-                    <artifactId>druid-spring-boot-starter</artifactId>
-                    <version>${druid.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>com.github.pagehelper</groupId>
-                    <artifactId>pagehelper-spring-boot-starter</artifactId>
-                    <version>${pagehelper.version}</version>
-                </dependency>
-
-                <!-- 工具类依赖 -->
-                <dependency>
-                    <groupId>org.projectlombok</groupId>
-                    <artifactId>lombok</artifactId>
-                    <version>${lombok.version}</version>
-                    <optional>true</optional>
-                </dependency>
-                <dependency>
-                    <groupId>com.alibaba</groupId>
-                    <artifactId>fastjson</artifactId>
-                    <version>${fastjson.version}</version>
-                </dependency>
-
-                <!-- AOP 相关依赖 -->
-                <dependency>
-                    <groupId>org.aspectj</groupId>
-                    <artifactId>aspectjrt</artifactId>
-                    <version>${aspectj.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.aspectj</groupId>
-                    <artifactId>aspectjweaver</artifactId>
-                    <version>${aspectj.version}</version>
-                </dependency>
-
-                <!-- Swagger 相关依赖 -->
-                <dependency>
-                    <groupId>com.github.xiaoymin</groupId>
-                    <artifactId>knife4j-spring-boot-starter</artifactId>
-                    <version>${knife4j.version}</version>
-                </dependency>
-
-                <!-- JAXB 依赖 -->
-                <dependency>
-                    <groupId>javax.xml.bind</groupId>
-                    <artifactId>jaxb-api</artifactId>
-                    <version>${jaxb-api.version}</version>
-                </dependency>
-
-                <!-- POI 依赖 -->
-                <dependency>
-                    <groupId>org.apache.poi</groupId>
-                    <artifactId>poi</artifactId>
-                    <version>${poi.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.poi</groupId>
-                    <artifactId>poi-ooxml</artifactId>
-                    <version>${poi.version}</version>
-                </dependency>
-
-        </dependencies>
-    </dependencyManagement>
-
 
 </project>
