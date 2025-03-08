@@ -1,2 +1,9 @@
 server:
   port: 8080
+spring:
+  datasource:
+  druid:
+    driver-class-name: ${sky.datasource.driver-class-name}
+    url: jdbc:mysql://139.129.37.84:${sky.datasource.port}/${sky.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: BuDou&123
