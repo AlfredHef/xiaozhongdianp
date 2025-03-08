@@ -24,7 +24,9 @@
 	<modules>
 		<module>common</module>
 		<module>server</module>
-		<module>server/server-customer</module>
+		<module>common</module>
+		<module>pojo</module>
+
 	</modules>
 
 	<!-- 依赖管理 -->
