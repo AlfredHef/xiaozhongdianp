@@ -5,33 +5,16 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.fudan</groupId>
-        <artifactId>server</artifactId>
+        <artifactId>xiaozhong_dianping</artifactId>
         <version>0.0.1-SNAPSHOT</version>
-        <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>server-customer</artifactId>
+    <artifactId>pojo</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-<dependencies>
-    <dependency>
-        <groupId>com.alibaba</groupId>
-        <artifactId>druid-spring-boot-starter</artifactId>
-        <version>1.2.16</version>
-    </dependency>
-    <dependency>
-        <groupId>com.fudan</groupId>
-        <artifactId>common</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-        <groupId>com.fudan</groupId>
-        <artifactId>pojo</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
-    </dependency>
-</dependencies>
+
 </project>
