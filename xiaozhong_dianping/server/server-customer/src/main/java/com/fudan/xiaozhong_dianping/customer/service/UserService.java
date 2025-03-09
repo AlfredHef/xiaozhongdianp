@@ -1,6 +1,6 @@
 package com.fudan.xiaozhong_dianping.customer.service;
 
-import com.fudan.xiaozhong_dianping.customer.entity.User;
+import com.fudan.entity.User;
 import com.fudan.xiaozhong_dianping.customer.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
