@@ -6,6 +6,7 @@
       <list>
         <option value="$PROJECT_DIR$/xiaozhong_dianping/server/server-customer/pom.xml" />
         <option value="$PROJECT_DIR$/xiaozhong_dianping/pom.xml" />
+        <option value="$PROJECT_DIR$/xiaozhong_dianping/pojo/pom.xml" />
       </list>
     </option>
   </component>
