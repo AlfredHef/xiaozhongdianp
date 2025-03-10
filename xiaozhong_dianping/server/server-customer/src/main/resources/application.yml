@@ -1,15 +1,33 @@
-server:
-  port: 8080
 spring:
+  application:
+    name: customerApplication
   datasource:
-    druid:
-      driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://139.129.37.84:3306/xiaozhong_dianping?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
-      username: root
-      password: BuDou&123
+    url: jdbc:mysql://139.129.37.84:3306/test
+    username: budouer
+    password: BuDou@123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      database: 0
+      host: 139.129.37.84
+      port: 6379
+      password: Yt526526
+      timeout: 5000
+      lettuce:
+        pool:
+          max-active: 32
+          max-wait: -1
+          max-idle: 16
+          min-idle: 8
 
-mybatis:
-#  mapper-locations: classpath:mapper/*.xml # 如果使用 XML 映射文件
-  type-aliases-package: com.fudan.entity # 实体类所在包
+server:
+  port: 8088
+
+rocketmq:
+  name-server: 121.43.228.48:9876
+  transaction:
+    topic: demo-topic
+    producer:
+      group: transaction-producer-group
 
 
