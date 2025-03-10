@@ -116,7 +116,7 @@
 						<phase>package</phase>
 						<configuration>
 							<classifier>exec</classifier>
-						</configuration>
+									</configuration>
 					</execution>
 				</executions>
 			</plugin>
