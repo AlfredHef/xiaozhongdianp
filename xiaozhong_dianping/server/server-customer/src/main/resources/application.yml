@@ -2,32 +2,10 @@ spring:
   application:
     name: customerApplication
   datasource:
-    url: jdbc:mysql://139.129.37.84:3306/test
+    url: jdbc:mysql://139.129.37.84:3306/xiaozhong_dianping
     username: budouer
-    password: BuDou@123
+    password: 'BuDou&123'
     driver-class-name: com.mysql.cj.jdbc.Driver
-  data:
-    redis:
-      database: 0
-      host: 139.129.37.84
-      port: 6379
-      password: Yt526526
-      timeout: 5000
-      lettuce:
-        pool:
-          max-active: 32
-          max-wait: -1
-          max-idle: 16
-          min-idle: 8
-
 server:
-  port: 8088
-
-rocketmq:
-  name-server: 121.43.228.48:9876
-  transaction:
-    topic: demo-topic
-    producer:
-      group: transaction-producer-group
-
-
+  port:
+    8088
