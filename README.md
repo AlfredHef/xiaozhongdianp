@@ -12,3 +12,5 @@
 
 使用JPA时 → 建议保留dao目录
 使用MyBatis时 → 建议使用mapper目录
+
+![img_1.png](img_1.png)

@@ -1,6 +1,6 @@
 package com.fudan.xiaozhong_dianping.customer.mapper;
 
-import com.fudan.xiaozhong_dianping.customer.entity.User;
+import com.fudan.entity.User;
 import org.apache.ibatis.annotations.*;
 
 @Mapper

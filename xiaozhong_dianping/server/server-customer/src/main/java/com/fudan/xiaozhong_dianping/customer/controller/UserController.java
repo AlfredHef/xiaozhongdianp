@@ -17,12 +17,12 @@ public class UserController {
      * 用户注册接口
      */
     @PostMapping("/register")
-    public ResponseDTO<String> register(@RequestBody User user) {
-        boolean isRegistered = userService.register(user);
+    public ResponseDTO<String> register(@RequestBody User user, @RequestParam("captcha") String captcha) {
+        boolean isRegistered = userService.register(user, captcha);
         if (isRegistered) {
             return new ResponseDTO<>(200, "注册成功", null);
         } else {
-            return new ResponseDTO<>(400, "注册失败，用户名可能已存在", null);
+            return new ResponseDTO<>(400, "注册失败，可能是用户名已存在、格式不符合要求、密码强度不足或验证码错误", null);
         }
     }
 
