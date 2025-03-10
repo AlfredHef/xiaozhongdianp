@@ -38,6 +38,10 @@
         <artifactId>spring-security-crypto</artifactId>
         <version>6.4.3</version> <!-- 根据项目使用的 Spring 版本调整 -->
     </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
 
 
 </dependencies>
