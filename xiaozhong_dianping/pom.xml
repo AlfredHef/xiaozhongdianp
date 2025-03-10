@@ -24,7 +24,6 @@
 	<modules>
 		<module>common</module>
 		<module>server</module>
-		<module>common</module>
 		<module>pojo</module>
 
 	</modules>
@@ -46,7 +45,7 @@
 		<dependency>
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
-			<version>8.0.32</version> <!-- 与 Spring Boot 3.4.3 兼容的版本 -->
+			<version>8.0.33</version> <!-- 与 Spring Boot 3.4.3 兼容的版本 -->
 		</dependency>
 		<!-- MyBatis Spring Boot Starter 依赖 -->
 		<dependency>
@@ -83,6 +82,19 @@
 					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
+
+<!--			<plugin>-->
+<!--				<groupId>org.springframework.boot</groupId>-->
+<!--				<artifactId>spring-boot-maven-plugin</artifactId>-->
+<!--				<configuration>-->
+<!--					<excludes>-->
+<!--						<exclude>-->
+<!--							<groupId>org.projectlombok</groupId>-->
+<!--							<artifactId>lombok</artifactId>-->
+<!--						</exclude>-->
+<!--					</excludes>-->
+<!--				</configuration>-->
+<!--			</plugin>-->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
@@ -94,7 +106,21 @@
 						</exclude>
 					</excludes>
 				</configuration>
+				<!-- 仅对非 common 模块生效 -->
+				<executions>
+					<execution>
+						<id>repackage</id>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+						<phase>package</phase>
+						<configuration>
+							<classifier>exec</classifier>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
+
 		</plugins>
 	</build>
 
