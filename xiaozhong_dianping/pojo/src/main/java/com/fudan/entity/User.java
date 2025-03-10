@@ -8,6 +8,6 @@ import java.time.LocalDateTime;
 public class User {
     private Long id;
     private String username;
-    private String password; // 存储加密后的密码
+    private String password;
     private LocalDateTime createTime;
 }
