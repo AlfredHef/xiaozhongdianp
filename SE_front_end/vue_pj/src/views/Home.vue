@@ -1,9 +1,123 @@
+<!--
+  这是一个Vue组件的模板部分，用于定义组件的HTML结构。
+  该组件为应用的主页，提供登录和注册的入口。
+-->
 <template>
-  <div>
-    <h1>欢迎来到首页</h1>
-    <p>
-      <router-link to="/login">登录</router-link> |
-      <router-link to="/register">注册</router-link>
-    </p>
+  <!--
+    外层容器，使用类名 "centered-container"。
+    该容器的作用是将内部内容垂直和水平居中显示。
+  -->
+  <div class="centered-container">
+    <!--
+      登录框容器，使用类名 "login-box"。
+      包含欢迎标题和登录、注册链接。
+    -->
+    <div class="login-box">
+      <!-- 显示欢迎信息，告知用户欢迎来到 "软旦餐厅" -->
+      <h1>欢迎来到"软旦餐厅"</h1>
+      <!-- 段落元素，用于包裹登录和注册链接 -->
+      <p>
+        <!--
+          路由链接组件，使用类名 "custom-link"。
+          点击该链接将导航到登录页面，路径为 "/login"。
+        -->
+        <router-link class="custom-link" to="/login">登录</router-link> |
+        <!--
+          路由链接组件，使用类名 "custom-link"。
+          点击该链接将导航到注册页面，路径为 "/register"。
+        -->
+        <router-link class="custom-link" to="/register">注册</router-link>
+      </p>
+    </div>
   </div>
 </template>
+
+<script>
+// 导出一个默认的Vue组件对象
+export default {
+  // 组件的名称，用于在其他地方引用和调试
+  name: 'HomePage'
+}
+</script>
+
+<style>
+/*
+  全局样式，对 body 和 html 元素进行样式设置。
+  去除默认的外边距和内边距，使元素充满整个页面。
+  设置高度和宽度为 100%，确保页面占满整个可视区域。
+*/
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
+/*
+  对 body 元素设置背景样式。
+  使用背景图片 "/Home_BG.jpg" 作为页面的背景。
+  background-size: cover 使背景图片覆盖整个页面。
+  background-position: center 使背景图片居中显示。
+  background-repeat: no-repeat 防止背景图片重复显示。
+  background-attachment: fixed 使背景图片固定，不随页面滚动而滚动。
+*/
+body {
+  background-image: url('/Home_BG.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/*
+  定义类名为 "centered-container" 的样式。
+  使用 flex 布局，将内部元素垂直和水平居中显示。
+  min-height: 100vh 确保容器至少占满整个视口的高度。
+*/
+.centered-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/*
+  定义类名为 "login-box" 的样式。
+  设置边框为 2px 宽的灰色边框，边框圆角为 20px。
+  内边距为 40px，使内容与边框之间有一定的间距。
+  文本居中显示。
+  背景颜色为半透明的浅灰色，增加视觉效果。
+  添加阴影效果，使登录框有立体感。
+  宽度为 350px，固定登录框的宽度。
+*/
+.login-box {
+  border: 2px solid #ccc;
+  border-radius: 20px;
+  padding: 40px;
+  text-align: center;
+  background-color: rgba(240, 240, 240, 0.9); /* 半透明背景 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  width: 350px;
+}
+
+/*
+  定义类名为 "custom-link" 的样式。
+  设置字体大小为 24px。
+  文本颜色为 #1c2561。
+  去除下划线，使链接看起来更简洁。
+*/
+.custom-link {
+  font-size: 24px;
+  color: #1c2561;
+  text-decoration: none;
+}
+
+/*
+  定义类名为 "custom-link" 的链接在鼠标悬停时的样式。
+  当鼠标悬停在链接上时，显示下划线，提示用户该元素可点击。
+*/
+.custom-link:hover {
+  text-decoration: underline;
+}
+</style>
