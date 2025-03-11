@@ -26,7 +26,7 @@ public class UserServiceImpl implements UserService {
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d]{8,20}$");
 
     @Override
-    public boolean register(User user, String captcha) {
+    public boolean register(User user, String captchaId, String userInputCaptcha) {
         // 验证用户名是否符合规则
         if (!isValidUsername(user.getUsername())) {
             return false;
@@ -40,12 +40,9 @@ public class UserServiceImpl implements UserService {
         if (!isValidPassword(user.getPassword())) {
             return false;
         }
-//        // 校验验证码（这里简单假设验证码为固定值，实际应用中需要根据具体情况实现）
-//        if (!"1234".equals(captcha)) {
-//            return false;
 
         // 校验验证码（替换原来的固定值判断）
-        if (!captchaService.validateCaptcha(captcha)) { // 调用验证码服务的验证方法
+        if (!captchaService.validateCaptcha(captchaId, userInputCaptcha)) { // 调用验证码服务的验证方法
             return false;
         }
 
