@@ -17,8 +17,8 @@ public class UserController {
      * 用户注册接口
      */
     @PostMapping("/register")
-    public ResponseDTO<String> register(@RequestBody User user, @RequestParam("captcha") String captcha) {
-        boolean isRegistered = userService.register(user, captcha);
+    public ResponseDTO<String> register(@RequestBody User user, @RequestParam("captchaId") String captchaId, @RequestParam("captcha") String userInputCaptcha) {
+        boolean isRegistered = userService.register(user, captchaId, userInputCaptcha);
         if (isRegistered) {
             return new ResponseDTO<>(200, "注册成功", null);
         } else {
