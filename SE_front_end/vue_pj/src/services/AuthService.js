@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = "http://localhost:8080/api/auth"; // 后端接口 URL
+const API_URL = "http://localhost:8088/user";  // 修改端口和路径
+ // 确保后端端口正确
 
 export default {
     // 获取验证码图片
