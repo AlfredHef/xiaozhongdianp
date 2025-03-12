@@ -6,7 +6,7 @@ import com.fudan.xiaozhong_dianping.customer.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-
+import com.fudan.xiaozhong_dianping.customer.enums.RegisterResult;
 import java.util.regex.Pattern;
 
 @Service
@@ -26,31 +26,34 @@ public class UserServiceImpl implements UserService {
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d]{8,20}$");
 
     @Override
-    public boolean register(User user, String captchaId, String userInputCaptcha) {
+    public RegisterResult register(User user, String captchaId, String userInputCaptcha) {
         // 验证用户名是否符合规则
         if (!isValidUsername(user.getUsername())) {
-            return false;
+            return RegisterResult.USERNAME_INVALID;
         }
         // 检查用户名是否已存在
         User existingUser = userMapper.findByUsername(user.getUsername());
         if (existingUser != null) {
-            return false; // 用户名已存在
+            return RegisterResult.USERNAME_EXISTS;
         }
         // 验证密码强度
         if (!isValidPassword(user.getPassword())) {
-            return false;
+            return RegisterResult.PASSWORD_INVALID;
         }
 
         // 校验验证码（替换原来的固定值判断）
-        if (!captchaService.validateCaptcha(captchaId, userInputCaptcha)) { // 调用验证码服务的验证方法
-            return false;
+        if (!captchaService.validateCaptcha(captchaId, userInputCaptcha)) {
+            return RegisterResult.CAPTCHA_INVALID;
         }
 
         // 对密码进行加密处理
         String encryptedPassword = passwordEncoder.encode(user.getPassword());
         user.setPassword(encryptedPassword);
         // 插入新用户
-        return userMapper.insertUser(user) > 0;
+        if (userMapper.insertUser(user) > 0) {
+            return RegisterResult.SUCCESS;
+        }
+        return RegisterResult.USERNAME_EXISTS; // 插入失败，可能是用户名已存在
     }
 
     @Override
