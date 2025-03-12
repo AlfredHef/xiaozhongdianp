@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/captcha")
 public class CaptchaController {
     private final CaptchaService captchaService;
     private static final Logger logger = LoggerFactory.getLogger(CaptchaController.class);
@@ -23,7 +23,7 @@ public class CaptchaController {
     /**
      * 生成验证码并返回验证码图片和 captchaId
      */
-    @GetMapping("/captcha")
+    @GetMapping("/generate")
     public void getCaptcha(HttpServletResponse response) {
         try {
             String captchaId = captchaService.generateCaptcha();
