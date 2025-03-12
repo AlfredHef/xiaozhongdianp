@@ -11,7 +11,7 @@ export default {
             const captchaImage = `data:image/png;base64,${Buffer.from(response.data, 'binary').toString('base64')}`;
             return {
                 captchaImage,  // 返回图片的 base64 字符串
-                captchaId: response.data.captchaId // 返回验证码的 ID
+                captchaId: response.headers['captcha-id'] // 从响应头中获取验证码的 ID
             };
         } catch (error) {
             console.error('Error fetching captcha:', error);
