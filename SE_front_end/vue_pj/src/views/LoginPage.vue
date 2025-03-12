@@ -17,7 +17,7 @@
         <label class="form-label">验证码</label>
         <div class="captcha-container">
           <input type="text" v-model="captchaInput" placeholder="输入验证码" class="form-input captcha-input" />
-          <div class="captcha-image" @click="refreshCaptcha" v-html="captchaImage"></div>
+          <img :src="captchaImage" alt="验证码" class="captcha-image" @click="refreshCaptcha" />
         </div>
         <p v-if="captchaError" class="error-message">{{ captchaError }}</p>
       </div>
@@ -40,102 +40,56 @@ export default {
       username: "",
       password: "",
       captchaInput: "",
-      captchaText: "",
       captchaImage: "",
-      captchaError: ""
+      captchaError: "",
+      captchaId: "" // 存储验证码 ID
     };
   },
   mounted() {
-    this.generateCaptcha();
+    this.getCaptcha();  // 页面加载时获取验证码
   },
   methods: {
+    // 登录时调用
     async login() {
-      // 重置错误信息
+      // 清除错误信息
       this.captchaError = "";
 
       // 验证验证码
-      if (this.captchaInput.toLowerCase() !== this.captchaText.toLowerCase()) {
-        this.captchaError = "验证码不正确";
-        return;
-      }
-
       try {
-        await AuthService.login(this.username, this.password);
-        this.$router.push("/");
+        // 先验证验证码
+        await AuthService.verifyCaptcha(this.captchaInput, this.captchaId); // 向后端验证验证码
+
+        // 如果验证码验证通过，调用登录接口
+        await AuthService.login(this.username, this.password, this.captchaInput, this.captchaId);
+        this.$router.push("/");  // 登录成功后跳转到首页
       } catch (error) {
-        alert("登录失败，请检查用户名和密码！");
-        // 刷新验证码
-        this.refreshCaptcha();
+        alert("登录失败，请检查用户名、密码和验证码！");
+        this.refreshCaptcha();  // 刷新验证码
       }
     },
-    generateCaptcha() {
-      // 生成随机验证码文本（4-6位字母数字组合）
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-      const length = Math.floor(Math.random() * 3) + 4; // 4-6位长度
-      let result = '';
-      for (let i = 0; i < length; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      this.captchaText = result;
 
-      // 生成SVG验证码图片
-      this.captchaImage = this.createCaptchaSVG(result);
+    // 获取后端生成的验证码
+    async getCaptcha() {
+      try {
+        const response = await AuthService.getCaptcha();  // 从后端获取验证码图片
+        this.captchaImage = response.data.captchaImage;
+        this.captchaId = response.data.captchaId;  // 保存验证码 ID
+      } catch (error) {
+        console.error("获取验证码失败：", error);
+      }
     },
-    createCaptchaSVG(text) {
-      const width = 120;
-      const height = 40;
 
-      // 开始SVG
-      let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
-
-      // 背景
-      svg += `<rect width="100%" height="100%" fill="#f0f2f5" />`;
-
-      // 添加干扰线
-      for (let i = 0; i < 5; i++) {
-        const x1 = Math.random() * width;
-        const y1 = Math.random() * height;
-        const x2 = Math.random() * width;
-        const y2 = Math.random() * height;
-        const color = `rgb(${Math.floor(Math.random() * 200)}, ${Math.floor(Math.random() * 200)}, ${Math.floor(Math.random() * 200)})`;
-        svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="1" />`;
-      }
-
-      // 添加干扰点
-      for (let i = 0; i < 30; i++) {
-        const cx = Math.random() * width;
-        const cy = Math.random() * height;
-        const color = `rgb(${Math.floor(Math.random() * 200)}, ${Math.floor(Math.random() * 200)}, ${Math.floor(Math.random() * 200)})`;
-        svg += `<circle cx="${cx}" cy="${cy}" r="1" fill="${color}" />`;
-      }
-
-      // 添加验证码文本
-      const fontSize = Math.floor(height * 0.7);
-      const letterSpacing = width / (text.length + 1);
-
-      for (let i = 0; i < text.length; i++) {
-        const x = letterSpacing * (i + 0.5);
-        const y = height / 2 + fontSize / 3;
-        const rotate = Math.random() * 30 - 15; // -15到15度的随机旋转
-        const color = `rgb(${Math.floor(Math.random() * 100)}, ${Math.floor(Math.random() * 100)}, ${Math.floor(Math.random() * 100)})`;
-
-        svg += `<text x="${x}" y="${y}" font-family="Arial" font-size="${fontSize}" fill="${color}"
-                  transform="rotate(${rotate}, ${x}, ${y})">${text[i]}</text>`;
-      }
-
-      // 结束SVG
-      svg += '</svg>';
-
-      return svg;
-    },
+    // 刷新验证码
     refreshCaptcha() {
-      this.generateCaptcha();
-      this.captchaInput = "";
-      this.captchaError = "";
+      this.getCaptcha();  // 刷新验证码图片
+      this.captchaInput = "";  // 清空验证码输入框
+      this.captchaError = "";  // 清空错误提示
     }
   }
 };
 </script>
+
+
 
 <style scoped>
 /*

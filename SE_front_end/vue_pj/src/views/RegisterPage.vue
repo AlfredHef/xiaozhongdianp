@@ -3,34 +3,40 @@
     <div class="form-card">
       <h2 class="form-title">用户注册</h2>
 
+      <!-- 用户名输入框 -->
       <div class="form-group">
         <label class="form-label">用户名</label>
         <input type="text" v-model="username" placeholder="输入用户名" class="form-input" />
         <p v-if="usernameError" class="error-message">{{ usernameError }}</p>
       </div>
 
+      <!-- 密码输入框 -->
       <div class="form-group">
         <label class="form-label">密码</label>
         <input type="password" v-model="password" placeholder="输入密码" class="form-input" @input="checkPasswordStrength" />
         <p class="strength-message" :class="passwordStrengthClass">{{ passwordStrength }}</p>
       </div>
 
+      <!-- 确认密码输入框 -->
       <div class="form-group">
         <label class="form-label">确认密码</label>
         <input type="password" v-model="confirmPassword" placeholder="确认密码" class="form-input" />
       </div>
 
+      <!-- 验证码输入框 -->
       <div class="form-group">
         <label class="form-label">验证码</label>
         <div class="captcha-container">
           <input type="text" v-model="captchaInput" placeholder="输入验证码" class="form-input captcha-input" />
-          <div class="captcha-image" @click="refreshCaptcha" v-html="captchaImage"></div>
+          <img :src="captchaImage" alt="验证码" class="captcha-image" @click="refreshCaptcha" />
         </div>
         <p v-if="captchaError" class="error-message">{{ captchaError }}</p>
       </div>
 
+      <!-- 注册按钮 -->
       <button @click="register" class="register-button">注册</button>
 
+      <!-- 跳转到登录页面 -->
       <p class="login-link">
         已有账号？<router-link to="/login" class="link">去登录</router-link>
       </p>
@@ -51,13 +57,13 @@ export default {
       passwordStrength: "",
       passwordStrengthClass: "default",
       captchaInput: "",
-      captchaText: "",
       captchaImage: "",
-      captchaError: ""
+      captchaError: "",
+      captchaId: "" // 存储验证码 ID，用于验证
     };
   },
   mounted() {
-    this.generateCaptcha();
+    this.getCaptcha();  // 页面加载时获取验证码
   },
   methods: {
     async register() {
@@ -71,21 +77,32 @@ export default {
         return;
       }
 
+      // 验证用户名
+      if (this.username === "") {
+        this.usernameError = "用户名不能为空！";
+        return;
+      }
+
       // 验证验证码
-      if (this.captchaInput.toLowerCase() !== this.captchaText.toLowerCase()) {
+      try {
+        await AuthService.verifyCaptcha(this.captchaInput, this.captchaId);  // 验证验证码
+      } catch (error) {
         this.captchaError = "验证码不正确";
         return;
       }
 
       try {
-        await AuthService.register(this.username, this.password);
+        // 调用 AuthService 的 register 方法进行注册
+        await AuthService.register(this.username, this.password, this.captchaInput);
         alert("注册成功，请登录！");
         this.$router.push("/login");
       } catch (error) {
         alert("注册失败，请重试！");
       }
     },
+
     checkPasswordStrength() {
+      // 密码强度检查
       if (this.password.length < 6) {
         this.passwordStrength = "密码太短";
         this.passwordStrengthClass = "weak";
@@ -100,70 +117,23 @@ export default {
         this.passwordStrengthClass = "weak";
       }
     },
-    generateCaptcha() {
-      // 生成随机验证码文本（4-6位字母数字组合）
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-      const length = Math.floor(Math.random() * 3) + 4; // 4-6位长度
-      let result = '';
-      for (let i = 0; i < length; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      this.captchaText = result;
 
-      // 生成SVG验证码图片
-      this.captchaImage = this.createCaptchaSVG(result);
+    // 获取验证码图片
+    async getCaptcha() {
+      try {
+        const response = await AuthService.getCaptcha();  // 从后端获取验证码图片
+        this.captchaImage = response.data.captchaImage;
+        this.captchaId = response.data.captchaId;  // 保存验证码 ID，用于后续验证
+      } catch (error) {
+        console.error("获取验证码失败：", error);
+      }
     },
-    createCaptchaSVG(text) {
-      const width = 120;
-      const height = 40;
 
-      // 开始SVG
-      let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
-
-      // 背景
-      svg += `<rect width="100%" height="100%" fill="#f0f2f5" />`;
-
-      // 添加干扰线
-      for (let i = 0; i < 5; i++) {
-        const x1 = Math.random() * width;
-        const y1 = Math.random() * height;
-        const x2 = Math.random() * width;
-        const y2 = Math.random() * height;
-        const color = `rgb(${Math.floor(Math.random() * 200)}, ${Math.floor(Math.random() * 200)}, ${Math.floor(Math.random() * 200)})`;
-        svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="1" />`;
-      }
-
-      // 添加干扰点
-      for (let i = 0; i < 30; i++) {
-        const cx = Math.random() * width;
-        const cy = Math.random() * height;
-        const color = `rgb(${Math.floor(Math.random() * 200)}, ${Math.floor(Math.random() * 200)}, ${Math.floor(Math.random() * 200)})`;
-        svg += `<circle cx="${cx}" cy="${cy}" r="1" fill="${color}" />`;
-      }
-
-      // 添加验证码文本
-      const fontSize = Math.floor(height * 0.7);
-      const letterSpacing = width / (text.length + 1);
-
-      for (let i = 0; i < text.length; i++) {
-        const x = letterSpacing * (i + 0.5);
-        const y = height / 2 + fontSize / 3;
-        const rotate = Math.random() * 30 - 15; // -15到15度的随机旋转
-        const color = `rgb(${Math.floor(Math.random() * 100)}, ${Math.floor(Math.random() * 100)}, ${Math.floor(Math.random() * 100)})`;
-
-        svg += `<text x="${x}" y="${y}" font-family="Arial" font-size="${fontSize}" fill="${color}"
-                  transform="rotate(${rotate}, ${x}, ${y})">${text[i]}</text>`;
-      }
-
-      // 结束SVG
-      svg += '</svg>';
-
-      return svg;
-    },
+    // 刷新验证码
     refreshCaptcha() {
-      this.generateCaptcha();
-      this.captchaInput = "";
-      this.captchaError = "";
+      this.getCaptcha();  // 刷新验证码图片
+      this.captchaInput = "";  // 清空验证码输入框
+      this.captchaError = "";  // 清空错误提示
     }
   }
 };
