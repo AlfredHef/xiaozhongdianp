@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8080/api/auth"; // 确保后端端口正确
+const API_URL = "http://localhost:8088/user";  // 修改端口和路径
+ // 确保后端端口正确
 
 export default {
     async login(username, password) {

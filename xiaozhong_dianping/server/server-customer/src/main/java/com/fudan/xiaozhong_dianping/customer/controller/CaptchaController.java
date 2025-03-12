@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RestController
-@RequestMapping("/captcha")
+@RequestMapping("/user")
 public class CaptchaController {
     private final CaptchaService captchaService;
     private static final Logger logger = LoggerFactory.getLogger(CaptchaController.class);
@@ -23,7 +23,7 @@ public class CaptchaController {
     /**
      * 生成验证码并返回验证码图片和 captchaId
      */
-    @GetMapping
+    @GetMapping("/captcha")
     public void getCaptcha(HttpServletResponse response) {
         try {
             String captchaId = captchaService.generateCaptcha();
@@ -39,6 +39,7 @@ public class CaptchaController {
             ImageIO.write(captchaImage, "png", response.getOutputStream());
             // 设置响应头，将 captchaId 作为自定义头返回
             response.setHeader("Captcha-Id", captchaId);
+            logger.info("captchaId: " + captchaId);
         } catch (IOException e) {
             logger.error("Failed to generate captcha image", e);
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
