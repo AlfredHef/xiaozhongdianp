@@ -1,13 +1,13 @@
 import axios from 'axios';
 
-const API_URL = "http://localhost:8088/user";  // 修改端口和路径
+const API_URL = "http://localhost:8088";  // 修改端口和路径
  // 确保后端端口正确
 
 export default {
     // 获取验证码图片
     async getCaptcha() {
         try {
-            const response = await axios.get(`${API_URL}/captcha`, { responseType: 'arraybuffer' });
+            const response = await axios.get(`${API_URL}/captcha/generate`, { responseType: 'arraybuffer' });
             const captchaImage = `data:image/png;base64,${Buffer.from(response.data, 'binary').toString('base64')}`;
             return {
                 captchaImage,  // 返回图片的 base64 字符串
@@ -20,9 +20,9 @@ export default {
     },
 
     // 验证验证码
-    async verifyCaptcha(captchaInput, captchaId) {
+    async verifyCaptcha(captchaText, captchaId) {
         try {
-            const response = await axios.post(`${API_URL}/verify-captcha`, { captchaInput, captchaId });
+            const response = await axios.post(`${API_URL}/captcha/verify`, { captchaText, captchaId });
             return response.data; // 返回成功的响应
         } catch (error) {
             console.error('Captcha verification error:', error.response?.data?.message || error.message);
@@ -31,9 +31,9 @@ export default {
     },
 
     // 登录接口，传递验证码
-    async login(username, password, captcha, captchaId) {
+    async login(username, password, captchaText, captchaId) {
         try {
-            const response = await axios.post(`${API_URL}/login`, { username, password, captcha, captchaId });
+            const response = await axios.post(`${API_URL}/user/login`, { username, password, captcha: captchaText, captchaId });
             return response.data; // 返回后端响应的数据（如 token）
         } catch (error) {
             console.error('Login error:', error.response?.data?.message || error.message);
@@ -42,9 +42,9 @@ export default {
     },
 
     // 注册接口，传递验证码
-    async register(username, password, captcha) {
+    async register(username, password, captcha, captchaId) {
         try {
-            const response = await axios.post(`${API_URL}/register`, { username, password, captcha });
+            const response = await axios.post(`${API_URL}/user/register`, { username, password, captcha, captchaId });
             return response.data; // 注册成功返回的数据
         } catch (error) {
             console.error('Register error:', error.response?.data?.message || error.message);
