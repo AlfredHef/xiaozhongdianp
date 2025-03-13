@@ -24,13 +24,19 @@ export default {
     // 验证验证码
     async verifyCaptcha(captchaText, captchaId) {
         try {
-            const response = await axios.post(`${API_URL}/captcha/verify`, { captchaText, captchaId });
-            return response.data; // 返回成功的响应
+            const response = await axios.post(`${API_URL}/captcha/verify`, null, {
+                params: {
+                    captchaId,
+                    captchaText
+                }
+            });
+            return response.data;  // 返回成功的响应
         } catch (error) {
             console.error('Captcha verification error:', error.response?.data?.message || error.message);
             throw new Error('Captcha verification failed');
         }
-    },
+    }
+    ,
 
     // 登录接口，传递验证码
     async login(username, password, captchaText, captchaId) {
