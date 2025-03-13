@@ -1,24 +1,19 @@
 import axios from 'axios';
 
-const API_URL = "http://localhost:8088";  // 修改端口和路径
- // 确保后端端口正确
+const API_URL = "http://localhost:8088";  // 修改端口和路径，确保后端端口正确
 
 export default {
     // 获取验证码图片
-    // 获取验证码图片
     async getCaptcha() {
         try {
-            const response = await axios.get(`${API_URL}/captcha/generate`, {
-                responseType: 'arraybuffer'
-            });
-            // 浏览器环境处理二进制数据
-            const blob = new Blob([response.data], { type: 'image/png' });
-            const captchaImage = URL.createObjectURL(blob);
-            // 从响应头获取 captchaId（注意响应头大小写，后端可能是驼峰或全小写）
-            const captchaId = response.headers['captcha-id'] || response.headers['Captcha-Id'];
+            const response = await axios.get(`${API_URL}/captcha/generate`);
+            // 从响应体中获取 captchaId 和 captchaImage（Base64 编码）
+            const { captchaImage, captchaId } = response.data;
+
+            // 返回验证码图片和验证码 ID
             return {
-                captchaImage,
-                captchaId
+                captchaImage,  // Base64 编码的验证码图片
+                captchaId      // 验证码 ID
             };
         } catch (error) {
             console.error('Error fetching captcha:', error);
@@ -26,7 +21,6 @@ export default {
         }
     },
 
-    // 验证验证码
     // 验证验证码
     async verifyCaptcha(captchaText, captchaId) {
         try {

@@ -1,4 +1,5 @@
 <template>
+  <img :src="captchaImage" alt="验证码" class="captcha-image" @click="refreshCaptcha" />
   <div class="container">
     <div class="form-card">
       <h2 class="form-title">用户注册</h2>
@@ -122,12 +123,29 @@ export default {
     async getCaptcha() {
       try {
         const response = await AuthService.getCaptcha();  // 从后端获取验证码图片
-        this.captchaImage = response.data.captchaImage;
-        this.captchaId = response.data.captchaId;  // 保存验证码 ID，用于后续验证
+        console.log('验证码接口返回数据:', response);
+
+        // 确保从后端正确获取验证码数据，并更新 captchaImage 和 captchaId
+        if (response && response.data) {
+          const { captchaImage, captchaId } = response.data;
+
+          if (captchaImage && captchaId) {
+            this.captchaImage = captchaImage;  // 设置 Base64 图片
+            this.captchaId = captchaId;        // 设置 captchaId
+          } else {
+            console.error("验证码数据不完整:", response);
+            alert("验证码加载失败，请刷新页面！");
+          }
+        } else {
+          console.error("返回的数据格式不正确:", response);
+          alert("验证码加载失败，请刷新页面！");
+        }
       } catch (error) {
         console.error("获取验证码失败：", error);
+        alert("验证码加载失败，请刷新页面！");
       }
     },
+
 
     // 刷新验证码
     refreshCaptcha() {
@@ -140,33 +158,6 @@ export default {
 </script>
 
 <style scoped>
-/*
-  全局样式，对 body 和 html 元素进行样式设置。
-  去除默认的外边距和内边距，使元素充满整个页面。
-  设置高度和宽度为 100%，确保页面占满整个可视区域。
-*/
-body, html {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  width: 100%;
-}
-/*
-  对 body 元素设置背景样式。
-  使用背景图片 "/Home_BG.jpg" 作为页面的背景。
-  background-size: cover 使背景图片覆盖整个页面。
-  background-position: center 使背景图片居中显示。
-  background-repeat: no-repeat 防止背景图片重复显示。
-  background-attachment: fixed 使背景图片固定，不随页面滚动而滚动。
-*/
-body {
-  background-image: url('/Home_BG.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-}
-
 .container {
   display: flex;
   align-items: center;
