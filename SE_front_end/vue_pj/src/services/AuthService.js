@@ -1,17 +1,19 @@
 import axios from 'axios';
 
-const API_URL = "http://localhost:8088";  // 修改端口和路径
- // 确保后端端口正确
+const API_URL = "http://localhost:8088";  // 修改端口和路径，确保后端端口正确
 
 export default {
     // 获取验证码图片
     async getCaptcha() {
         try {
-            const response = await axios.get(`${API_URL}/captcha/generate`, { responseType: 'arraybuffer' });
-            const captchaImage = `data:image/png;base64,${Buffer.from(response.data, 'binary').toString('base64')}`;
+            const response = await axios.get(`${API_URL}/captcha/generate`);
+            // 从响应体中获取 captchaId 和 captchaImage（Base64 编码）
+            const { captchaImage, captchaId } = response.data;
+
+            // 返回验证码图片和验证码 ID
             return {
-                captchaImage,  // 返回图片的 base64 字符串
-                captchaId: response.headers['captcha-id'] // 从响应头中获取验证码的 ID
+                captchaImage,  // Base64 编码的验证码图片
+                captchaId      // 验证码 ID
             };
         } catch (error) {
             console.error('Error fetching captcha:', error);
@@ -22,8 +24,13 @@ export default {
     // 验证验证码
     async verifyCaptcha(captchaText, captchaId) {
         try {
-            const response = await axios.post(`${API_URL}/captcha/verify`, { captchaText, captchaId });
-            return response.data; // 返回成功的响应
+            const response = await axios.post(`${API_URL}/captcha/verify`,
+                null, // 空请求体
+                {
+                    params: { captchaId, captchaText } // 通过 params 传递查询参数
+                }
+            );
+            return response.data;
         } catch (error) {
             console.error('Captcha verification error:', error.response?.data?.message || error.message);
             throw new Error('Captcha verification failed');
