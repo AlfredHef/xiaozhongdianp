@@ -7,12 +7,14 @@ export default {
     // 获取验证码图片
     async getCaptcha() {
         try {
-            const response = await axios.get(`${API_URL}/captcha/generate`, { responseType: 'arraybuffer' });
+            const response = await axios.get(`${API_URL}/captcha/generate`, {
+                responseType: 'arraybuffer',
+                headers: { /* 若需自定义头，可补充 */ }
+            });
             const captchaImage = `data:image/png;base64,${Buffer.from(response.data, 'binary').toString('base64')}`;
-            return {
-                captchaImage,  // 返回图片的 base64 字符串
-                captchaId: response.data.captchaId // 返回验证码的 ID
-            };
+            // 从响应头获取 captchaId
+            const captchaId = response.headers['captcha-Id'];
+            return { captchaImage, captchaId };
         } catch (error) {
             console.error('Error fetching captcha:', error);
             throw new Error('Failed to load captcha');

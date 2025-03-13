@@ -2,7 +2,9 @@ package com.fudan.xiaozhong_dianping.customer.controller;
 
 import com.fudan.xiaozhong_dianping.customer.service.CaptchaService;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestMapping;
 import jakarta.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -11,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:5176", exposedHeaders = "Captcha-Id") // 根据前端实际地址调整，若允许所有源可写 `*`，但不推荐
 @RequestMapping("/captcha")
 public class CaptchaController {
     private final CaptchaService captchaService;
