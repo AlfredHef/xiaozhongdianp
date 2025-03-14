@@ -1,5 +1,4 @@
 <template>
-  <img :src="captchaImage" alt="验证码" class="captcha-image" @click="refreshCaptcha" />
   <div class="container">
     <div class="form-card">
       <h2 class="form-title">用户注册</h2>
@@ -44,6 +43,7 @@
     </div>
   </div>
 </template>
+
 
 <script>
 import AuthService from "../services/AuthService";
@@ -96,7 +96,7 @@ export default {
         // 调用 AuthService 的 register 方法进行注册
         await AuthService.register(this.username, this.password, this.captchaInput, this.captchaId);//之前缺少了captchaId
         alert("注册成功，请登录！");
-        this.$router.push("/login");
+        this.$router.push("/login"); // Redirect to /home/login after successful registration
       } catch (error) {
         alert("注册失败，请重试！");
       }
@@ -146,7 +146,6 @@ export default {
       }
     },
 
-
     // 刷新验证码
     refreshCaptcha() {
       this.getCaptcha();  // 刷新验证码图片
@@ -156,6 +155,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 .container {
