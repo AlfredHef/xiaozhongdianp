@@ -72,8 +72,8 @@ export default {
     async getCaptcha() {
       try {
         const response = await AuthService.getCaptcha();  // 从后端获取验证码图片
-        this.captchaImage = response.data.captchaImage;
-        this.captchaId = response.data.captchaId;  // 保存验证码 ID
+        this.captchaImage = response.captchaImage;
+        this.captchaId = response.captchaId;  // 保存验证码 ID
       } catch (error) {
         console.error("获取验证码失败：", error);
       }

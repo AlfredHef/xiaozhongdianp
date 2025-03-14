@@ -49,13 +49,37 @@ export default {
     },
 
     // 注册接口，传递验证码
-    async register(username, password, captcha, captchaId) {
+    async register(username, password, captchaText, captchaId) {
+        // 打印出构建的请求体，确保数据结构正确
+        console.log('Register payload:', {
+            user: {
+                username,
+                password
+            },
+            captchaId,
+            captchaText
+        });
+
         try {
-            const response = await axios.post(`${API_URL}/user/register`, { username, password, captcha, captchaId });
-            return response.data; // 注册成功返回的数据
+            // 构建请求体
+            const payload = {
+                user: {
+                    username,
+                    password
+                },
+                captchaId,
+                captchaText
+            };
+
+            // 发送 POST 请求
+            const response = await axios.post(`${API_URL}/user/register`, payload);
+
+            // 返回注册成功的响应数据
+            return response.data;
         } catch (error) {
             console.error('Register error:', error.response?.data?.message || error.message);
             throw new Error('Registration failed');
         }
     }
+
 };

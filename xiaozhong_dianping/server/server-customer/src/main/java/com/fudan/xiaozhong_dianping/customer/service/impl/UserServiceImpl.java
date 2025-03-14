@@ -1,4 +1,5 @@
 package com.fudan.xiaozhong_dianping.customer.service.impl;
+import com.fudan.entity.RegisterRequest;
 import com.fudan.xiaozhong_dianping.customer.service.CaptchaService; // 引入验证码服务接口
 import com.fudan.xiaozhong_dianping.customer.service.UserService;
 import com.fudan.entity.User;
@@ -26,7 +27,12 @@ public class UserServiceImpl implements UserService {
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d]{8,20}$");
 
     @Override
-    public RegisterResult register(User user, String captchaId, String userInputCaptcha) {
+    public RegisterResult register(RegisterRequest registerRequest) {
+        // 从 RegisterRequest 中获取用户数据和验证码信息
+        User user = registerRequest.getUser();
+        String captchaId = registerRequest.getCaptchaId();
+        String captchaText = registerRequest.getCaptchaText();
+
         // 验证用户名是否符合规则
         if (!isValidUsername(user.getUsername())) {
             return RegisterResult.USERNAME_INVALID;
@@ -41,20 +47,22 @@ public class UserServiceImpl implements UserService {
             return RegisterResult.PASSWORD_INVALID;
         }
 
-        // 校验验证码（替换原来的固定值判断）
-        if (!captchaService.validateCaptcha(captchaId, userInputCaptcha)) {
+        // 校验验证码
+        if (!captchaService.validateCaptcha(captchaId, captchaText)) {
             return RegisterResult.CAPTCHA_INVALID;
         }
 
         // 对密码进行加密处理
         String encryptedPassword = passwordEncoder.encode(user.getPassword());
         user.setPassword(encryptedPassword);
+
         // 插入新用户
         if (userMapper.insertUser(user) > 0) {
             return RegisterResult.SUCCESS;
         }
         return RegisterResult.USERNAME_EXISTS; // 插入失败，可能是用户名已存在
     }
+
 
     @Override
     public boolean login(String username, String password) {

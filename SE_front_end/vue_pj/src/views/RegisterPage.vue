@@ -94,7 +94,7 @@ export default {
 
       try {
         // 调用 AuthService 的 register 方法进行注册
-        await AuthService.register(this.username, this.password, this.captchaInput);
+        await AuthService.register(this.username, this.password, this.captchaInput, this.captchaId);//之前缺少了captchaId
         alert("注册成功，请登录！");
         this.$router.push("/login");
       } catch (error) {
@@ -126,8 +126,8 @@ export default {
         console.log('验证码接口返回数据:', response);
 
         // 确保从后端正确获取验证码数据，并更新 captchaImage 和 captchaId
-        if (response && response.data) {
-          const { captchaImage, captchaId } = response.data;
+        if (response ) {
+          const { captchaImage, captchaId } = response;
 
           if (captchaImage && captchaId) {
             this.captchaImage = captchaImage;  // 设置 Base64 图片
