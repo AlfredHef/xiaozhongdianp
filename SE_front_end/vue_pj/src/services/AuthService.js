@@ -62,6 +62,9 @@ export default {
 
         try {
             // 构建请求体
+            // 打印验证数据，确保发送的数据正确
+            console.log('Captcha ID:', captchaId);
+            console.log('Captcha Text:', captchaText);
             const payload = {
                 user: {
                     username,
@@ -74,7 +77,7 @@ export default {
             // 发送 POST 请求
             const response = await axios.post(`${API_URL}/user/register`, payload);
 
-            // 返回注册成功的响应数据
+            // 返回注册成功地响应数据
             return response.data;
         } catch (error) {
             console.error('Register error:', error.response?.data?.message || error.message);

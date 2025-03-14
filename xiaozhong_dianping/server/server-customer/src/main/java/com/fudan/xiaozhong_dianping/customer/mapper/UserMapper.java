@@ -11,7 +11,7 @@ public interface UserMapper {
      * @param username 用户名
      * @return 用户信息
      */
-    @Select("SELECT * FROM user WHERE username = #{username}")
+    @Select("SELECT id, username, password, created_at AS createdAt FROM user WHERE username = #{username}")
     User findByUsername(String username);
 
     /**
@@ -27,7 +27,8 @@ public interface UserMapper {
      * @param user 用户对象
      * @return 影响的行数
      */
-    @Insert("INSERT INTO user (username, password, create_time) VALUES (#{username}, #{password}, NOW())")
+    @Insert("INSERT INTO user (username, password, created_at) VALUES (#{username}, #{password}, NOW())")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insertUser(User user);
 }
+
