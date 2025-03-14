@@ -1,16 +1,15 @@
 package com.fudan.xiaozhong_dianping.customer.service;
+
+import com.fudan.entity.RegisterRequest;
 import com.fudan.xiaozhong_dianping.customer.enums.RegisterResult;
-import com.fudan.entity.User;
 
 public interface UserService {
     /**
      * 用户注册
-     * @param user            用户信息
-     * @param captchaId       验证码ID
-     * @param userInputCaptcha 用户输入的验证码
+     * @param registerRequest 注册请求对象，包含用户信息和验证码
      * @return 注册是否成功
      */
-    RegisterResult register(User user, String captchaId, String userInputCaptcha);
+    public RegisterResult register(RegisterRequest registerRequest);
 
     /**
      * 用户登录
