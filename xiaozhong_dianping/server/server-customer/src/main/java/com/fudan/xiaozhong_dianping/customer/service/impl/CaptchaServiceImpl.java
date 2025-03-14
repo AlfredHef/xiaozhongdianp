@@ -73,15 +73,29 @@ public class CaptchaServiceImpl implements CaptchaService {
      * 校验验证码
      */
     @Override
-    public boolean validateCaptcha(String captchaId, String userInput) {
+    public boolean validateCaptcha(String captchaId, String captchaText) {
         String storedInfo = captchaStore.get(captchaId);
-        if (storedInfo == null) return false;
+        System.out.println("Captcha ID received: " + captchaId);  // 打印验证码 ID
+        System.out.println("Captcha Text received: " + captchaText);  // 打印验证码文本
 
-        String storedCaptcha = storedInfo.split("_")[0];
-        boolean isValid = storedCaptcha.equalsIgnoreCase(userInput);
+        if (storedInfo == null) {
+            System.out.println("Captcha ID not found in store");
+            return false;  // 如果没有找到验证码 ID
+        }
+
+        String storedCaptcha = storedInfo.split("_")[0];  // 提取存储的验证码文本
+        System.out.println("Stored Captcha: " + storedCaptcha);  // 打印存储的验证码文本
+
+        boolean isValid = storedCaptcha.equalsIgnoreCase(captchaText);
 
         // 如果校验成功，删除验证码
-        if (isValid) captchaStore.remove(captchaId);
+        if (isValid) {
+            captchaStore.remove(captchaId);
+            System.out.println("Captcha is valid, removing from store");
+        } else {
+            System.out.println("Captcha is invalid");
+        }
+
         return isValid;
     }
 
