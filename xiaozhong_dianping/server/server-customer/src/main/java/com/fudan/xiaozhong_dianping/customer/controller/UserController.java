@@ -1,19 +1,32 @@
 package com.fudan.xiaozhong_dianping.customer.controller;
 
+import com.fudan.constant.JwtClaimsConstant;
 import com.fudan.dto.ResponseDTO;
+import com.fudan.dto.UserLoginDTO;
 import com.fudan.entity.RegisterRequest;
+import com.fudan.result.Result;
+import com.fudan.vo.UserLoginVO;
 import com.fudan.xiaozhong_dianping.customer.enums.RegisterResult;
+import com.fudan.xiaozhong_dianping.customer.properties.JwtProperties;
 import com.fudan.xiaozhong_dianping.customer.service.UserService;
 import com.fudan.entity.User;
+
+import com.fudan.xiaozhong_dianping.utils.JwtUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+@Slf4j
 @RestController
 @RequestMapping("/user")
 public class UserController {
 
     @Autowired
     private UserService userService;
+    @Autowired
+    private JwtProperties jwtProperties;
 
     /**
      * 用户注册接口
@@ -43,12 +56,20 @@ public class UserController {
      * 用户登录接口
      */
     @PostMapping("/login")
-    public ResponseDTO<String> login(@RequestBody User user) {
-        boolean isLoginSuccessful = userService.login(user.getUsername(), user.getPassword());
-        if (isLoginSuccessful) {
-            return new ResponseDTO<>(200, "登录成功", null);
-        } else {
-            return new ResponseDTO<>(401, "登录失败，用户名或密码错误", null);
-        }
+    public Result<UserLoginVO> login(@RequestBody UserLoginDTO userLoginDTO) {
+        log.info("用户登录:{}", userLoginDTO);
+        User user = userService.login(userLoginDTO);
+        Map<String, Object> claims = new HashMap<>();
+        claims.put(JwtClaimsConstant.EMP_ID, user.getId());
+        String token = JwtUtil.createJWT(
+                jwtProperties.getUserSecretKey(),
+                jwtProperties.getUserTtl(),
+                claims);
+        UserLoginVO userLoginVO=UserLoginVO.builder()
+                .id(user.getId())
+                .userName(user.getUsername())
+                .token(token)
+                .build();
+        return Result.success(userLoginVO);
     }
 }

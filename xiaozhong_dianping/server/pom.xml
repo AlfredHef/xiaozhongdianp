@@ -11,9 +11,9 @@
 
     <artifactId>server</artifactId>
     <packaging>pom</packaging>
-<modules>
-    <module>server-customer</module>
-</modules>
+    <modules>
+        <module>server-customer</module>
+    </modules>
 
 
     <properties>

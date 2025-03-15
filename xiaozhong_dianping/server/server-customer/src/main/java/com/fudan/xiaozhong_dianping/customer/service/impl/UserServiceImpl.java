@@ -1,7 +1,9 @@
 package com.fudan.xiaozhong_dianping.customer.service.impl;
 
+import com.fudan.constant.MessageConstant;
+import com.fudan.dto.UserLoginDTO;
 import com.fudan.entity.RegisterRequest;
-import com.fudan.xiaozhong_dianping.customer.service.CaptchaService; // 引入验证码服务接口
+import com.fudan.exception.PasswordErrorException;
 import com.fudan.xiaozhong_dianping.customer.service.UserService;
 import com.fudan.entity.User;
 import com.fudan.xiaozhong_dianping.customer.mapper.UserMapper;
@@ -10,6 +12,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.fudan.xiaozhong_dianping.customer.enums.RegisterResult;
 import java.util.regex.Pattern;
+import  com.fudan.exception.AccountNotFoundException;
+import org.springframework.util.DigestUtils;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -52,7 +56,8 @@ public class UserServiceImpl implements UserService {
         // 只需前端通过 verify 接口验证即可，后端不需要再验证
 
         // 对密码进行加密处理
-        String encryptedPassword = passwordEncoder.encode(user.getPassword());
+        String password=user.getPassword();
+        String encryptedPassword = DigestUtils.md5DigestAsHex(password.getBytes());
         user.setPassword(encryptedPassword);
 
         // 插入新用户
@@ -64,9 +69,18 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean login(String username, String password) {
+    public User login(UserLoginDTO userLoginDTO) {
+        String username = userLoginDTO.getUsername();
+        String password = userLoginDTO.getPassword();
         User user = userMapper.findByUsername(username);
-        return user != null && passwordEncoder.matches(password, user.getPassword());
+        if (user == null) {
+            throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
+        }
+        password = DigestUtils.md5DigestAsHex(password.getBytes());
+        if (!password.equals(user.getPassword())) {
+            throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
+        }
+        return user;
     }
 
     /**
