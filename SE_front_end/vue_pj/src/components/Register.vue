@@ -75,6 +75,7 @@ export default {
 
 .form-label {
   display: block;
+  text-align: left;
   color: #4b5563;
 }
 
