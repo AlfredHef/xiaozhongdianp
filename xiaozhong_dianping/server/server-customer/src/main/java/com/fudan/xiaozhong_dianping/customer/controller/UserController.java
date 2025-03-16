@@ -10,11 +10,13 @@ import com.fudan.entity.User;
 import com.fudan.xiaozhong_dianping.customer.utils.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RestController
@@ -25,6 +27,8 @@ public class UserController {
     private UserService userService;
     @Autowired
     private JwtProperties jwtProperties;
+    @Autowired
+    private RedisTemplate redisTemplate;
     /**
      * 用户注册接口
      */
@@ -58,21 +62,33 @@ public class UserController {
         try {
             log.info("用户登录:{}", user);
             boolean isLoginSuccessful = userService.login(user.getUsername(), user.getPassword());
-            Map<String, Object> claims = new HashMap<>();
-            claims.put("userId", user.getId());
-            String token = JwtUtil.createJWT(
-                    jwtProperties.getUserSecretKey(),
-                    jwtProperties.getUserTtl(),
-                    claims
-            );
-            if (isLoginSuccessful) {
+            if (isLoginSuccessful ) {
+                Map<String, Object> claims = new HashMap<>();
+                claims.put("userId", user.getId());
+                String token = JwtUtil.createJWT(
+                        jwtProperties.getUserSecretKey(),
+                        jwtProperties.getUserTtl(),
+                        claims
+                );
+                // 将 Token 和用户信息存入 Redis
+                redisTemplate.opsForValue().set(token, user.getId().toString(), jwtProperties.getUserTtl(), TimeUnit.MILLISECONDS);
                 return new ResponseDTO<>(200, "登录成功", token);
             } else {
-                return new  ResponseDTO<>(401, "登录失败，用户名或密码错误", null);
+                return new ResponseDTO<>(401, "登录失败，用户名或密码错误", null);
             }
         } catch (Exception e) {
             log.error("登录过程中出现异常", e);
-            return new  ResponseDTO<>(500, "登录过程中出现异常，请稍后重试", null);
+            return new ResponseDTO<>(500, "登录过程中出现异常，请稍后重试", null);
         }
+    }
+    @PostMapping("/logout")
+    public ResponseDTO<String> logout(@RequestHeader("Authorization") String authorization) {
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring(7);
+            // 从 Redis 中删除 Token 记录
+            redisTemplate.delete(token);
+            return new ResponseDTO<>(200, "退出登录成功", null);
+        }
+        return new ResponseDTO<>(400, "无效的 Token", null);
     }
 }
