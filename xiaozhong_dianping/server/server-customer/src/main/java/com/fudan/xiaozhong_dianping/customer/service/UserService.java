@@ -1,6 +1,7 @@
 package com.fudan.xiaozhong_dianping.customer.service;
 
 import com.fudan.entity.RegisterRequest;
+import com.fudan.entity.User;
 import com.fudan.xiaozhong_dianping.customer.enums.RegisterResult;
 
 public interface UserService {
@@ -17,5 +18,5 @@ public interface UserService {
      * @param password 密码
      * @return 登录是否成功
      */
-    boolean login(String username, String password);
+    User login(String username, String password);
 }

@@ -20,14 +20,12 @@ spring:
           max-idle: 16
           min-idle: 8
 server:
-  port:
-    8088
+  port: 8088
 fudan:
   jwt:
     user-secret-key: fudan
     user-ttl: 360000000000
     user-token-name: authentication
-
 
 #server:
 #  port:

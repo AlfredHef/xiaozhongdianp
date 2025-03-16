@@ -54,41 +54,50 @@ public class UserController {
         }
     }
 
+
+
     /**
-     * 用户登录接口
+     * 用户登录接口（修正后）
      */
     @PostMapping("/login")
     public ResponseDTO<String> login(@RequestBody User user) {
         try {
-            log.info("用户登录:{}", user);
-            boolean isLoginSuccessful = userService.login(user.getUsername(), user.getPassword());
-            if (isLoginSuccessful ) {
+            User authenticatedUser = userService.login(user.getUsername(), user.getPassword());
+            if (authenticatedUser != null) {
                 Map<String, Object> claims = new HashMap<>();
-                claims.put("userId", user.getId());
-                String token = JwtUtil.createJWT(
-                        jwtProperties.getUserSecretKey(),
-                        jwtProperties.getUserTtl(),
-                        claims
-                );
-                // 将 Token 和用户信息存入 Redis
-                redisTemplate.opsForValue().set(token, user.getId().toString(), jwtProperties.getUserTtl(), TimeUnit.MILLISECONDS);
-                return new ResponseDTO<>(200, "登录成功", token);
+                claims.put("userId", authenticatedUser.getId());
+                String token = JwtUtil.createJWT(jwtProperties.getUserSecretKey(), jwtProperties.getUserTtl(), claims);
+                // 存储到Redis，添加前缀
+                String redisKey = "token:" + token;
+                redisTemplate.opsForValue().set(redisKey, authenticatedUser.getId().toString(),
+                        jwtProperties.getUserTtl(), TimeUnit.MILLISECONDS);
+                return new ResponseDTO<>(200, "登录成功", "Bearer " + token);
             } else {
-                return new ResponseDTO<>(401, "登录失败，用户名或密码错误", null);
+                return new ResponseDTO<>(401, "登录失败", null);
             }
         } catch (Exception e) {
-            log.error("登录过程中出现异常", e);
-            return new ResponseDTO<>(500, "登录过程中出现异常，请稍后重试", null);
+            // 记录日志
+            return new ResponseDTO<>(500, "服务器错误", null);
         }
     }
+
+    /**
+     * 用户退出接口（修正后）
+     */
     @PostMapping("/logout")
-    public ResponseDTO<String> logout(@RequestHeader("Authorization") String authorization) {
-        if (authorization != null && authorization.startsWith("Bearer ")) {
-            String token = authorization.substring(7);
-            // 从 Redis 中删除 Token 记录
-            redisTemplate.delete(token);
-            return new ResponseDTO<>(200, "退出登录成功", null);
+    public ResponseDTO<String> logout(@RequestHeader("Authorization") String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return new ResponseDTO<>(400, "无效Token", null);
         }
-        return new ResponseDTO<>(400, "无效的 Token", null);
+        String token = authHeader.substring(7);
+        // 使用与登录时一致的Redis键
+        String redisKey = "token:" + token;
+        Boolean exists = redisTemplate.hasKey(redisKey);
+        if (exists != null && exists) {
+            redisTemplate.delete(redisKey);
+            return new ResponseDTO<>(200, "退出成功", null);
+        } else {
+            return new ResponseDTO<>(400, "无效Token", null);
+        }
     }
 }
