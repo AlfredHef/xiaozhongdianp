@@ -61,7 +61,7 @@ export default {
 
         // 如果验证码验证通过，调用登录接口
         await AuthService.login(this.username, this.password, this.captchaInput, this.captchaId);
-        this.$router.push("/");  // 登录成功后跳转到首页
+        this.$router.push("/homepage");  // 登录成功后跳转到首页
       } catch (error) {
         alert("登录失败，请检查用户名、密码和验证码！");
         this.refreshCaptcha();  // 刷新验证码
@@ -148,6 +148,7 @@ body {
 .form-label {
   display: block;
   color: #4b5563;
+  text-align:left;
 }
 
 .form-input {

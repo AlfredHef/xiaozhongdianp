@@ -187,6 +187,7 @@ export default {
 .form-label {
   display: block;
   color: #4b5563;
+  text-align: left;
 }
 
 .form-input {

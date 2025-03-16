@@ -7,7 +7,7 @@
     外层容器，使用类名 "centered-container"。
     该容器的作用是将内部内容垂直和水平居中显示。
   -->
-  <div class="centered-container">
+  <div class="centered-container" >
     <!--
       登录框容器，使用类名 "login-box"。
       包含欢迎标题和登录、注册链接。
@@ -61,6 +61,7 @@ body, html {
   background-repeat: no-repeat 防止背景图片重复显示。
   background-attachment: fixed 使背景图片固定，不随页面滚动而滚动。
 */
+
 body {
   background-image: url('/Home_BG.jpg');
   background-size: cover;
