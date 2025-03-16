@@ -6,10 +6,26 @@ spring:
     username: budouer
     password: 'BuDou&123'
     driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      database: 0
+      host: 139.129.37.84
+      port: 6379
+      password: Yt526526
+      timeout: 500000000
+      lettuce:
+        pool:
+          max-active: 32
+          max-wait: -1
+          max-idle: 16
+          min-idle: 8
 server:
-  port:
-    8088
-
+  port: 8088
+fudan:
+  jwt:
+    user-secret-key: fudan
+    user-ttl: 360000000000
+    user-token-name: authentication
 
 #server:
 #  port:

@@ -64,9 +64,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean login(String username, String password) {
+    public User login(String username, String password) {
         User user = userMapper.findByUsername(username);
-        return user != null && passwordEncoder.matches(password, user.getPassword());
+        if (user != null && passwordEncoder.matches(password, user.getPassword())) {
+            return user; // 返回用户对象
+        }
+        return null; // 验证失败返回null
     }
 
     /**
