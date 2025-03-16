@@ -5,9 +5,10 @@ import com.fudan.entity.RegisterRequest;
 import com.fudan.xiaozhong_dianping.customer.enums.RegisterResult;
 import com.fudan.xiaozhong_dianping.customer.service.UserService;
 import com.fudan.entity.User;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
+@Slf4j
 @RestController
 @RequestMapping("/user")
 public class UserController {
@@ -20,6 +21,7 @@ public class UserController {
      */
     @PostMapping("/register")
     public ResponseDTO<String> register(@RequestBody RegisterRequest registerRequest) {
+        log.info("Received register request: {}", registerRequest);
         // 调用 service 处理注册
         RegisterResult result = userService.register(registerRequest);
 
@@ -44,6 +46,7 @@ public class UserController {
      */
     @PostMapping("/login")
     public ResponseDTO<String> login(@RequestBody User user) {
+        log.info("用户登录:{}", user);
         boolean isLoginSuccessful = userService.login(user.getUsername(), user.getPassword());
         if (isLoginSuccessful) {
             return new ResponseDTO<>(200, "登录成功", null);
