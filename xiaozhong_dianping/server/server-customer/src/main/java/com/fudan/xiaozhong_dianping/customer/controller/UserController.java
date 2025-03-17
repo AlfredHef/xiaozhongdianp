@@ -34,7 +34,7 @@ public class UserController {
      */
     @PostMapping("/register")
     public ResponseDTO<String> register(@RequestBody RegisterRequest registerRequest) {
-        log.info("Received register request: {}", registerRequest);
+        log.info("用户注册，请求为: {}", registerRequest);
         // 调用 service 处理注册
         RegisterResult result = userService.register(registerRequest);
 
