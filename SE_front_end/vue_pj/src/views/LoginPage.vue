@@ -48,6 +48,7 @@ export default {
   mounted() {
     this.getCaptcha();  // 页面加载时获取验证码
   },
+  //****
   methods: {
     // 登录时调用
     async login() {
@@ -60,8 +61,17 @@ export default {
         await AuthService.verifyCaptcha(this.captchaInput, this.captchaId); // 向后端验证验证码
 
         // 如果验证码验证通过，调用登录接口
-        await AuthService.login(this.username, this.password, this.captchaInput, this.captchaId);
-        this.$router.push("/homepage");  // 登录成功后跳转到首页
+        const loginResponse = await AuthService.login(this.username, this.password, this.captchaInput, this.captchaId);
+
+        // 判断后端返回的 token 是否有效
+        if (loginResponse && loginResponse.token) {
+          // 存储 token 到 localStorage
+          localStorage.setItem("user", JSON.stringify({ token: loginResponse.token }));
+          // 跳转到首页
+          this.$router.push("/homepage");
+        } else {
+          throw new Error("登录失败，未返回 token");
+        }
       } catch (error) {
         alert("登录失败，请检查用户名、密码和验证码！");
         this.refreshCaptcha();  // 刷新验证码
@@ -88,7 +98,6 @@ export default {
   }
 };
 </script>
-
 
 
 <style scoped>

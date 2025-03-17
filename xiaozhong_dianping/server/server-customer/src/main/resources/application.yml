@@ -23,7 +23,7 @@ server:
   port: 8088
 fudan:
   jwt:
-    user-secret-key: fudan
+    user-secret-key: fudan_university_security_key_for_jwt_authentication_2025
     user-ttl: 360000000000
     user-token-name: authentication
 
