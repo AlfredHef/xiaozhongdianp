@@ -3,6 +3,7 @@
     <h1>{{ message }}</h1>
     <button @click="order">点单</button>
     <button @click="evaluate">评价</button>
+    <button @click="quit">退出登录</button>
   </div>
 </template>
 
@@ -23,6 +24,9 @@ export default {
     evaluate() {
       this.message = '评价模式';
     },
+    quit(){
+      this.$router.push("/");  
+    }
   }
 };
 </script>
