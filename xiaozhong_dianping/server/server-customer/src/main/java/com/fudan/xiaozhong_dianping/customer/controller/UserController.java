@@ -34,7 +34,7 @@ public class UserController {
      */
     @PostMapping("/register")
     public ResponseDTO<String> register(@RequestBody RegisterRequest registerRequest) {
-        log.info("用户注册，请求为: {}", registerRequest);
+        log.info("Received register request: {}", registerRequest);
         // 调用 service 处理注册
         RegisterResult result = userService.register(registerRequest);
 
@@ -77,6 +77,9 @@ public class UserController {
             }
         } catch (Exception e) {
             // 记录日志
+            // 详细记录异常
+            e.printStackTrace(); // 或使用日志框架
+            System.out.println("登录异常: " + e.getMessage());
             return new ResponseDTO<>(500, "服务器错误", null);
         }
     }

@@ -57,6 +57,12 @@
         <version>0.11.5</version>
         <scope>runtime</scope>
     </dependency>
+    <dependency>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt-jackson</artifactId> <!-- 或者 jjwt-gson 取决于你想要使用的 JSON 处理器 -->
+        <version>0.11.5</version>
+        <scope>runtime</scope>
+    </dependency>
 
 </dependencies>
 </project>
