@@ -1,6 +1,8 @@
 spring:
   application:
     name: customerApplication
+
+
   datasource:
     url: jdbc:mysql://139.129.37.84:3306/xiaozhong_dianping
     username: budouer
