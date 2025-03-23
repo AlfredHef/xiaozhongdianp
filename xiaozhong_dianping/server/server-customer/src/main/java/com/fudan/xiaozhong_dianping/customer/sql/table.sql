@@ -8,7 +8,7 @@ CREATE TABLE user (
 ) COMMENT '用户信息表，存储用户的基本信息';
 
 -- 商家表（存储商家基本信息）
-CREATE TABLE merchant (
+CREATE TABLE shop (
                           id INT PRIMARY KEY AUTO_INCREMENT COMMENT '商家ID（主键，自增）',
                           name VARCHAR(255) NOT NULL COMMENT '商家名称（支持模糊搜索）',
                           address TEXT COMMENT '详细地址（支持地理信息检索）',
@@ -31,7 +31,7 @@ CREATE TABLE category (
 ) COMMENT '商家分类字典表，用于搜索关键词匹配';
 
 -- 商家图片表（存储商家相关图片）
-CREATE TABLE merchant_image (
+CREATE TABLE shop_image (
                                 id INT PRIMARY KEY AUTO_INCREMENT COMMENT '图片ID（主键，自增）',
                                 merchant_id INT NOT NULL COMMENT '所属商家ID（关联merchant表）',
                                 image_url TEXT NOT NULL COMMENT '图片存储URL（支持多图）',
