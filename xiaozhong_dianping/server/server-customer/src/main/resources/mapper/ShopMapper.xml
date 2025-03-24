@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fudan.xiaozhong_dianping.shop.mapper.ShopMapper">
+
+    <!-- 根据查询条件搜索商家列表 -->
+    <select id="searchShops" parameterType="com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO" resultType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
+        SELECT * FROM shop
+        WHERE 1 = 1
+        <if test="name != null and name != ''">
+            AND (name LIKE CONCAT('%', #{name}, '%') OR category.name LIKE CONCAT('%', #{name}, '%'))
+        </if>
+        <if test="category != null and category != ''">
+            AND category.name = #{category}
+        </if>
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- 统计符合查询条件的商家数量 -->
+    <select id="countShops" parameterType="com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO" resultType="int">
+        SELECT COUNT(*) FROM shop
+        JOIN category ON shop.category_id = category.id
+        WHERE 1 = 1
+        <if test="name != null and name != ''">
+            AND (shop.name LIKE CONCAT('%', #{name}, '%') OR category.name LIKE CONCAT('%', #{name}, '%'))
+        </if>
+        <if test="category != null and category != ''">
+            AND category.name = #{category}
+        </if>
+    </select>
+</mapper>
