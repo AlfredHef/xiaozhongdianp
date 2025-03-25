@@ -26,6 +26,28 @@
         <if test="category != null and category != ''">
             AND c.name = #{category}
         </if>
+        <!-- 新增评分筛选 -->
+        <if test="minRating != null">
+            AND s.rating >= #{minRating}
+        </if>
+        <if test="maxRating != null">
+            AND s.rating <= #{maxRating}
+        </if>
+        <!-- 新增价格区间筛选（假设价格字段为 price） -->
+        <if test="minPrice != null">
+            AND s.price >= #{minPrice}
+        </if>
+        <if test="maxPrice != null">
+            AND s.price <= #{maxPrice}
+        </if>
+
+        <!-- 新增人均消费筛选 -->
+        <if test="minAverageCost != null">
+            AND s.average_cost >= #{minAverageCost}
+        </if>
+        <if test="maxAverageCost != null">
+            AND s.average_cost <= #{maxAverageCost}
+        </if>
         <!-- 动态排序逻辑 -->
         <if test="sortBy != null and sortBy != ''">
             ORDER BY
@@ -41,6 +63,8 @@
                 </otherwise>
             </choose>
         </if>
+
+
         LIMIT #{offset}, #{pageSize}
     </select>
     <!--
@@ -73,6 +97,11 @@
     <select id="showShops" resultType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
         select *
         from shop limit #{(pageCurrent - 1) * pageSize},#{pageSize}
+    </select>
+    <select id="findShopById" resultType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
+        select *
+        from shop
+        where id = #{id}
     </select>
 
 </mapper>

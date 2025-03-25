@@ -23,7 +23,7 @@ public interface ShopService {
      * 根据查询条件搜索商店列表
      *
      * @param shopPageQueryDTO 商店页面查询DTO对象，包含分页和查询条件信息
-     * @return 返回一个商店实体列表，满足查询条件的商店信息
+     * @return 返回一个商店实体 列表，满足查询条件的商店信息
      */
     List<com.fudan.xiaozhong_dianping.shop.entity.Shop> searchShops(com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO shopPageQueryDTO);
 
