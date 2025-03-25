@@ -1,20 +1,21 @@
 package com.fudan.xiaozhong_dianping.shop.service;
 
-import com.fudan.result.PageResult;
 import com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO;
 import com.fudan.xiaozhong_dianping.shop.entity.SearchHistory;
 import com.fudan.xiaozhong_dianping.shop.entity.Shop;
+import com.fudan.xiaozhong_dianping.shop.entity.ShopImage;
 
 import java.util.List;
+
 /**
- * ShopService接口定义了与商店搜索相关的服务方法
+ * ShopService接口定义了与商店搜索和管理相关的服务方法
  */
 public interface ShopService {
 
     /**
      * 保存用户的搜索历史记录
      *
-     * @param searchHistory 搜索历史记录对象，包含用户搜索的相关信息
+     * @param searchHistory 搜索历史记录对象，包含用户ID和搜索关键词等信息
      * @return 返回一个布尔值，表示搜索历史记录是否成功保存
      */
     Boolean saveSearchHistory(SearchHistory searchHistory);
@@ -25,7 +26,7 @@ public interface ShopService {
      * @param shopPageQueryDTO 商店页面查询DTO对象，包含分页和查询条件信息
      * @return 返回一个商店实体列表，满足查询条件的商店信息
      */
-    List<com.fudan.xiaozhong_dianping.shop.entity.Shop> searchShops(com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO shopPageQueryDTO);
+    List<Shop> searchShops(ShopPageQueryDTO shopPageQueryDTO);
 
     /**
      * 根据用户ID获取该用户的搜索历史记录
@@ -44,5 +45,20 @@ public interface ShopService {
      *         当无数据时返回空列表（非null）
      */
     List<Shop> showShops(int pageCurrent, int pageSize);
-}
 
+    /**
+     * 批量导入商家及其图片数据
+     *
+     * @param shops 商家列表
+     * @param imagePaths 图片路径列表，需与商家列表一一对应
+     */
+    void importShopsFromCSV(List<Shop> shops, List<String> imagePaths);
+
+    /**
+     * 批量导入商家及其图片数据（带描述）
+     *
+     * @param shops 商家列表
+     * @param shopImages 图片信息列表，每个对象包含 shopId 和图片路径及描述
+     */
+    void importShopsFromCSVWithDescriptions(List<Shop> shops, List<ShopImage> shopImages);
+}

@@ -1,10 +1,8 @@
 package com.fudan.xiaozhong_dianping.shop.mapper;
 
-import com.fudan.result.PageResult;
-import com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO;
 import com.fudan.xiaozhong_dianping.shop.entity.Shop;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
+import com.fudan.xiaozhong_dianping.shop.entity.ShopImage;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -13,27 +11,43 @@ public interface ShopMapper {
 
 
     /**
-     * 根据查询条件搜索商家列表
-     * @param shopPageQueryDTO 包含分页和搜索条件的查询对象
-     * @return 商家列表
-     */
-    List<Shop> searchShops(ShopPageQueryDTO shopPageQueryDTO);
-
-    /**
-     * 统计符合查询条件的商家数量
-     * @param shopPageQueryDTO 包含分页和搜索条件的查询对象
-     * @return 符合条件的商家数量
-     */
-    int countShops(ShopPageQueryDTO shopPageQueryDTO);
-
-
-    /**
      * 分页查询店铺列表
      *
-     * @param pageCurrent 当前页码，从1开始计数
-     * @param pageSize 每页显示的记录数量，需大于0
-     * @return 包含分页结果的店铺列表，当无数据时返回空列表（非null）
+     * @param offset 起始位置
+     * @param limit 每页记录数
+     * @return 分页后的店铺列表
      */
-    List<Shop> showShops(int pageCurrent, int pageSize);
+    @Select("SELECT * FROM shop LIMIT #{limit} OFFSET #{offset}")
+    List<Shop> showShops(@Param("offset") int offset, @Param("limit") int limit);
 
+    /**
+     * 批量插入商家数据
+     *
+     * @param shops 商家列表
+     */
+    @Insert({
+            "<script>",
+            "INSERT INTO shop (name, address, other_columns) VALUES ",
+            "<foreach collection='list' item='shop' separator=','>",
+            "(#{shop.name}, #{shop.address}, #{shop.otherColumns})",
+            "</foreach>",
+            "</script>"
+    })
+    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
+    void batchInsertShops(@Param("list") List<Shop> shops);
+
+    /**
+     * 批量插入商家图片数据
+     *
+     * @param shopImages 商家图片列表
+     */
+    @Insert({
+            "<script>",
+            "INSERT INTO shop_image (shop_id, image_url, description) VALUES ",
+            "<foreach collection='list' item='image' separator=','>",
+            "(#{image.shopId}, #{image.imageUrl}, #{image.description})",
+            "</foreach>",
+            "</script>"
+    })
+    void batchInsertShopImages(@Param("list") List<ShopImage> shopImages);
 }

@@ -24,4 +24,8 @@ public class ShopPageQueryDTO implements Serializable {
 
     /* 用户ID（用于关联用户与店铺） */
     private Long userId;
+
+    public int getPageCurrent() {
+        return 0;
+    }
 }

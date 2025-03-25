@@ -2,6 +2,8 @@ package com.fudan.xiaozhong_dianping.shop.controller;
 
 import com.fudan.result.PageResult;
 import com.fudan.result.Result;
+import com.fudan.xiaozhong_dianping.shop.dto.ShopImportDTO;
+import com.fudan.xiaozhong_dianping.shop.dto.ShopImportWithDescriptionsDTO;
 import com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO;
 import com.fudan.xiaozhong_dianping.shop.entity.SearchHistory;
 import com.fudan.xiaozhong_dianping.shop.entity.Shop;
@@ -9,10 +11,8 @@ import com.fudan.xiaozhong_dianping.shop.service.ShopService;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
 import java.util.List;
@@ -79,5 +79,42 @@ public class ShopController {
         log.info("获取用户的搜索历史记录：{}", userId);
         List<SearchHistory> historyList = shopService.getSearchHistoryByUserId(userId);
         return Result.success(historyList);
+    }
+
+    /**
+     * 从CSV导入商家数据（带图片路径）
+     * @param shopImportDTO 包含商家列表和图片路径列表的DTO
+     * @return 导入结果
+     */
+    @PostMapping("/import-with-images")
+    public Result<String> importShopsWithImages(@RequestBody ShopImportDTO shopImportDTO) {
+        try {
+            shopService.importShopsFromCSV(shopImportDTO.getShops(), shopImportDTO.getImagePaths());
+            return Result.success("商家数据导入成功");
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
+        } catch (Exception e) {
+            return Result.error("商家数据导入失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 从CSV导入商家数据（带完整图片信息）
+     * @param shopImportWithDescriptionsDTO 包含商家列表和图片信息列表的DTO
+     * @return 导入结果
+     */
+    @PostMapping("/import-with-descriptions")
+    public Result<String> importShopsWithDescriptions(
+            @RequestBody ShopImportWithDescriptionsDTO shopImportWithDescriptionsDTO) {
+        try {
+            shopService.importShopsFromCSVWithDescriptions(
+                    shopImportWithDescriptionsDTO.getShops(),
+                    shopImportWithDescriptionsDTO.getShopImages());
+            return Result.success("商家数据导入成功");
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
+        } catch (Exception e) {
+            return Result.error("商家数据导入失败: " + e.getMessage());
+        }
     }
 }
