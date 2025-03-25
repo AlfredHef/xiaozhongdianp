@@ -25,12 +25,21 @@ public class ShopController {
     @Autowired
     private ShopService shopService;
 
+    /**
+     * 分页查询店铺信息
+     *
+     * @param pageCurrent 当前页码（从1开始计数）
+     * @param pageSize 每页记录数
+     * @return 包含分页查询结果和状态信息的响应对象，data属性为店铺列表
+     */
     @GetMapping("/page")
     @ApiOperation(value="分页查询")
     public Result<List<Shop>> page(int pageCurrent,int pageSize){
-     List<Shop> list=shopService.showShops(pageCurrent,pageSize);
-     return Result.success(list);
+        // 调用服务层获取分页数据
+        List<Shop> list=shopService.showShops(pageCurrent,pageSize);
+        return Result.success(list);
     }
+
     /**
      * 搜索店铺接口
      * 该方法用于处理GET请求，根据查询条件返回店铺列表

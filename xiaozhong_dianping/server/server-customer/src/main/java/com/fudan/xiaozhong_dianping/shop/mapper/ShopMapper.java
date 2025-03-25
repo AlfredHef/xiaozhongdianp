@@ -26,6 +26,14 @@ public interface ShopMapper {
      */
     int countShops(ShopPageQueryDTO shopPageQueryDTO);
 
-    @Select("select * from shop limit #{(pageCurrent - 1) * pageSize},#{pageSize}")
+
+    /**
+     * 分页查询店铺列表
+     *
+     * @param pageCurrent 当前页码，从1开始计数
+     * @param pageSize 每页显示的记录数量，需大于0
+     * @return 包含分页结果的店铺列表，当无数据时返回空列表（非null）
+     */
     List<Shop> showShops(int pageCurrent, int pageSize);
+
 }

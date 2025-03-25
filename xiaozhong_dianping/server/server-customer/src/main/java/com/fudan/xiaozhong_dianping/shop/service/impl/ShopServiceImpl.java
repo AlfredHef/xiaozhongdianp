@@ -65,8 +65,16 @@ public class ShopServiceImpl implements ShopService {
         return searchHistoryMapper.getSearchHistoryByUserId(userId);
     }
 
+    /**
+     * 分页查询店铺信息列表
+     *
+     * @param pageCurrent 当前页码，从1开始计数
+     * @param pageSize    每页显示的记录数量
+     * @return            分页查询后的店铺信息集合，包含当前页的店铺数据
+     */
     @Override
     public List<Shop> showShops(int pageCurrent, int pageSize) {
+        // 调用数据访问层获取分页数据
         List<Shop> list=shopMapper.showShops(pageCurrent,pageSize);
         return list;
     }

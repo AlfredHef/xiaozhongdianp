@@ -35,7 +35,14 @@ public interface ShopService {
      */
     List<SearchHistory> getSearchHistoryByUserId(Long userId);
 
-
+    /**
+     * 分页查询店铺列表
+     *
+     * @param pageCurrent 当前页码，从1开始计数
+     * @param pageSize 每页显示的记录数量
+     * @return 包含分页数据的店铺列表，列表元素为Shop对象
+     *         当无数据时返回空列表（非null）
+     */
     List<Shop> showShops(int pageCurrent, int pageSize);
 }
 
