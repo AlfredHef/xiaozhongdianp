@@ -4,6 +4,7 @@ import com.fudan.result.PageResult;
 import com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO;
 import com.fudan.xiaozhong_dianping.shop.entity.SearchHistory;
 import com.fudan.xiaozhong_dianping.shop.entity.Shop;
+import com.fudan.xiaozhong_dianping.shop.entity.ShopImage;
 
 import java.util.List;
 import java.util.Map;
@@ -53,5 +54,9 @@ public interface ShopService {
      * @return 包含商家详情和图片的Map，键分别为"shop"和"images"
      */
     Map<String, Object> getShopDetails(Long shopId);
+
+    void importShopsFromCSV(List<Shop> shops, List<String> imagePaths);
+
+    void importShopsFromCSVWithDescriptions(List<Shop> shops, List<ShopImage> shopImages);
 }
 

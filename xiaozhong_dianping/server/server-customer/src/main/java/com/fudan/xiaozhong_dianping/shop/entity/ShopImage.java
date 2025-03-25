@@ -1,14 +1,12 @@
 package com.fudan.xiaozhong_dianping.shop.entity;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
-
 /**
  * ShopImage 类用于表示与商家相关的图片信息，支持商家多图展示。
- * 借助 Lombok 注解，自动生成了 getter、setter、构造函数等常用方法，简化代码编写。
  */
 @Data
 @Builder
@@ -19,13 +17,13 @@ public class ShopImage {
      * 图片的唯一标识符，在系统中唯一标识一张商家图片。
      * 通常为自增的整数类型，作为数据库表的主键使用。
      */
-    private Integer id;
+    private Long id;
 
     /**
-     * 该图片所属的商家对象，通过关联 Shop 实体类，
+     * 该图片所属的商家ID，通过关联 Shop 实体类的 id，
      * 可以明确此图片是属于哪个具体的商家。
      */
-    private Shop shop;
+    private Long shopId;
 
     /**
      * 图片的存储 URL，用于定位图片在存储系统中的位置。
