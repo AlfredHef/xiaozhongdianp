@@ -29,8 +29,12 @@ public class UserController {
     private JwtProperties jwtProperties;
     @Autowired
     private RedisTemplate redisTemplate;
+
     /**
      * 用户注册接口
+     *
+     * @param registerRequest 注册请求对象，包含用户注册所需的信息
+     * @return 返回注册结果的DTO对象
      */
     @PostMapping("/register")
     public ResponseDTO<String> register(@RequestBody RegisterRequest registerRequest) {
@@ -38,6 +42,7 @@ public class UserController {
         // 调用 service 处理注册
         RegisterResult result = userService.register(registerRequest);
 
+        // 根据注册结果返回不同的响应
         switch (result) {
             case SUCCESS:
                 return new ResponseDTO<>(200, "注册成功", null);
@@ -54,16 +59,18 @@ public class UserController {
         }
     }
 
-
-
     /**
-     * 用户登录接口（修正后）
+     * 用户登录接口
+     *
+     * @param user 用户对象，包含用户名和密码
+     * @return 返回登录结果的DTO对象，包括token
      */
     @PostMapping("/login")
     public ResponseDTO<String> login(@RequestBody User user) {
         try {
             User authenticatedUser = userService.login(user.getUsername(), user.getPassword());
             if (authenticatedUser != null) {
+                // 生成JWT token
                 Map<String, Object> claims = new HashMap<>();
                 claims.put("userId", authenticatedUser.getId());
                 String token = JwtUtil.createJWT(jwtProperties.getUserSecretKey(), jwtProperties.getUserTtl(), claims);
@@ -85,7 +92,10 @@ public class UserController {
     }
 
     /**
-     * 用户退出接口（修正后）
+     * 用户登出接口
+     *
+     * @param authHeader 授权头部，包含Bearer token
+     * @return 返回登出结果的DTO对象
      */
     @PostMapping("/logout")
     public ResponseDTO<String> logout(@RequestHeader("Authorization") String authHeader) {
@@ -96,6 +106,7 @@ public class UserController {
         // 使用与登录时一致的Redis键
         String redisKey = "token:" + token;
         Boolean exists = redisTemplate.hasKey(redisKey);
+        // 如果token存在，则删除之，完成登出
         if (exists != null && exists) {
             redisTemplate.delete(redisKey);
             return new ResponseDTO<>(200, "退出成功", null);
