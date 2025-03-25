@@ -14,19 +14,35 @@
     @return List<Shop> 符合条件的商家实体列表
     -->
     <select id="searchShops" parameterType="com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO" resultType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
-        SELECT * FROM shop
+        SELECT s.*
+        FROM shop s
+        LEFT JOIN category c ON s.category_id = c.id
         WHERE 1 = 1
-        <!-- 动态生成名称模糊查询条件（商家名称或分类名称） -->
+        <!-- 动态生成名称模糊查询条件 -->
         <if test="name != null and name != ''">
-            AND (name LIKE CONCAT('%', #{name}, '%') OR category.name LIKE CONCAT('%', #{name}, '%'))
+            AND (s.name LIKE CONCAT('%', #{name}, '%') OR c.name LIKE CONCAT('%', #{name}, '%'))
         </if>
         <!-- 动态生成分类精确匹配条件 -->
         <if test="category != null and category != ''">
-            AND category.name = #{category}
+            AND c.name = #{category}
+        </if>
+        <!-- 动态排序逻辑 -->
+        <if test="sortBy != null and sortBy != ''">
+            ORDER BY
+            <choose>
+                <when test="sortBy == 'rating_desc'">
+                    s.rating DESC
+                </when>
+                <when test="sortBy == 'average_cost_asc'">
+                    s.average_cost ASC
+                </when>
+                <otherwise>
+                    s.id ASC  <!-- 默认按商家ID升序排序 -->
+                </otherwise>
+            </choose>
         </if>
         LIMIT #{offset}, #{pageSize}
     </select>
-
     <!--
     统计符合动态条件的商家总数（用于分页）
     @param ShopPageQueryDTO 查询条件参数对象
