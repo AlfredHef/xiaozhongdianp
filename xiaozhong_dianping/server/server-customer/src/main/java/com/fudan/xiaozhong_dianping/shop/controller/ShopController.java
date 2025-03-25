@@ -7,6 +7,7 @@ import com.fudan.xiaozhong_dianping.shop.entity.SearchHistory;
 import com.fudan.xiaozhong_dianping.shop.entity.Shop;
 import com.fudan.xiaozhong_dianping.shop.service.ShopService;
 import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +20,7 @@ import java.util.List;
 // 控制器类，处理与店铺相关的请求
 @RequestMapping("/shop")
 @RestController
+@Slf4j
 public class ShopController {
 
     // 自动注入ShopService，用于处理店铺相关的业务逻辑
@@ -35,6 +37,7 @@ public class ShopController {
     @GetMapping("/page")
     @ApiOperation(value="分页查询")
     public Result<List<Shop>> page(int pageCurrent,int pageSize){
+        log.info("分页查询，当前页码：{}，每页记录数：{}",pageCurrent,pageSize);
         // 调用服务层获取分页数据
         List<Shop> list=shopService.showShops(pageCurrent,pageSize);
         return Result.success(list);
@@ -49,6 +52,7 @@ public class ShopController {
      */
     @GetMapping("/search")
     public Result<List<Shop>> search(ShopPageQueryDTO shopPageQueryDTO) {
+        log.info("搜索店铺：{}", shopPageQueryDTO);
         // 创建搜索历史记录对象
         SearchHistory searchHistory = new SearchHistory();
         searchHistory.setUserId(shopPageQueryDTO.getUserId());
@@ -72,6 +76,7 @@ public class ShopController {
      */
     @GetMapping("/search/history")
     public Result<List<SearchHistory>> getSearchHistory(@RequestParam Long userId) {
+        log.info("获取用户的搜索历史记录：{}", userId);
         List<SearchHistory> historyList = shopService.getSearchHistoryByUserId(userId);
         return Result.success(historyList);
     }
