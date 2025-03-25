@@ -4,8 +4,11 @@ import lombok.Data;
 
 import java.io.Serializable;
 
+/**
+ * 店铺分页查询数据传输对象
+ * 用于封装分页查询店铺信息时的参数条件
+ */
 @Data
-
 public class ShopPageQueryDTO implements Serializable {
     private String name;        // 搜索关键词
     private String category;    // 分类名称
@@ -14,6 +17,8 @@ public class ShopPageQueryDTO implements Serializable {
     private String sortBy;      // 新增排序字段，例如："rating_desc"（评分降序）、"average_cost_asc"（人均消费升序）
     private Long userId;
 
+    /* 每页显示记录数 */
+    private Integer pageSize;
 
     // 新增筛选字段
     private Double minRating;    // 最低评分（如 4.0）

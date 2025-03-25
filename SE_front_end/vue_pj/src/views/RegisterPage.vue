@@ -92,15 +92,21 @@ export default {
         return;
       }
 
-      try {
-        // 调用 AuthService 的 register 方法进行注册
-        await AuthService.register(this.username, this.password, this.captchaInput, this.captchaId);//之前缺少了captchaId
-        alert("注册成功，请登录！");
-        this.$router.push("/login"); // Redirect to /home/login after successful registration
-      } catch (error) {
-        alert("注册失败，请重试！");
-      }
-    },
+      // RegisterPage.vue 中的注册逻辑
+  try {
+    await AuthService.register(
+      this.username,
+      this.password,
+      this.captchaInput,
+      this.captchaId
+    );
+    alert("注册成功，请登录！");
+    this.$router.push("/login");
+  } catch (error) {
+    // 直接显示 error.message（已包含后端返回的 msg）
+    alert(error.message); // 例如："注册失败，用户名已存在"
+  }
+  },
 
     checkPasswordStrength() {
       // 密码强度检查
