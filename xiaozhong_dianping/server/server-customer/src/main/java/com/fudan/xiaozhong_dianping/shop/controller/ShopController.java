@@ -9,13 +9,11 @@ import com.fudan.xiaozhong_dianping.shop.service.ShopService;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 // 控制器类，处理与店铺相关的请求
 @RequestMapping("/shop")
@@ -79,5 +77,15 @@ public class ShopController {
         log.info("获取用户的搜索历史记录：{}", userId);
         List<SearchHistory> historyList = shopService.getSearchHistoryByUserId(userId);
         return Result.success(historyList);
+    }
+
+    /**
+     * 获取商家详情
+     * @param shopId 商家ID
+     * @return 商家详情及图片
+     */
+    @GetMapping("/{shopId}")
+    public Map<String, Object> getShopDetails(@PathVariable("shopId") Long shopId) {
+        return shopService.getShopDetails(shopId);
     }
 }

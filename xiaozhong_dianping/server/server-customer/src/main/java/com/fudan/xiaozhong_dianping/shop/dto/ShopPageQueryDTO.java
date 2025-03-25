@@ -21,4 +21,7 @@ public class ShopPageQueryDTO implements Serializable {
     private Double maxPrice;     // 最高价格（如 50）
     private Double minAverageCost; // 最低人均消费
     private Double maxAverageCost; // 最高人均消费
+
+    public Long getUserId() {
+    }
 }
