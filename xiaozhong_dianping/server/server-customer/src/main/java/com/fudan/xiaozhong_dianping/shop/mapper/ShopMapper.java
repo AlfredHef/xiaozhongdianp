@@ -4,6 +4,7 @@ import com.fudan.result.PageResult;
 import com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO;
 import com.fudan.xiaozhong_dianping.shop.entity.Shop;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -24,4 +25,15 @@ public interface ShopMapper {
      * @return 符合条件的商家数量
      */
     int countShops(ShopPageQueryDTO shopPageQueryDTO);
+
+
+    /**
+     * 分页查询店铺列表
+     *
+     * @param pageCurrent 当前页码，从1开始计数
+     * @param pageSize 每页显示的记录数量，需大于0
+     * @return 包含分页结果的店铺列表，当无数据时返回空列表（非null）
+     */
+    List<Shop> showShops(int pageCurrent, int pageSize);
+
 }
