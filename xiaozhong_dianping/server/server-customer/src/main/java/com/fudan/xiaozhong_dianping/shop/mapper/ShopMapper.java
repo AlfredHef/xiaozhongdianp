@@ -4,6 +4,7 @@ import com.fudan.result.PageResult;
 import com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO;
 import com.fudan.xiaozhong_dianping.shop.entity.Shop;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
@@ -35,5 +36,17 @@ public interface ShopMapper {
      * @return 包含分页结果的店铺列表，当无数据时返回空列表（非null）
      */
     List<Shop> showShops(int pageCurrent, int pageSize);
+
+    /**
+     * 根据商家ID查询详情
+     * @param id 商家ID
+     * @return 商家实体
+     */
+    @Select("SELECT * FROM shop WHERE id = #{id}")
+    Shop findShopById(@Param("id") Long id);
+//    当用户在前端分页列表中点击某个商家时，前端会获取该商家的 ID，然后向后端发送一个请求，
+//    请求该商家的详细信息。后端接收到这个 ID 后，
+//    调用 findShopById 方法从数据库中查询对应的商家数据，
+//    再返回给前端，前端拿到数据后渲染详情页。
 
 }

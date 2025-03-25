@@ -4,13 +4,17 @@ import com.fudan.result.PageResult;
 import com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO;
 import com.fudan.xiaozhong_dianping.shop.entity.SearchHistory;
 import com.fudan.xiaozhong_dianping.shop.entity.Shop;
+import com.fudan.xiaozhong_dianping.shop.entity.ShopImage;
 import com.fudan.xiaozhong_dianping.shop.mapper.SearchHistoryMapper;
+import com.fudan.xiaozhong_dianping.shop.mapper.ShopImageMapper;
 import com.fudan.xiaozhong_dianping.shop.mapper.ShopMapper;
 import com.fudan.xiaozhong_dianping.shop.service.ShopService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 /**
@@ -31,6 +35,8 @@ public class ShopServiceImpl implements ShopService {
      */
     private SearchHistoryMapper searchHistoryMapper;
 
+    @Autowired
+    private ShopImageMapper shopImageMapper; // 新增注入图片Mapper
     @Override
     /**
      * 保存用户的搜索历史记录
@@ -77,6 +83,21 @@ public class ShopServiceImpl implements ShopService {
         // 调用数据访问层获取分页数据
         List<Shop> list=shopMapper.showShops(pageCurrent,pageSize);
         return list;
+    }
+
+    @Override
+    public Map<String, Object> getShopDetails(Long shopId) {
+        Map<String, Object> result = new HashMap<>();
+
+        // 查询商家基本信息
+        Shop shop = shopMapper.findShopById(shopId);
+        result.put("shop", shop);
+
+        // 查询商家图片（需确保ShopImageMapper已定义findImagesByShopId方法）
+        List<ShopImage> images = shopImageMapper.findImagesByShopId(shopId);
+        result.put("images", images);
+
+        return result;
     }
 
 
