@@ -6,7 +6,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.mybatis.spring.annotation.MapperScan;
 @Slf4j
 @SpringBootApplication
-
 public class ServerCustomerApplication {
     public static void main(String[] args) {
         SpringApplication.run(ServerCustomerApplication.class, args);
