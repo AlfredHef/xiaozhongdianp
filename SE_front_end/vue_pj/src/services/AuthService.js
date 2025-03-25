@@ -61,18 +61,32 @@ export default {
     },
 
     // 注册接口，传递验证码
+    // AuthService.js
     async register(username, password, captchaText, captchaId) {
         try {
-            const payload = {
-                user: { username, password },
-                captchaId,
-                captchaText
-            };
-            const response = await axios.post(`${API_URL}/user/register`, payload);
+        const payload = {
+            user: { username, password },
+            captchaId,
+            captchaText
+        };
+  
+        // 发送 POST 请求
+        const response = await axios.post(`${API_URL}/user/register`, payload);
+  
+        // 直接根据后端的 code 判断是否成功
+        if (response.data.code === 200) {
             return response.data;
+        } else {
+            // 如果 code 不是 200，抛出后端返回的 msg
+            throw new Error(response.data.msg || '注册失败');
+        }
         } catch (error) {
-            console.error('Register error:', error.response?.data?.message || error.message);
-            throw new Error('Registration failed');
+        // 如果是 HTTP 400 错误，提取后端的 msg
+        if (error.response && error.response.data) {
+            throw new Error(error.response.data.msg || '注册失败');
+        } else {
+            throw new Error(error.message || '注册失败，请重试！');
+        }
         }
     }
-};
+}
