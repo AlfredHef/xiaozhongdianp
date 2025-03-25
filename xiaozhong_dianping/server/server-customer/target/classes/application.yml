@@ -1,8 +1,6 @@
 spring:
   application:
     name: customerApplication
-
-
   datasource:
     url: jdbc:mysql://139.129.37.84:3306/xiaozhong_dianping
     username: budouer
@@ -14,13 +12,21 @@ spring:
       host: 139.129.37.84
       port: 6379
       password: Yt526526
-      timeout: 500000000
+      timeout: 5000
       lettuce:
         pool:
           max-active: 32
           max-wait: -1
           max-idle: 16
           min-idle: 8
+
+rocketmq:
+  name-server: 121.43.228.48:9876
+  transaction:
+    topic: demo-topic
+    producer:
+      group: transaction-producer-group
+
 server:
   port: 8088
 fudan:

@@ -12,7 +12,7 @@ spring:
       host: 139.129.37.84
       port: 6379
       password: Yt526526
-      timeout: 5000
+      timeout: 500000
       lettuce:
         pool:
           max-active: 32
