@@ -64,4 +64,12 @@ public class ShopServiceImpl implements ShopService {
     public List<SearchHistory> getSearchHistoryByUserId(Long userId) {
         return searchHistoryMapper.getSearchHistoryByUserId(userId);
     }
+
+    @Override
+    public List<Shop> showShops(int pageCurrent, int pageSize) {
+        List<Shop> list=shopMapper.showShops(pageCurrent,pageSize);
+        return list;
+    }
+
+
 }

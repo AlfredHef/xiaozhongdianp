@@ -6,6 +6,7 @@ import com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO;
 import com.fudan.xiaozhong_dianping.shop.entity.SearchHistory;
 import com.fudan.xiaozhong_dianping.shop.entity.Shop;
 import com.fudan.xiaozhong_dianping.shop.service.ShopService;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,6 +25,12 @@ public class ShopController {
     @Autowired
     private ShopService shopService;
 
+    @GetMapping("/page")
+    @ApiOperation(value="分页查询")
+    public Result<List<Shop>> page(int pageCurrent,int pageSize){
+     List<Shop> list=shopService.showShops(pageCurrent,pageSize);
+     return Result.success(list);
+    }
     /**
      * 搜索店铺接口
      * 该方法用于处理GET请求，根据查询条件返回店铺列表

@@ -34,5 +34,8 @@ public interface ShopService {
      * @return 返回一个搜索历史记录列表，包含该用户的所有搜索历史
      */
     List<SearchHistory> getSearchHistoryByUserId(Long userId);
+
+
+    List<Shop> showShops(int pageCurrent, int pageSize);
 }
 

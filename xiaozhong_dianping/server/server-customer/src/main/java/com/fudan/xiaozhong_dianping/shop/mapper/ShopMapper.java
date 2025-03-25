@@ -4,6 +4,7 @@ import com.fudan.result.PageResult;
 import com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO;
 import com.fudan.xiaozhong_dianping.shop.entity.Shop;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -24,4 +25,7 @@ public interface ShopMapper {
      * @return 符合条件的商家数量
      */
     int countShops(ShopPageQueryDTO shopPageQueryDTO);
+
+    @Select("select * from shop limit #{(pageCurrent - 1) * pageSize},#{pageSize}")
+    List<Shop> showShops(int pageCurrent, int pageSize);
 }
