@@ -28,25 +28,25 @@
         </if>
         <!-- 新增评分筛选 -->
         <if test="minRating != null">
-            AND s.rating >= #{minRating}
+            AND s.rating &gt;= #{minRating}
         </if>
         <if test="maxRating != null">
-            AND s.rating <= #{maxRating}
+            AND s.rating &lt;= #{maxRating}
         </if>
         <!-- 新增价格区间筛选（假设价格字段为 price） -->
         <if test="minPrice != null">
-            AND s.price >= #{minPrice}
+            AND s.price &gt;= #{minPrice}
         </if>
         <if test="maxPrice != null">
-            AND s.price <= #{maxPrice}
+            AND s.price &lt;= #{maxPrice}
         </if>
 
         <!-- 新增人均消费筛选 -->
         <if test="minAverageCost != null">
-            AND s.average_cost >= #{minAverageCost}
+            AND s.average_cost &gt;= #{minAverageCost}
         </if>
         <if test="maxAverageCost != null">
-            AND s.average_cost <= #{maxAverageCost}
+            AND s.average_cost &lt;= #{maxAverageCost}
         </if>
         <!-- 动态排序逻辑 -->
         <if test="sortBy != null and sortBy != ''">
