@@ -55,8 +55,5 @@ public interface ShopService {
      */
     Map<String, Object> getShopDetails(Long shopId);
 
-    void importShopsFromCSV(List<Shop> shops, List<String> imagePaths);
-
-    void importShopsFromCSVWithDescriptions(List<Shop> shops, List<ShopImage> shopImages);
 }
 

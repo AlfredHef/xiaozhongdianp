@@ -86,35 +86,4 @@ public class ShopController {
      * @param shopImportDTO 包含商家列表和图片路径列表的DTO
      * @return 导入结果
      */
-    @PostMapping("/import-with-images")
-    public Result<String> importShopsWithImages(@RequestBody ShopImportDTO shopImportDTO) {
-        try {
-            shopService.importShopsFromCSV(shopImportDTO.getShops(), shopImportDTO.getImagePaths());
-            return Result.success("商家数据导入成功");
-        } catch (IllegalArgumentException e) {
-            return Result.error(e.getMessage());
-        } catch (Exception e) {
-            return Result.error("商家数据导入失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 从CSV导入商家数据（带完整图片信息）
-     * @param shopImportWithDescriptionsDTO 包含商家列表和图片信息列表的DTO
-     * @return 导入结果
-     */
-    @PostMapping("/import-with-descriptions")
-    public Result<String> importShopsWithDescriptions(
-            @RequestBody ShopImportWithDescriptionsDTO shopImportWithDescriptionsDTO) {
-        try {
-            shopService.importShopsFromCSVWithDescriptions(
-                    shopImportWithDescriptionsDTO.getShops(),
-                    shopImportWithDescriptionsDTO.getShopImages());
-            return Result.success("商家数据导入成功");
-        } catch (IllegalArgumentException e) {
-            return Result.error(e.getMessage());
-        } catch (Exception e) {
-            return Result.error("商家数据导入失败: " + e.getMessage());
-        }
-    }
 }
