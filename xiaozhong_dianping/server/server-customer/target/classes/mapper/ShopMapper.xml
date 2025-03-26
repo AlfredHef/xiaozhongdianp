@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fudan.xiaozhong_dianping.shop.mapper.ShopMapper">
+
+    <!--
+    根据动态条件分页查询商家列表
+    @param ShopPageQueryDTO 查询条件参数对象
+        - name: 模糊匹配商家名称或分类名称的关键词
+        - category: 精确匹配分类名称
+        - offset: 分页偏移量
+        - pageSize: 分页大小
+    @return List<Shop> 符合条件的商家实体列表
+    -->
+    <select id="searchShops" parameterType="com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO" resultType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
+        SELECT s.*
+        FROM shop s
+        LEFT JOIN category c ON s.category_id = c.id
+        WHERE 1 = 1
+        <!-- 动态生成名称模糊查询条件 -->
+        <if test="name != null and name != ''">
+            AND (s.name LIKE CONCAT('%', #{name}, '%') OR c.name LIKE CONCAT('%', #{name}, '%'))
+        </if>
+        <!-- 动态生成分类精确匹配条件 -->
+        <if test="category != null and category != ''">
+            AND c.name = #{category}
+        </if>
+        <!-- 新增评分筛选 -->
+        <if test="minRating != null">
+            AND s.rating &gt;= #{minRating}
+        </if>
+        <if test="maxRating != null">
+            AND s.rating &lt;= #{maxRating}
+        </if>
+        <!-- 新增价格区间筛选（假设价格字段为 price） -->
+        <if test="minPrice != null">
+            AND s.price &gt;= #{minPrice}
+        </if>
+        <if test="maxPrice != null">
+            AND s.price &lt;= #{maxPrice}
+        </if>
+
+        <!-- 新增人均消费筛选 -->
+        <if test="minAverageCost != null">
+            AND s.average_cost &gt;= #{minAverageCost}
+        </if>
+        <if test="maxAverageCost != null">
+            AND s.average_cost &lt;= #{maxAverageCost}
+        </if>
+        <!-- 动态排序逻辑 -->
+        <if test="sortBy != null and sortBy != ''">
+            ORDER BY
+            <choose>
+                <when test="sortBy == 'rating_desc'">
+                    s.rating DESC
+                </when>
+                <when test="sortBy == 'average_cost_asc'">
+                    s.average_cost ASC
+                </when>
+                <otherwise>
+                    s.id ASC  <!-- 默认按商家ID升序排序 -->
+                </otherwise>
+            </choose>
+        </if>
+
+
+        LIMIT #{offset}, #{pageSize}
+    </select>
+    <!--
+    统计符合动态条件的商家总数（用于分页）
+    @param ShopPageQueryDTO 查询条件参数对象
+        - name: 模糊匹配商家名称或分类名称的关键词
+        - category: 精确匹配分类名称
+    @return int 符合条件的结果总数
+    -->
+    <select id="countShops" parameterType="com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO" resultType="int">
+        SELECT COUNT(*) FROM shop
+        JOIN category ON shop.category_id = category.id
+        WHERE 1 = 1
+        <!-- 动态生成名称模糊查询条件（商家名称或分类名称） -->
+        <if test="name != null and name != ''">
+            AND (shop.name LIKE CONCAT('%', #{name}, '%') OR category.name LIKE CONCAT('%', #{name}, '%'))
+        </if>
+        <!-- 动态生成分类精确匹配条件 -->
+        <if test="category != null and category != ''">
+            AND category.name = #{category}
+        </if>
+    </select>
+
+    <!--
+    分页查询所有商家（无过滤条件）
+    @param pageCurrent 当前页码（需在传入参数中计算偏移量）
+    @param pageSize 每页数据量
+    @return List<Shop> 商家实体列表
+    -->
+    <select id="showShops" resultType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
+        select *
+        from shop limit #{(pageCurrent - 1) * pageSize},#{pageSize}
+    </select>
+    <select id="findShopById" resultType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
+        select *
+        from shop
+        where id = #{id}
+    </select>
+
+</mapper>
