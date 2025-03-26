@@ -61,7 +61,7 @@ export default {
         await AuthService.verifyCaptcha(this.captchaInput, this.captchaId); // 向后端验证验证码
 
         // 如果验证码验证通过，调用登录接口
-        const loginResponse = await AuthService.login(this.username, this.password, this.captchaInput, this.captchaId);
+        const loginResponse = await AuthService.login(this.username, this.password, this.captchaId,this.captchaInput);
 
         // 判断后端返回的 token 是否有效
         if (loginResponse && loginResponse.token) {
