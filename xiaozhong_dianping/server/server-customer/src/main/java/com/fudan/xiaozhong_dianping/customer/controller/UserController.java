@@ -1,6 +1,7 @@
 package com.fudan.xiaozhong_dianping.customer.controller;
 
 import com.fudan.dto.ResponseDTO;
+import com.fudan.dto.UserLoginDTO;
 import com.fudan.entity.RegisterRequest;
 
 import com.fudan.xiaozhong_dianping.customer.enums.RegisterResult;
@@ -62,13 +63,21 @@ public class UserController {
     /**
      * 用户登录接口
      *
-     * @param user 用户对象，包含用户名和密码
+     * @param userLoginDTO 用户对象，包含用户名和密码以及验证码文本
      * @return 返回登录结果的DTO对象，包括token
      */
     @PostMapping("/login")
-    public ResponseDTO<String> login(@RequestBody User user) {
+    public ResponseDTO<String> login(@RequestBody UserLoginDTO userLoginDTO) {
+        // 校验验证码（假设验证码存储在Redis中，键为 "captcha:用户标识"）
+        String storedCaptcha = (String) redisTemplate.opsForValue().get("captcha:" + userLoginDTO.getCaptchaId());
+        if (storedCaptcha == null || !storedCaptcha.equalsIgnoreCase(userLoginDTO.getCaptchaText())) {
+            if(storedCaptcha == null){
+                System.out.println("验证码已过期");
+            }
+            return new ResponseDTO<>(400, "验证码错误", null);
+        }
         try {
-            User authenticatedUser = userService.login(user.getUsername(), user.getPassword());
+            User authenticatedUser = userService.login(userLoginDTO.getUsername(), userLoginDTO.getPassword());
             if (authenticatedUser != null) {
                 // 生成JWT token
                 Map<String, Object> claims = new HashMap<>();

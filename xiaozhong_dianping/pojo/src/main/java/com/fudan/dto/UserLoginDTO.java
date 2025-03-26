@@ -7,10 +7,12 @@ import lombok.Data;
  * 用户登录 DTO
  */
 @Data
-public class LoginDTO {
-    @NotBlank(message = "用户名不能为空")
+public class UserLoginDTO {
     private String username;
 
-    @NotBlank(message = "密码不能为空")
     private String password;
+
+    private String captchaId;
+    private String captchaText; // 新增验证码字段
+
 }

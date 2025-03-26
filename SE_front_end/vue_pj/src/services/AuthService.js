@@ -29,23 +29,31 @@ export default {
     },
 
     //****// 登录接口，传递验证码
-    async login(username, password) {
+    async login(username, password, captchaId, captchaText) {
         try {
-            const response = await axios.post(`${API_URL}/user/login`, { username, password});
+            const response = await axios.post(`${API_URL}/user/login`, {
+                username,
+                password,
+                captchaId,
+                captchaText
+            });
 
-            // 判断后端是否返回 token 并处理
-            if (response.data && response.data.data && response.data.data.startsWith("Bearer ")) {
-                // 提取 Token (去除 'Bearer ' 前缀)
-                const token = response.data.data.split("Bearer ")[1];
-                // 将 Token 存储到 localStorage
-                localStorage.setItem('user', JSON.stringify({ token }));
-                return { token };  // 返回存储的 token
+            // 校验状态码和响应数据
+            if (response.status === 200 && response.data && response.data.data) {
+                const data = response.data.data;
+                if (data.startsWith("Bearer ")) {
+                    const token = data.substring(7); // 提取 Token
+                    localStorage.setItem('user', JSON.stringify({ token }));
+                    return { token };
+                } else {
+                    throw new Error('登录失败，返回的 Token 格式不正确');
+                }
             } else {
-                throw new Error('登录失败，未返回 Token');
+                throw new Error(`登录失败，状态码：${response.status}`);
             }
         } catch (error) {
             console.error('Login error:', error.response?.data?.message || error.message);
-            throw new Error('Login failed');
+            throw error; // 保留原始错误信息
         }
     },
 
