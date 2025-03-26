@@ -17,6 +17,7 @@ public class ShopPageQueryDTO implements Serializable {
     private String sortBy;      // 新增排序字段，例如："rating_desc"（评分降序）、"average_cost_asc"（人均消费升序）
     private Long userId;
 
+    /* 每页显示记录数 */
 
 
     // 新增筛选字段
