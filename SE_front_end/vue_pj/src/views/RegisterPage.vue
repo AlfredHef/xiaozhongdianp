@@ -171,6 +171,14 @@ export default {
   min-height: 100vh;
 }
 
+
+body {
+  background-image: url('SE_front_end\vue_pj\public\Home_BG.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
 .form-card {
   background-color: white;
   padding: 2rem;

@@ -33,6 +33,7 @@
 
 <script>
 import AuthService from "../services/AuthService";
+import { ElMessage } from "element-plus";
 
 export default {
   data() {
@@ -65,10 +66,16 @@ export default {
 
         // 判断后端返回的 token 是否有效
         if (loginResponse && loginResponse.token) {
-          // 存储 token 到 localStorage
-          localStorage.setItem("user", JSON.stringify({ token: loginResponse.token }));
-          // 跳转到首页
-          this.$router.push("/homepage");
+          // 保存token和用户信息
+          localStorage.setItem('token', loginResponse.token)
+          localStorage.setItem('userInfo', JSON.stringify({
+            username: loginResponse.username,
+            avatar: loginResponse.avatar
+          }))
+          
+          // 跳转到搜索页面
+          this.$router.push('/search')
+          ElMessage.success('登录成功')
         } else {
           throw new Error("登录失败，未返回 token");
         }
@@ -121,7 +128,7 @@ body, html {
   background-attachment: fixed 使背景图片固定，不随页面滚动而滚动。
 */
 body {
-  background-image: url('/Home_BG.jpg');
+  background-image: url('SE_front_end\vue_pj\public\Home_BG.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

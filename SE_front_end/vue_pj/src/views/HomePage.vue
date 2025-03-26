@@ -47,7 +47,7 @@ button {
 }
 
 body {
-  background-image: url('/background_homepage.jpg');
+  background-image: url('SE_front_end\vue_pj\public\Home_BG.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
