@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 // 控制器类，处理与店铺相关的请求
 @RequestMapping("/shop")
@@ -82,8 +83,12 @@ public class ShopController {
     }
 
     /**
-     * 从CSV导入商家数据（带图片路径）
-     * @param shopImportDTO 包含商家列表和图片路径列表的DTO
-     * @return 导入结果
+     * 获取商家详情
+     * @param shopId 商家ID
+     * @return 商家详情及图片
      */
+    @GetMapping("/{shopId}/detail")
+    public Map<String, Object> getShopDetails(@PathVariable("shopId") Long shopId) {
+        return shopService.getShopDetails(shopId);
+    }
 }
