@@ -21,12 +21,13 @@
           路由链接组件，使用类名 "custom-link"。
           点击该链接将导航到登录页面，路径为 "/login"。
         -->
-        <router-link class="custom-link" to="/login">登录</router-link> |
+        <router-link to="/login" class="button">登录</router-link>
         <!--
           路由链接组件，使用类名 "custom-link"。
           点击该链接将导航到注册页面，路径为 "/register"。
         -->
-        <router-link class="custom-link" to="/register">注册</router-link>
+        <router-link to="/register" class="button">注册</router-link>
+        
       </p>
     </div>
   </div>
@@ -120,5 +121,22 @@ body {
 */
 .custom-link:hover {
   text-decoration: underline;
+}
+
+/* 按钮样式 */
+.button {
+  display: inline-block;
+  padding: 10px 20px;
+  margin: 10px 5px;
+  font-size: 18px;
+  color: #fff;
+  background-color: #409eff;
+  border-radius: 5px;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+
+.button:hover {
+  background-color: #66b1ff;
 }
 </style>
