@@ -107,7 +107,14 @@ export default {
       console.log(`加载更多${column === 'left' ? '左侧' : '右侧'}内容`)
     },
     goToSearch() {
-      this.$router.push('/shop/search')
+      this.$router.push('/shop/search');
+      setTimeout(() => {
+        // 聚焦到搜索框
+        const searchInput = document.querySelector('input[placeholder="搜索商家，如\'火锅\'、\'奶茶\'、\'炸鸡\'"]');
+        if (searchInput) {
+          searchInput.focus();
+        }
+      }, 500); // 延时保证页面渲染完成
     }
   }
 }
