@@ -4,6 +4,8 @@ import com.fudan.xiaozhong_dianping.shop.entity.SearchHistory;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 /**
@@ -30,4 +32,20 @@ public interface SearchHistoryMapper {
      */
     @Select("SELECT * FROM search_history WHERE user_id = #{userId} ORDER BY search_time DESC")
     List<SearchHistory> getSearchHistoryByUserId(Long userId);
+
+    /**
+     * 根据ID删除搜索历史记录
+     * @param id 历史记录ID
+     * @return 影响的行数
+     */
+    @Delete("DELETE FROM search_history WHERE id = #{id}")
+    int deleteById(@Param("id") Long id);
+
+    /**
+     * 根据用户ID删除所有搜索历史记录
+     * @param userId 用户ID
+     * @return 影响的行数
+     */
+    @Delete("DELETE FROM search_history WHERE user_id = #{userId}")
+    int deleteByUserId(@Param("userId") Long userId);
 }

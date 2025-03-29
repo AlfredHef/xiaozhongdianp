@@ -53,20 +53,32 @@ public class ShopController {
      */
     @GetMapping("/search")
     public Result<List<Shop>> search(ShopPageQueryDTO shopPageQueryDTO) {
-        log.info("搜索店铺：{}", shopPageQueryDTO);
-        // 创建搜索历史记录对象
-        SearchHistory searchHistory = new SearchHistory();
-        searchHistory.setUserId(shopPageQueryDTO.getUserId());
-        // 设置搜索时间
-        searchHistory.setSearchTime(new Date());
-        // 设置搜索关键词
-        searchHistory.setKeyword(shopPageQueryDTO.getName());
-        // 保存搜索历史记录
-        shopService.saveSearchHistory(searchHistory);
+        log.info("搜索店铺，参数：{}", shopPageQueryDTO);
+        
+        // 设置默认分页参数
+        if (shopPageQueryDTO.getPageSize() == null) {
+            shopPageQueryDTO.setPageSize(10);
+        }
+        if (shopPageQueryDTO.getPageCurrent() == null) {
+            shopPageQueryDTO.setPageCurrent(1);
+        }
+        
+        // 计算偏移量
+        shopPageQueryDTO.setOffset((shopPageQueryDTO.getPageCurrent() - 1) * shopPageQueryDTO.getPageSize());
+        
+        // 保存搜索历史
+        if (shopPageQueryDTO.getUserId() != null && shopPageQueryDTO.getName() != null && !shopPageQueryDTO.getName().trim().isEmpty()) {
+            SearchHistory searchHistory = new SearchHistory();
+            searchHistory.setUserId(shopPageQueryDTO.getUserId());
+            searchHistory.setSearchTime(new Date());
+            searchHistory.setKeyword(shopPageQueryDTO.getName().trim());
+            shopService.saveSearchHistory(searchHistory);
+        }
 
-        // 调用服务层方法，根据查询条件搜索店铺，并返回分页结果
+        // 执行搜索
         List<Shop> pageResult = shopService.searchShops(shopPageQueryDTO);
-        // 返回成功结果，包含分页数据
+        log.info("搜索完成，找到{}条记录", pageResult.size());
+        
         return Result.success(pageResult);
     }
 
@@ -90,5 +102,30 @@ public class ShopController {
     @GetMapping("/{shopId}/detail")
     public Map<String, Object> getShopDetails(@PathVariable("shopId") Long shopId) {
         return shopService.getShopDetails(shopId);
+    }
+
+    /**
+     * 删除用户的搜索历史记录
+     * @param userId 用户ID
+     * @param historyId 历史记录ID
+     * @return 操作结果
+     */
+    @DeleteMapping("/search/history/{historyId}")
+    public Result<Void> deleteSearchHistory(@RequestParam Long userId, @PathVariable Long historyId) {
+        log.info("删除用户的搜索历史记录：userId={}, historyId={}", userId, historyId);
+        shopService.deleteSearchHistory(userId, historyId);
+        return Result.success();
+    }
+
+    /**
+     * 清空用户的搜索历史记录
+     * @param userId 用户ID
+     * @return 操作结果
+     */
+    @DeleteMapping("/search/history/clear")
+    public Result<Void> clearSearchHistory(@RequestParam Long userId) {
+        log.info("清空用户的搜索历史记录：userId={}", userId);
+        shopService.clearSearchHistory(userId);
+        return Result.success();
     }
 }

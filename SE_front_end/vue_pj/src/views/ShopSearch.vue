@@ -79,6 +79,10 @@
           </el-radio-group>
         </div>
       </div>
+      
+      <div class="filter-actions">
+        <el-button type="primary" @click="resetFilters">重置筛选条件</el-button>
+      </div>
     </div>
 
     <!-- 搜索结果 -->
@@ -96,20 +100,26 @@
           class="shop-card" 
           @click="viewShopDetails(shop.id)">
           <div class="shop-avatar">
-            <img :src="require('@/assets/shop-default.png')" alt="店铺图片" onerror="this.src='https://shadow.elemecdn.com/app/element/hamburger.9cf7b091-55e9-11e9-a976-7f4d0b07eef6.png'" />
+            <img :src="defaultImage" alt="店铺图片" />
           </div>
           <div class="shop-info">
-            <h3 class="shop-name">{{ shop.name }}</h3>
+            <h3 class="shop-name">{{ shop.name || '未命名商家' }}</h3>
             <div class="shop-rating">
               <el-rate 
-                v-model="shop.rating" 
+                :model-value="shop.rating || 0" 
                 disabled 
-                text-color="#ff9900" 
-                :score-template="shop.rating" />
-              <span>{{ shop.rating }}</span>
+                text-color="#ff9900" />
+              <span>{{ shop.rating || '暂无评分' }}</span>
             </div>
-            <div class="shop-price">人均：￥{{ shop.averageCost }} | 价格区间：￥{{ shop.priceMin }}-{{ shop.priceMax }}</div>
-            <div class="shop-address">地址：{{ shop.address }}</div>
+            <div class="shop-meta">
+              <el-tag size="small" type="success" v-if="shop.category && shop.category.name">{{ shop.category.name }}</el-tag>
+              <el-tag size="small" type="success" v-else-if="shop.categoryName">{{ shop.categoryName }}</el-tag>
+              <el-tag size="small" type="warning">人均￥{{ shop.averageCost || '未知' }}</el-tag>
+              <el-tag size="small" type="info">￥{{ shop.priceMin || '0' }}-￥{{ shop.priceMax || '0' }}</el-tag>
+            </div>
+            <div class="shop-address"><i class="el-icon-location"></i> {{ shop.address || '暂无地址信息' }}</div>
+            <div class="shop-hours"><i class="el-icon-time"></i> {{ shop.businessHours || '暂无营业时间信息' }}</div>
+            <div class="shop-description" v-if="shop.description">{{ shop.description }}</div>
           </div>
         </div>
       </div>
@@ -136,6 +146,7 @@ export default {
     const loading = ref(false);
     const searchHistory = ref([]);
     const showSearchHistory = ref(false);
+    const defaultImage = 'https://shadow.elemecdn.com/app/element/hamburger.9cf7b091-55e9-11e9-a976-7f4d0b07eef6.png';
     
     // 筛选相关
     const selectedRatings = ref([]);
@@ -145,7 +156,9 @@ export default {
     
     // 用户信息
     const user = AuthService.getUser();
-    const userId = user ? 1 : null; // 这里假设用户ID为1，实际应该从登录信息中获取
+    const userId = user?.id || null; // 添加可选链操作符，确保安全访问
+    
+    console.log('当前用户信息:', user);
     
     // 监听搜索框点击，显示历史记录
     watch(searchQuery, () => {
@@ -168,7 +181,7 @@ export default {
       loading.value = true;
       try {
         const response = await ShopService.getShops(1, 20);
-        if (response.code === 200 && response.data) {
+        if (response.code === 1 && response.data) {
           shops.value = response.data;
         }
       } catch (error) {
@@ -184,7 +197,7 @@ export default {
       
       try {
         const response = await ShopService.getSearchHistory(userId);
-        if (response.code === 200 && response.data) {
+        if (response.code === 1 && response.data) {
           searchHistory.value = response.data;
         }
       } catch (error) {
@@ -203,11 +216,18 @@ export default {
       showSearchHistory.value = false;
       
       try {
+        // 基础搜索参数
         const queryParams = {
           name: searchQuery.value,
-          userId: userId,
+          pageSize: 10,
+          pageCurrent: 1,
           sortBy: sortBy.value
         };
+        
+        // 只有在用户已登录时才添加userId
+        if (userId) {
+          queryParams.userId = userId;
+        }
         
         // 添加评分筛选
         if (selectedRatings.value.length > 0) {
@@ -244,12 +264,20 @@ export default {
           }
         }
         
+        console.log('发送搜索请求，最终参数:', queryParams);
         const response = await ShopService.searchShops(queryParams);
-        if (response.code === 200 && response.data) {
+        console.log('搜索结果:', response); // 添加日志
+        
+        if (response && response.code === 1 && response.data) {
           shops.value = response.data;
+          console.log('更新后的商家列表:', shops.value); // 添加日志
+        } else {
+          console.error('搜索响应格式不符合预期:', response);
+          shops.value = [];
         }
       } catch (error) {
         console.error('搜索商家失败:', error);
+        shops.value = [];
       } finally {
         loading.value = false;
       }
@@ -276,6 +304,15 @@ export default {
       router.push({ name: 'ShopDetail', params: { id: shopId } });
     };
     
+    // 重置筛选条件
+    const resetFilters = () => {
+      selectedRatings.value = [];
+      selectedPrices.value = [];
+      selectedAverageCosts.value = [];
+      sortBy.value = 'default';
+      searchShops();
+    };
+    
     return {
       Search,
       searchQuery,
@@ -291,7 +328,9 @@ export default {
       useHistoryItem,
       clearSearchHistory,
       applyFilter,
-      viewShopDetails
+      viewShopDetails,
+      resetFilters,
+      defaultImage
     };
   }
 };
@@ -361,6 +400,13 @@ export default {
   min-width: 250px;
 }
 
+.filter-actions {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 15px;
+}
+
 .filter-title {
   font-weight: bold;
   margin-bottom: 10px;
@@ -385,6 +431,8 @@ export default {
   padding: 15px;
   cursor: pointer;
   transition: transform 0.3s, box-shadow 0.3s;
+  background-color: #fff;
+  margin-bottom: 10px;
 }
 
 .shop-card:hover {
@@ -393,9 +441,11 @@ export default {
 }
 
 .shop-avatar {
-  width: 80px;
-  height: 80px;
+  width: 120px;
+  height: 120px;
   margin-right: 15px;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .shop-avatar img {
@@ -407,29 +457,61 @@ export default {
 
 .shop-info {
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .shop-name {
-  margin: 0 0 5px;
-  font-size: 16px;
+  margin: 0 0 8px;
+  font-size: 18px;
   font-weight: bold;
+  color: #303133;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .shop-rating {
   display: flex;
   align-items: center;
-  margin-bottom: 5px;
+  margin-bottom: 10px;
 }
 
 .shop-rating span {
   margin-left: 5px;
   color: #ff9900;
+  font-weight: bold;
 }
 
-.shop-price, .shop-address {
-  font-size: 12px;
-  color: #666;
-  margin-bottom: 3px;
+.shop-meta {
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.shop-address, .shop-hours {
+  font-size: 13px;
+  color: #606266;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+}
+
+.shop-address i, .shop-hours i {
+  margin-right: 5px;
+  font-size: 14px;
+}
+
+.shop-description {
+  font-size: 13px;
+  color: #909399;
+  margin-top: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .loading, .no-results {

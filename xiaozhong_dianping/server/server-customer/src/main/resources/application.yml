@@ -20,6 +20,14 @@ spring:
           max-idle: 16
           min-idle: 8
 
+# MyBatis配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.fudan.xiaozhong_dianping.shop.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
 rocketmq:
   name-server: 121.43.228.48:9876
   transaction:
