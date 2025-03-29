@@ -55,5 +55,20 @@ public interface ShopService {
      */
     Map<String, Object> getShopDetails(Long shopId);
 
+    /**
+     * 删除指定的搜索历史记录
+     * @param userId 用户ID
+     * @param historyId 历史记录ID
+     * @return 是否删除成功
+     */
+    Boolean deleteSearchHistory(Long userId, Long historyId);
+
+    /**
+     * 清空用户的搜索历史记录
+     * @param userId 用户ID
+     * @return 是否清空成功
+     */
+    Boolean clearSearchHistory(Long userId);
+
 }
 

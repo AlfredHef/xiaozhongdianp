@@ -14,34 +14,37 @@
     @return List<Shop> 符合条件的商家实体列表
     -->
     <select id="searchShops" parameterType="com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO" resultType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
-        SELECT s.*
+        SELECT s.*, c.name as category_name
         FROM shop s
         LEFT JOIN category c ON s.category_id = c.id
         WHERE 1 = 1
         <!-- 动态生成名称模糊查询条件 -->
         <if test="name != null and name != ''">
-            AND (s.name LIKE CONCAT('%', #{name}, '%') OR c.name LIKE CONCAT('%', #{name}, '%'))
+            AND (
+                s.name LIKE CONCAT('%', #{name}, '%') 
+                OR c.name LIKE CONCAT('%', #{name}, '%')
+                OR s.description LIKE CONCAT('%', #{name}, '%')
+            )
         </if>
         <!-- 动态生成分类精确匹配条件 -->
         <if test="category != null and category != ''">
             AND c.name = #{category}
         </if>
-        <!-- 新增评分筛选 -->
+        <!-- 评分筛选 -->
         <if test="minRating != null">
             AND s.rating &gt;= #{minRating}
         </if>
         <if test="maxRating != null">
             AND s.rating &lt;= #{maxRating}
         </if>
-        <!-- 新增价格区间筛选（假设价格字段为 price） -->
+        <!-- 价格区间筛选 -->
         <if test="minPrice != null">
-            AND s.price &gt;= #{minPrice}
+            AND s.price_min &gt;= #{minPrice}
         </if>
         <if test="maxPrice != null">
-            AND s.price &lt;= #{maxPrice}
+            AND s.price_max &lt;= #{maxPrice}
         </if>
-
-        <!-- 新增人均消费筛选 -->
+        <!-- 人均消费筛选 -->
         <if test="minAverageCost != null">
             AND s.average_cost &gt;= #{minAverageCost}
         </if>
@@ -59,12 +62,11 @@
                     s.average_cost ASC
                 </when>
                 <otherwise>
-                    s.id ASC  <!-- 默认按商家ID升序排序 -->
+                    s.id ASC
                 </otherwise>
             </choose>
         </if>
-
-
+        <!-- 分页 -->
         LIMIT #{offset}, #{pageSize}
     </select>
     <!--
@@ -95,13 +97,16 @@
     @return List<Shop> 商家实体列表
     -->
     <select id="showShops" resultType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
-        select *
-        from shop limit #{(pageCurrent - 1) * pageSize},#{pageSize}
+        SELECT s.*, c.name as category_name
+        FROM shop s
+        LEFT JOIN category c ON s.category_id = c.id
+        LIMIT #{pageCurrent}, #{pageSize}
     </select>
     <select id="findShopById" resultType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
-        select *
-        from shop
-        where id = #{id}
+        SELECT s.*, c.name as category_name
+        FROM shop s
+        LEFT JOIN category c ON s.category_id = c.id
+        WHERE s.id = #{id}
     </select>
 
 </mapper>

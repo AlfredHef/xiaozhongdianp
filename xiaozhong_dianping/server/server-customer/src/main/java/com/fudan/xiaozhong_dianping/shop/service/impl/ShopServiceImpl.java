@@ -80,8 +80,10 @@ public class ShopServiceImpl implements ShopService {
      */
     @Override
     public List<Shop> showShops(int pageCurrent, int pageSize) {
+        // 计算偏移量
+        int offset = (pageCurrent - 1) * pageSize;
         // 调用数据访问层获取分页数据
-        List<Shop> list=shopMapper.showShops(pageCurrent,pageSize);
+        List<Shop> list = shopMapper.showShops(offset, pageSize);
         return list;
     }
 
@@ -100,5 +102,14 @@ public class ShopServiceImpl implements ShopService {
         return result;
     }
 
+    @Override
+    public Boolean deleteSearchHistory(Long userId, Long historyId) {
+        return searchHistoryMapper.deleteById(historyId) > 0;
+    }
+
+    @Override
+    public Boolean clearSearchHistory(Long userId) {
+        return searchHistoryMapper.deleteByUserId(userId) > 0;
+    }
 
 }

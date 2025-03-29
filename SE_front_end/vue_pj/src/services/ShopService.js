@@ -28,7 +28,20 @@ export default {
      */
     async searchShops(queryParams) {
         try {
-            const response = await axios.get(`${API_URL}/shop/search`, { params: queryParams });
+            // 添加默认分页参数
+            const params = {
+                ...queryParams,
+                pageSize: queryParams.pageSize || 10,
+                pageCurrent: queryParams.pageCurrent || 1
+            };
+            console.log('发送搜索请求，参数:', params); // 添加日志
+            const response = await axios.get(`${API_URL}/shop/search`, { params });
+            console.log('搜索响应:', response.data); // 添加日志
+            
+            if (response.data.code === 1 && (!response.data.data || response.data.data.length === 0)) {
+                console.log('未找到符合条件的商家，尝试检查数据库中是否有相关数据');
+            }
+            
             return response.data;
         } catch (error) {
             console.error('搜索商家失败:', error);

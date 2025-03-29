@@ -43,6 +43,11 @@ public class Shop {
     private String phone;
 
     /**
+     * 商家的描述信息
+     */
+    private String description;
+
+    /**
      * 商家的人均消费金额，以元为单位，保留两位小数。
      */
     private BigDecimal averageCost;
