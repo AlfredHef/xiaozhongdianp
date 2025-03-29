@@ -92,7 +92,7 @@
 
     <!--
     分页查询所有商家（无过滤条件）
-    @param pageCurrent 当前页码（需在传入参数中计算偏移量）
+    @param offset 分页偏移量
     @param pageSize 每页数据量
     @return List<Shop> 商家实体列表
     -->
@@ -100,13 +100,21 @@
         SELECT s.*, c.name as category_name
         FROM shop s
         LEFT JOIN category c ON s.category_id = c.id
-        LIMIT #{pageCurrent}, #{pageSize}
+        LIMIT #{offset}, #{pageSize}
     </select>
     <select id="findShopById" resultType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
         SELECT s.*, c.name as category_name
         FROM shop s
         LEFT JOIN category c ON s.category_id = c.id
         WHERE s.id = #{id}
+    </select>
+
+    <!--
+    获取商家总数
+    @return 商家总数
+    -->
+    <select id="countAllShops" resultType="int">
+        SELECT COUNT(*) FROM shop
     </select>
 
 </mapper>

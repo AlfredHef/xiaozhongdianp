@@ -61,12 +61,12 @@ export default {
         await AuthService.verifyCaptcha(this.captchaInput, this.captchaId); // 向后端验证验证码
 
         // 如果验证码验证通过，调用登录接口
-        const loginResponse = await AuthService.login(this.username, this.password,this.captchaId,this.captchaInput);
+        const loginResponse = await AuthService.login(this.username, this.password, this.captchaId, this.captchaInput);
 
         // 判断后端返回的 token 是否有效
         if (loginResponse && loginResponse.token) {
-          // 存储 token 到 localStorage
-          localStorage.setItem("user", JSON.stringify({ token: loginResponse.token }));
+          // 用户登录成功，数据已经由AuthService保存到localStorage
+          console.log("登录成功，用户名:", this.username);
           // 跳转到首页
           this.$router.push("/homepage");
         } else {

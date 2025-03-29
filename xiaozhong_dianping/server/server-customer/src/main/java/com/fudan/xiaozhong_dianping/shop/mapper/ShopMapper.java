@@ -31,11 +31,11 @@ public interface ShopMapper {
     /**
      * 分页查询店铺列表
      *
-     * @param pageCurrent 当前页码，从1开始计数
+     * @param offset 分页偏移量
      * @param pageSize 每页显示的记录数量，需大于0
      * @return 包含分页结果的店铺列表，当无数据时返回空列表（非null）
      */
-    List<Shop> showShops(@Param("pageCurrent") int pageCurrent, @Param("pageSize") int pageSize);
+    List<Shop> showShops(@Param("offset") int offset, @Param("pageSize") int pageSize);
 
     /**
      * 根据商家ID查询详情
@@ -47,5 +47,11 @@ public interface ShopMapper {
 //    请求该商家的详细信息。后端接收到这个 ID 后，
 //    调用 findShopById 方法从数据库中查询对应的商家数据，
 //    再返回给前端，前端拿到数据后渲染详情页。
+
+    /**
+     * 获取商家总数
+     * @return 商家总数
+     */
+    int countAllShops();
 
 }

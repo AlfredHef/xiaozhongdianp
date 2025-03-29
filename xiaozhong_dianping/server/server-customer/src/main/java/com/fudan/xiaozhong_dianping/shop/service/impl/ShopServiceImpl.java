@@ -74,14 +74,12 @@ public class ShopServiceImpl implements ShopService {
     /**
      * 分页查询店铺信息列表
      *
-     * @param pageCurrent 当前页码，从1开始计数
+     * @param offset 分页偏移量
      * @param pageSize    每页显示的记录数量
      * @return            分页查询后的店铺信息集合，包含当前页的店铺数据
      */
     @Override
-    public List<Shop> showShops(int pageCurrent, int pageSize) {
-        // 计算偏移量
-        int offset = (pageCurrent - 1) * pageSize;
+    public List<Shop> showShops(int offset, int pageSize) {
         // 调用数据访问层获取分页数据
         List<Shop> list = shopMapper.showShops(offset, pageSize);
         return list;
@@ -110,6 +108,17 @@ public class ShopServiceImpl implements ShopService {
     @Override
     public Boolean clearSearchHistory(Long userId) {
         return searchHistoryMapper.deleteByUserId(userId) > 0;
+    }
+
+    @Override
+    public List<ShopImage> getShopImages(Integer shopId) {
+        // 将Integer类型的shopId转换为Long类型再传递
+        return shopImageMapper.findImagesByShopId(shopId != null ? shopId.longValue() : null);
+    }
+
+    @Override
+    public int countShops() {
+        return shopMapper.countAllShops();
     }
 
 }
