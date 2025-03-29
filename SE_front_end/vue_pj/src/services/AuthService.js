@@ -43,8 +43,11 @@ export default {
                 const data = response.data.data;
                 if (data.startsWith("Bearer ")) {
                     const token = data.substring(7); // 提取 Token
-                    localStorage.setItem('user', JSON.stringify({ token }));
-                    return { token };
+                    localStorage.setItem('user', JSON.stringify({ 
+                        token, 
+                        username // 保存用户名，便于显示
+                    }));
+                    return { token, username };
                 } else {
                     throw new Error('登录失败，返回的 Token 格式不正确');
                 }
@@ -58,9 +61,36 @@ export default {
     },
 
     //****// 获取存储的用户信息（如 token）
-
     getUser() {
-        return JSON.parse(localStorage.getItem('user'));
+        const userString = localStorage.getItem('user');
+        if (!userString) return null;
+
+        try {
+            const userData = JSON.parse(userString);
+            // 如果有token，尝试从token中解析用户ID和用户名
+            if (userData.token) {
+                // 解析JWT token (简单实现，实际应使用jwt库)
+                try {
+                    const tokenParts = userData.token.split('.');
+                    if (tokenParts.length === 3) {
+                        const payload = JSON.parse(atob(tokenParts[1]));
+                        console.log('解析的token payload:', payload);
+                        // 假设payload中有用户信息
+                        return {
+                            ...userData,
+                            id: payload.id || payload.userId || payload.sub || 1, // 尝试获取用户ID
+                            username: payload.username || payload.name || '用户' // 尝试获取用户名
+                        };
+                    }
+                } catch (e) {
+                    console.error('解析token失败:', e);
+                }
+            }
+            return userData;
+        } catch (e) {
+            console.error('解析用户数据失败:', e);
+            return null;
+        }
     },
 
     // 注销方法，清除 Token

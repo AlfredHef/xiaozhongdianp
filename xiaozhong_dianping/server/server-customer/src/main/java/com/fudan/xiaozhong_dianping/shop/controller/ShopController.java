@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 // 控制器类，处理与店铺相关的请求
 @RequestMapping("/shop")
@@ -52,34 +53,72 @@ public class ShopController {
      * @return 返回包含店铺列表的分页结果
      */
     @GetMapping("/search")
-    public Result<List<Shop>> search(ShopPageQueryDTO shopPageQueryDTO) {
+    public Result<List<Map<String, Object>>> search(ShopPageQueryDTO shopPageQueryDTO) {
         log.info("搜索店铺，参数：{}", shopPageQueryDTO);
         
-        // 设置默认分页参数
-        if (shopPageQueryDTO.getPageSize() == null) {
-            shopPageQueryDTO.setPageSize(10);
-        }
-        if (shopPageQueryDTO.getPageCurrent() == null) {
-            shopPageQueryDTO.setPageCurrent(1);
-        }
-        
-        // 计算偏移量
-        shopPageQueryDTO.setOffset((shopPageQueryDTO.getPageCurrent() - 1) * shopPageQueryDTO.getPageSize());
-        
-        // 保存搜索历史
-        if (shopPageQueryDTO.getUserId() != null && shopPageQueryDTO.getName() != null && !shopPageQueryDTO.getName().trim().isEmpty()) {
-            SearchHistory searchHistory = new SearchHistory();
-            searchHistory.setUserId(shopPageQueryDTO.getUserId());
-            searchHistory.setSearchTime(new Date());
-            searchHistory.setKeyword(shopPageQueryDTO.getName().trim());
-            shopService.saveSearchHistory(searchHistory);
-        }
+        try {
+            // 设置默认分页参数
+            if (shopPageQueryDTO.getPageSize() == null) {
+                shopPageQueryDTO.setPageSize(10);
+            }
+            if (shopPageQueryDTO.getPageCurrent() == null) {
+                shopPageQueryDTO.setPageCurrent(1);
+            }
+            
+            // 计算偏移量
+            shopPageQueryDTO.setOffset((shopPageQueryDTO.getPageCurrent() - 1) * shopPageQueryDTO.getPageSize());
+            
+            // 验证数值型参数
+            if (shopPageQueryDTO.getMinRating() != null && (shopPageQueryDTO.getMinRating() < 0 || shopPageQueryDTO.getMinRating() > 5)) {
+                shopPageQueryDTO.setMinRating(null);
+            }
+            
+            if (shopPageQueryDTO.getMaxRating() != null && (shopPageQueryDTO.getMaxRating() < 0 || shopPageQueryDTO.getMaxRating() > 5)) {
+                shopPageQueryDTO.setMaxRating(null);
+            }
+            
+            if (shopPageQueryDTO.getMinPrice() != null && shopPageQueryDTO.getMinPrice() < 0) {
+                shopPageQueryDTO.setMinPrice(null);
+            }
+            
+            if (shopPageQueryDTO.getMaxPrice() != null && shopPageQueryDTO.getMaxPrice() < 0) {
+                shopPageQueryDTO.setMaxPrice(null);
+            }
+            
+            if (shopPageQueryDTO.getMinAverageCost() != null && shopPageQueryDTO.getMinAverageCost() < 0) {
+                shopPageQueryDTO.setMinAverageCost(null);
+            }
+            
+            if (shopPageQueryDTO.getMaxAverageCost() != null && shopPageQueryDTO.getMaxAverageCost() < 0) {
+                shopPageQueryDTO.setMaxAverageCost(null);
+            }
+            
+            // 保存搜索历史
+            if (shopPageQueryDTO.getUserId() != null && shopPageQueryDTO.getName() != null && !shopPageQueryDTO.getName().trim().isEmpty()) {
+                SearchHistory searchHistory = new SearchHistory();
+                searchHistory.setUserId(shopPageQueryDTO.getUserId());
+                searchHistory.setSearchTime(new Date());
+                searchHistory.setKeyword(shopPageQueryDTO.getName().trim());
+                shopService.saveSearchHistory(searchHistory);
+            }
 
-        // 执行搜索
-        List<Shop> pageResult = shopService.searchShops(shopPageQueryDTO);
-        log.info("搜索完成，找到{}条记录", pageResult.size());
-        
-        return Result.success(pageResult);
+            // 执行搜索
+            List<Shop> shopList = shopService.searchShops(shopPageQueryDTO);
+            log.info("搜索完成，找到{}条记录", shopList.size());
+            
+            // 为每个商家获取图片信息
+            List<Map<String, Object>> result = shopList.stream().map(shop -> {
+                Map<String, Object> shopData = new HashMap<>();
+                shopData.put("shop", shop);
+                shopData.put("images", shopService.getShopImages(shop.getId()));
+                return shopData;
+            }).collect(java.util.stream.Collectors.toList());
+            
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("搜索店铺时发生错误：", e);
+            return Result.error("搜索失败：" + e.getMessage());
+        }
     }
 
     /**
@@ -102,6 +141,47 @@ public class ShopController {
     @GetMapping("/{shopId}/detail")
     public Map<String, Object> getShopDetails(@PathVariable("shopId") Long shopId) {
         return shopService.getShopDetails(shopId);
+    }
+
+    /**
+     * 获取首页商家列表
+     *
+     * @param pageCurrent 当前页码，默认1
+     * @param pageSize 每页记录数，默认4
+     * @return 商家列表及分页信息
+     */
+    @GetMapping("/list")
+    public Result<Map<String, Object>> getShopList(
+            @RequestParam(defaultValue = "1") Integer pageCurrent,
+            @RequestParam(defaultValue = "4") Integer pageSize) {
+        log.info("获取首页商家列表，页码：{}，每页记录数：{}", pageCurrent, pageSize);
+        
+        // 计算偏移量
+        int offset = (pageCurrent - 1) * pageSize;
+        
+        // 获取商家列表
+        List<Shop> shops = shopService.showShops(offset, pageSize);
+        
+        // 获取商家总数
+        int total = shopService.countShops();
+        
+        // 为每个商家获取图片信息
+        List<Map<String, Object>> shopsList = shops.stream().map(shop -> {
+            Map<String, Object> shopData = new HashMap<>();
+            shopData.put("shop", shop);
+            shopData.put("images", shopService.getShopImages(shop.getId()));
+            return shopData;
+        }).collect(java.util.stream.Collectors.toList());
+        
+        // 构建返回结果，包含分页信息
+        Map<String, Object> result = new HashMap<>();
+        result.put("records", shopsList);
+        result.put("total", total);
+        result.put("pages", (int) Math.ceil((double) total / pageSize));
+        result.put("current", pageCurrent);
+        result.put("size", pageSize);
+        
+        return Result.success(result);
     }
 
     /**

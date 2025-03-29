@@ -41,12 +41,12 @@ public interface ShopService {
     /**
      * 分页查询店铺列表
      *
-     * @param pageCurrent 当前页码，从1开始计数
+     * @param offset 分页偏移量
      * @param pageSize 每页显示的记录数量
      * @return 包含分页数据的店铺列表，列表元素为Shop对象
      *         当无数据时返回空列表（非null）
      */
-    List<Shop> showShops(int pageCurrent, int pageSize);
+    List<Shop> showShops(int offset, int pageSize);
 
     /**
      * 获取商家详情（包括基本信息和图片）
@@ -54,6 +54,13 @@ public interface ShopService {
      * @return 包含商家详情和图片的Map，键分别为"shop"和"images"
      */
     Map<String, Object> getShopDetails(Long shopId);
+
+    /**
+     * 根据商家ID获取商家图片
+     * @param shopId 商家ID
+     * @return 图片列表
+     */
+    List<ShopImage> getShopImages(Integer shopId);
 
     /**
      * 删除指定的搜索历史记录
@@ -69,6 +76,12 @@ public interface ShopService {
      * @return 是否清空成功
      */
     Boolean clearSearchHistory(Long userId);
+
+    /**
+     * 获取商家总数
+     * @return 商家总数
+     */
+    int countShops();
 
 }
 
