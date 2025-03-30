@@ -784,3 +784,124 @@ public interface ShopImageMapper {
    - 轮播图、商家卡片、详情图集等不同展示方式
 
 这个流程确保了前端能够获取并展示后端存储的商家图片信息，实现了完整的图片管理和展示功能。
+
+
+
+您说得对，我应该在正确的项目路径下创建资源目录。让我为您创建正确的目录结构。
+
+```bash
+mkdir -p xiaozhong_dianping/server/server-customer/src/main/resources/static/images/shops
+```
+
+```bash
+mkdir -p xiaozhong_dianping/server/server-customer/src/main/resources/static/images/shops
+```
+看起来PowerShell在Windows系统上有一些路径创建的问题。让我们用另一种方式来创建目录结构。
+
+```bash
+cd xiaozhong_dianping/server/server-customer
+```
+
+```bash
+mkdir -p src/main/resources/static/images/shops
+```
+
+```bash
+mkdir -p "src/main/resources/static/images/shops"
+```
+看起来目录已经存在了，让我们确认一下目录结构。
+
+```bash
+ls -la src/main/resources/static/images
+```
+
+```bash
+dir src/main/resources/static/images
+```
+很好，现在我们已经确认在正确的位置创建了 `shops` 目录。
+
+根据您的项目需求，我建议在该目录下进一步创建以下子目录结构来分类存储不同类型的商家图片：
+
+```bash
+mkdir -p "src/main/resources/static/images/shops/environment" "src/main/resources/static/images/shops/food" "src/main/resources/static/images/shops/other"
+```
+看起来PowerShell在处理嵌套路径时遇到了一些问题。让我们分开创建这些目录：
+
+```bash
+mkdir "src\main\resources\static\images\shops\environment"
+```
+
+```bash
+mkdir "src\main\resources\static\images\shops\food"
+```
+
+```bash
+mkdir "src\main\resources\static\images\shops\other"
+```
+
+```bash
+dir "src\main\resources\static\images\shops\"
+```
+很好！现在我们已经成功创建了所需的目录结构：
+- `src/main/resources/static/images/shops/environment` - 用于存储店铺环境图片
+- `src/main/resources/static/images/shops/food` - 用于存储招牌菜品图片
+- `src/main/resources/static/images/shops/other` - 用于存储其他相关图片
+
+现在我来回答您的问题：
+
+## 商家图片存储方案
+
+1. **图片存放位置**：
+   - 路径：`xiaozhong_dianping/server/server-customer/src/main/resources/static/images/shops/`
+   - 子目录结构：
+     - `environment/` - 店铺环境图片
+     - `food/` - 菜品图片
+     - `other/` - 其他图片
+
+2. **图片命名规则**：
+   建议采用 `{shop_id}_{category}_{sequence}.{extension}` 格式
+   例如：
+   - `123_environment_01.jpg` - 商家ID为123的第1张环境图片
+   - `123_food_01.png` - 商家ID为123的第1张菜品图片
+   - `123_other_01.jpg` - 商家ID为123的第1张其他类型图片
+
+3. **数据库记录方式**：
+   根据您的 `shop_image` 表结构：
+   ```sql
+   CREATE TABLE shop_image (
+       id INT AUTO_INCREMENT COMMENT '图片 ID（主键，自增）',
+       shop_id INT NOT NULL COMMENT '所属商家 ID（关联 shop 表）',
+       image_url TEXT NOT NULL COMMENT '图片存储 URL（支持多图）',
+       description TEXT COMMENT '图片描述（如"招牌菜品"、"门店外观"）',
+       PRIMARY KEY (id),
+       FOREIGN KEY (shop_id) REFERENCES shop(id),
+       INDEX shop_id (shop_id)
+   )
+   ```
+
+   记录示例：
+   ```
+   id: 1
+   shop_id: 123
+   image_url: "/images/shops/environment/123_environment_01.jpg"
+   description: "店铺环境"
+   ```
+
+4. **前端展示获取**：
+   前端可以通过以下方式获取不同类型的图片：
+   - 按店铺ID查询所有图片：`SELECT * FROM shop_image WHERE shop_id = ?`
+   - 按类型筛选图片：`SELECT * FROM shop_image WHERE shop_id = ? AND description = ?`
+
+5. **图片访问方式**：
+   通过您的 WebConfig 配置，图片将可以通过以下URL访问：
+   ```
+   http://your-domain/images/shops/environment/123_environment_01.jpg
+   ```
+
+这种组织方式有以下优点：
+- 清晰的分类结构，易于管理
+- 通过文件名即可识别图片所属店铺和类型
+- 支持通过数据库灵活查询不同类型的图片
+- 与您现有的项目配置兼容
+
+您可以根据实际需要调整这个方案。例如，如果商家数量非常多，还可以进一步按商家ID分目录存储，如 `shops/{shop_id}/environment/`。
