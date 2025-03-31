@@ -101,19 +101,16 @@
         </div>
       </div>
       
-      <div class="filter-section">
-        <div class="filter-title">每页显示</div>
-        <div class="filter-options">
+      <div class="filter-actions">
+        <div class="filter-actions-left">
+          <div class="filter-title">每页显示</div>
           <el-select v-model="pageSize" @change="handlePageSizeChange" size="small" placeholder="每页显示">
-            <el-option :value="5" label="5条/页"></el-option>
-            <el-option :value="10" label="10条/页"></el-option>
-            <el-option :value="15" label="15条/页"></el-option>
-            <el-option :value="20" label="20条/页"></el-option>
+            <el-option :value="6" label="6条/页"></el-option>
+            <el-option :value="9" label="9条/页"></el-option>
+            <el-option :value="12" label="12条/页"></el-option>
+            <el-option :value="18" label="18条/页"></el-option>
           </el-select>
         </div>
-      </div>
-      
-      <div class="filter-actions">
         <el-button type="primary" @click="resetFilters">重置筛选条件</el-button>
       </div>
     </div>
@@ -225,7 +222,7 @@ export default {
     
     // 分页相关
     const currentPage = ref(1);
-    const pageSize = ref(10);
+    const pageSize = ref(6);
     const total = ref(0);
     const totalPages = computed(() => Math.ceil(total.value / pageSize.value) || 1);
     
@@ -844,148 +841,189 @@ export default {
 
 <style scoped>
 body {
-  overflow: hidden;
-  height: 100%;
+  overflow-x: hidden;
+  min-height: 100vh;
+  background-color: #f5f7fa;
 }
 
 .shop-search-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 10px;
+  padding: 20px;
   position: relative;
-  overflow: hidden;
-  z-index: 1;
+  min-height: 100vh;
 }
 
 .search-bar {
-  position: fixed;   /* 固定在页面顶部 */
-  top: 45px;         /* 设置搜索框位于app-header下方 */
-  left: 0;           /* 左对齐 */
-  right: 0;          /* 右对齐 */
-  padding: 10px 120px;
-  z-index: 9;        /* 设置一个比app-header小的z-index，确保其不覆盖app-header */
-  width: 100%;       /* 设置搜索框宽度为100% */
-  box-sizing: border-box; /* 包括padding在内 */
-  overflow: hidden;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 15px 0;
+  margin-bottom: 15px;
 }
 
 .search-input {
   width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.search-input :deep(.el-input__wrapper) {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 25px;
+  padding: 0 20px;
+}
+
+.search-input :deep(.el-input__inner) {
+  height: 45px;
+  font-size: 16px;
 }
 
 .search-history {
   position: absolute;
   top: 100%;
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   width: 100%;
+  max-width: 800px;
   background-color: white;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  padding: 10px;
-  z-index: 100;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  margin-top: 10px;
 }
 
 .history-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.history-header span {
+  font-size: 14px;
+  color: #606266;
+  font-weight: 500;
 }
 
 .history-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
 .history-item {
-  padding: 4px 10px;
+  padding: 6px 12px;
   background-color: #f5f7fa;
   border-radius: 16px;
   cursor: pointer;
-  font-size: 12px;
-}
-
-.filter-panel {
-  position: fixed;          /* 固定在页面上 */
-  top: 95px;               /* 确保筛选框与搜索框下方有足够的间距 */
-  left: 0;
-  right: 0;
-  width: 100%;              /* 使筛选框宽度和页面相同 */
-  max-width: 1200px;        /* 和搜索框容器同宽 */
-  margin: 0 auto;           /* 保持居中 */
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 10px 12px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  z-index: 10;               /* 确保在页面其他元素上面 */
-  box-sizing: border-box;   /* 确保宽度包括padding */
-  overflow: hidden;
-  max-height: calc(100vh - 95px);
+  font-size: 13px;
+  color: #606266;
   transition: all 0.3s ease;
 }
 
+.history-item:hover {
+  background-color: #ecf5ff;
+  color: #409EFF;
+}
+
+.filter-panel {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
 .filter-section {
-  flex: 1;
-  min-width: 250px;
+  margin-bottom: 0;
 }
 
-.filter-actions {
-  width: 100%;
-  display: flex;
-  justify-content: flex-end;
+.filter-section:last-child {
+  margin-bottom: 0;
 }
-
 
 .filter-title {
-  font-weight: bold;
-  margin-bottom: 5px;
-  margin-right: 12px;
   font-size: 14px;
-  white-space: nowrap;   /* 防止文字换行 */
-  flex-shrink: 0; 
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 12px;
 }
 
 .filter-options {
   display: flex;
   flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-options :deep(.el-radio) {
+  margin-right: 0;
+}
+
+.filter-options :deep(.el-radio__label) {
+  padding: 6px 12px;
+  border-radius: 16px;
+  background-color: #f5f7fa;
+  transition: all 0.3s ease;
+}
+
+.filter-options :deep(.el-radio__input.is-checked + .el-radio__label) {
+  background-color: #ecf5ff;
+  color: #409EFF;
+}
+
+.filter-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #ebeef5;
+}
+
+.filter-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.filter-actions-left .filter-title {
+  margin-bottom: 0;
+}
+
+.filter-actions-left :deep(.el-select) {
+  width: 120px;
 }
 
 .shop-list {
-  margin-top: 275px; /* 确保商家信息区域位于筛选面板下方 */
-  padding: 10px;     /* 可选：添加内边距，让内容更加美观 */
-  flex: 1;    
-  position: relative;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 20px;
-  overflow-y: auto;   /* 使商家列表可以垂直滚动 */
-  max-height: calc(100vh - 395px);  /* 限制商家信息区域的最大高度 */
+  padding: 10px 0;
 }
 
 .shop-card {
-  display: flex;
-  border: 1px solid #ebeef5;
-  border-radius: 8px;
-  padding: 15px;
-  cursor: pointer;
-  transition: transform 0.3s, box-shadow 0.3s;
   background-color: #fff;
-  margin-bottom: 10px;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
 .shop-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
 .shop-avatar {
-  width: 120px;
-  height: 120px;
-  margin-right: 15px;
-  border-radius: 8px;
+  width: 100%;
+  height: 200px;
   overflow: hidden;
 }
 
@@ -993,116 +1031,166 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 4px;
+  transition: transform 0.3s ease;
+}
+
+.shop-card:hover .shop-avatar img {
+  transform: scale(1.05);
 }
 
 .shop-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  padding: 15px;
 }
 
 .shop-name {
-  margin: 0 0 8px;
   font-size: 18px;
-  font-weight: bold;
+  font-weight: 600;
   color: #303133;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  margin-bottom: 10px;
 }
 
 .shop-rating {
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .shop-rating span {
-  margin-left: 5px;
+  margin-left: 8px;
   color: #ff9900;
-  font-weight: bold;
+  font-weight: 500;
 }
 
 .shop-meta {
-  margin-bottom: 8px;
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.shop-meta :deep(.el-tag) {
+  border-radius: 12px;
+  padding: 4px 10px;
 }
 
 .shop-address, .shop-hours {
-  font-size: 13px;
-  color: #606266;
-  margin-bottom: 5px;
   display: flex;
   align-items: center;
+  font-size: 13px;
+  color: #606266;
+  margin-bottom: 8px;
 }
 
 .shop-address i, .shop-hours i {
-  margin-right: 5px;
+  margin-right: 6px;
   font-size: 14px;
 }
 
 .shop-description {
   font-size: 13px;
   color: #909399;
-  margin-top: 5px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.loading, .no-results {
-  padding: 30px;
-  text-align: center;
+  line-height: 1.5;
+  margin-top: 8px;
 }
 
 .search-summary {
+  background-color: #fff;
+  padding: 15px 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
   display: flex;
   justify-content: space-between;
-  padding: 10px 0;
-  margin-bottom: 15px;
-  border-bottom: 1px solid #ebeef5;
+  align-items: center;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
 .result-count {
   font-size: 14px;
+  color: #606266;
+}
+
+.result-count strong {
+  color: #409EFF;
+  font-weight: 600;
 }
 
 .active-filters {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
 .active-filters span {
   background-color: #ecf5ff;
   color: #409EFF;
-  padding: 2px 8px;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 30px;
+  padding: 20px 0;
+}
+
+.pagination-info {
+  margin-left: 15px;
+  font-size: 13px;
+  color: #606266;
+}
+
+.loading, .no-results {
+  background-color: #fff;
+  padding: 40px;
   border-radius: 12px;
-  font-size: 12px;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.no-results h3 {
+  color: #303133;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.no-results p {
+  color: #909399;
+  font-size: 14px;
 }
 
 .error-message {
-  margin: 20px 0;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 12px;
   text-align: center;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
 .retry-button {
   margin-top: 15px;
 }
 
-.pagination-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.pagination-info {
-  margin-left: 10px;
-  font-size: 12px;
-  color: #606266;
+@media screen and (max-width: 768px) {
+  .shop-search-container {
+    padding: 10px;
+  }
+  
+  .search-bar {
+    padding: 10px 0;
+  }
+  
+  .filter-panel {
+    padding: 15px;
+  }
+  
+  .shop-list {
+    grid-template-columns: 1fr;
+  }
+  
+  .shop-avatar {
+    height: 160px;
+  }
 }
 </style> 

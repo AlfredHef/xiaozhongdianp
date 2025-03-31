@@ -1,7 +1,18 @@
 <template>
   <div class="shop-list-container">
     <div class="shop-list-header">
-      <h1>美食商家列表</h1>
+      <div class="header-left">
+        <el-button 
+          type="primary" 
+          plain 
+          icon="el-icon-arrow-left" 
+          @click="goBack"
+          class="back-button"
+        >
+          返回搜索
+        </el-button>
+        <h1>美食商家列表</h1>
+      </div>
       <div class="filter-controls">
         <el-select v-model="pageSize" placeholder="每页显示" @change="handlePageSizeChange">
           <el-option :value="8" label="每页8条"></el-option>
@@ -350,6 +361,11 @@ export default {
       e.target.src = categoryImages.default; // 使用默认图片
     };
     
+    // 返回搜索页面
+    const goBack = () => {
+      router.push('/shop/search');
+    };
+    
     // 生命周期钩子
     onMounted(() => {
       loadShopList();
@@ -379,7 +395,8 @@ export default {
       getShopAverageCost,
       getShopPriceRange,
       getShopAddress,
-      isUnmounted
+      isUnmounted,
+      goBack
     };
   }
 };
@@ -390,6 +407,8 @@ export default {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+
+  min-height: 100vh;
 }
 
 .shop-list-header {
@@ -397,12 +416,27 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.back-button {
+  margin-right: 20px;
 }
 
 .shop-list-header h1 {
   margin: 0;
   font-size: 28px;
   color: #303133;
+  font-weight: 600;
 }
 
 .filter-controls {
@@ -413,6 +447,9 @@ export default {
 .loading-state, .empty-state {
   padding: 50px 0;
   text-align: center;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
 }
 
 .shops-grid {
@@ -423,22 +460,23 @@ export default {
 }
 
 .shop-card {
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s, box-shadow 0.3s;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
   cursor: pointer;
   background-color: #fff;
+  border: 1px solid #ebeef5;
 }
 
 .shop-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .shop-image {
   position: relative;
-  height: 180px;
+  height: 200px;
   overflow: hidden;
 }
 
@@ -446,53 +484,58 @@ export default {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.5s;
+  transition: transform 0.5s ease;
 }
 
 .shop-card:hover .shop-image img {
-  transform: scale(1.05);
+  transform: scale(1.08);
 }
 
 .shop-category {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background-color: rgba(0, 0, 0, 0.6);
+  top: 12px;
+  right: 12px;
+  background-color: rgba(0, 0, 0, 0.7);
   color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  backdrop-filter: blur(4px);
 }
 
 .shop-info {
-  padding: 15px;
+  padding: 20px;
 }
 
 .shop-name {
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   font-size: 18px;
   color: #303133;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: 600;
 }
 
 .shop-rating {
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .shop-rating span {
   margin-left: 8px;
   color: #ff9900;
-  font-weight: bold;
+  font-weight: 600;
 }
 
 .shop-price {
   font-size: 14px;
   color: #606266;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
 }
 
 .separator {
@@ -506,10 +549,13 @@ export default {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
 }
 
 .shop-address i {
-  margin-right: 5px;
+  margin-right: 6px;
+  font-size: 16px;
 }
 
 .pagination-container {
@@ -517,6 +563,10 @@ export default {
   flex-direction: column;
   align-items: center;
   margin-top: 30px;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
 }
 
 .pagination-info {
@@ -528,10 +578,12 @@ export default {
 .success-message {
   background-color: #f0f9eb;
   color: #67c23a;
-  padding: 10px;
-  margin-bottom: 15px;
-  border-radius: 4px;
+  padding: 12px 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
   text-align: center;
   width: 100%;
+  font-weight: 500;
+  box-shadow: 0 2px 12px 0 rgba(103, 194, 58, 0.1);
 }
 </style> 
