@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商家图片展示</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        .shop-list {
+            margin-bottom: 30px;
+        }
+        .shop-item {
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .shop-item:hover {
+            background-color: #f9f9f9;
+            border-color: #ddd;
+        }
+        .shop-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .shop-rating {
+            color: #ff9800;
+            font-weight: bold;
+        }
+        .shop-address {
+            color: #666;
+            font-size: 14px;
+        }
+        .image-container {
+            display: none;
+            margin-top: 20px;
+        }
+        .image-section {
+            margin-bottom: 30px;
+        }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .image-item {
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+        .image-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.3s;
+        }
+        .image-item img:hover {
+            transform: scale(1.05);
+        }
+        .section-title {
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 16px;
+            color: #666;
+        }
+        .back-to-list {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .back-to-list:hover {
+            background-color: #45a049;
+        }
+        .no-images {
+            text-align: center;
+            padding: 50px;
+            color: #999;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>小众点评商家图片</h1>
+        
+        <div id="shopList" class="shop-list">
+            <div class="loading">正在加载商家列表...</div>
+        </div>
+        
+        <div id="shopDetail" class="image-container">
+            <button id="backToList" class="back-to-list">返回商家列表</button>
+            <h2 id="shopName"></h2>
+            <div id="imagesContent"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始加载商家列表
+            loadShopList();
+            
+            // 返回按钮点击事件
+            document.getElementById('backToList').addEventListener('click', function() {
+                document.getElementById('shopDetail').style.display = 'none';
+                document.getElementById('shopList').style.display = 'block';
+            });
+        });
+        
+        // 加载商家列表
+        function loadShopList() {
+            fetch('/api/shop/with-images')
+                .then(response => response.json())
+                .then(shops => {
+                    const shopListElement = document.getElementById('shopList');
+                    
+                    if (shops.length === 0) {
+                        shopListElement.innerHTML = '<div class="no-images">暂无商家图片数据，请先导入图片</div>' +
+                            '<div style="text-align: center; margin-top: 20px;">' +
+                            '<a href="/api/shop/import-images" target="_blank" style="text-decoration: none;">' +
+                            '<button class="back-to-list" style="background-color: #2196F3;">导入图片数据</button>' +
+                            '</a></div>';
+                        return;
+                    }
+                    
+                    let html = '';
+                    shops.forEach(shop => {
+                        html += `
+                            <div class="shop-item" onclick="showShopDetail(${shop.id}, '${shop.name}')">
+                                <div class="shop-name">${shop.name}</div>
+                                <div class="shop-rating">评分: ${shop.rating || '暂无评分'}</div>
+                                <div class="shop-address">${shop.address}</div>
+                            </div>
+                        `;
+                    });
+                    
+                    shopListElement.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('获取商家列表失败:', error);
+                    document.getElementById('shopList').innerHTML = 
+                        '<div class="no-images">获取商家数据失败，请确保服务器正常运行</div>';
+                });
+        }
+        
+        // 显示商家详情及图片
+        function showShopDetail(shopId, shopName) {
+            document.getElementById('shopName').textContent = shopName + ' - 图片详情';
+            document.getElementById('imagesContent').innerHTML = '<div class="loading">正在加载图片...</div>';
+            document.getElementById('shopList').style.display = 'none';
+            document.getElementById('shopDetail').style.display = 'block';
+            
+            fetch(`/api/shop/${shopId}/images`)
+                .then(response => response.json())
+                .then(imageGroups => {
+                    let html = '';
+                    
+                    // 检查是否有图片数据
+                    if (Object.keys(imageGroups).length === 0) {
+                        document.getElementById('imagesContent').innerHTML = 
+                            '<div class="no-images">该商家暂无图片数据</div>';
+                        return;
+                    }
+                    
+                    // 根据类型分组展示图片
+                    if (imageGroups.environment) {
+                        html += createImageSection('店铺环境', imageGroups.environment);
+                    }
+                    
+                    if (imageGroups.food) {
+                        html += createImageSection('美食图片', imageGroups.food);
+                    }
+                    
+                    if (imageGroups.other) {
+                        html += createImageSection('其他图片', imageGroups.other);
+                    }
+                    
+                    document.getElementById('imagesContent').innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('获取商家图片失败:', error);
+                    document.getElementById('imagesContent').innerHTML = 
+                        '<div class="no-images">获取图片数据失败，请稍后重试</div>';
+                });
+        }
+        
+        // 创建图片区域HTML
+        function createImageSection(title, images) {
+            let html = `<div class="image-section">
+                <h3 class="section-title">${title}</h3>
+                <div class="image-grid">`;
+            
+            images.forEach(image => {
+                html += `
+                    <div class="image-item">
+                        <img src="${image.image_url}" alt="${title}图片" onerror="this.src='/images/error.png'">
+                    </div>
+                `;
+            });
+            
+            html += '</div></div>';
+            return html;
+        }
+    </script>
+</body>
+</html> 
