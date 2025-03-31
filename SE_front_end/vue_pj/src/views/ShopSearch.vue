@@ -859,7 +859,7 @@ body {
 
 .search-bar {
   position: fixed;   /* 固定在页面顶部 */
-  top: 55px;         /* 设置搜索框位于app-header下方 */
+  top: 45px;         /* 设置搜索框位于app-header下方 */
   left: 0;           /* 左对齐 */
   right: 0;          /* 右对齐 */
   padding: 10px 120px;
@@ -908,7 +908,7 @@ body {
 
 .filter-panel {
   position: fixed;          /* 固定在页面上 */
-  top: 105px;               /* 确保筛选框与搜索框下方有足够的间距 */
+  top: 95px;               /* 确保筛选框与搜索框下方有足够的间距 */
   left: 0;
   right: 0;
   width: 100%;              /* 使筛选框宽度和页面相同 */
@@ -923,7 +923,7 @@ body {
   z-index: 10;               /* 确保在页面其他元素上面 */
   box-sizing: border-box;   /* 确保宽度包括padding */
   overflow: hidden;
-  max-height: calc(100vh - 105px);
+  max-height: calc(100vh - 95px);
   transition: all 0.3s ease;
 }
 
@@ -962,7 +962,7 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
   overflow-y: auto;   /* 使商家列表可以垂直滚动 */
-  max-height: calc(100vh - 410px);  /* 限制商家信息区域的最大高度 */
+  max-height: calc(100vh - 395px);  /* 限制商家信息区域的最大高度 */
 }
 
 .shop-card {

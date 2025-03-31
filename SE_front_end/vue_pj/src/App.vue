@@ -62,6 +62,7 @@ export default {
 }
 
 body {
+  height: 100%;
   font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -80,7 +81,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 0 20px;
-  height: 60px;
+  height: 50px;
   background-color: #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: fixed;  /* 固定在页面顶部 */
@@ -88,13 +89,12 @@ body {
   left: 0;          /* 左边对齐 */
   right: 0;         /* 右边对齐 */
   z-index: 10;      /* 确保在其他元素之上 */
-  width: 100%;      /* 确保宽度为 100% */
   box-sizing: border-box; /* 确保padding不会影响整体宽度 */
 }
 
 body {
-  height: 100%;
-  padding-top: 60px;  /* 给页面内容添加上边距，防止内容被header遮挡 */
+  padding-top: 50px; /* 与header高度一致 */
+  height: calc(100vh - 50px); /* 可选：根据需求决定是否设置 */
 }
 
 

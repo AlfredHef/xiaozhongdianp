@@ -68,7 +68,7 @@ export default {
           // 用户登录成功，数据已经由AuthService保存到localStorage
           console.log("登录成功，用户名:", this.username);
           // 跳转到首页
-          this.$router.push("/homepage");
+          this.$router.push("/shop/search");
         } else {
           throw new Error("登录失败，未返回 token");
         }
