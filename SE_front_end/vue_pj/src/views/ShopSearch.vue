@@ -843,15 +843,30 @@ export default {
 </script>
 
 <style scoped>
+body {
+  overflow: hidden;
+  height: 100%;
+}
+
 .shop-search-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 10px;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
 }
 
 .search-bar {
-  position: relative;
-  margin-bottom: 20px;
+  position: fixed;   /* 固定在页面顶部 */
+  top: 55px;         /* 设置搜索框位于app-header下方 */
+  left: 0;           /* 左对齐 */
+  right: 0;          /* 右对齐 */
+  padding: 10px 120px;
+  z-index: 9;        /* 设置一个比app-header小的z-index，确保其不覆盖app-header */
+  width: 100%;       /* 设置搜索框宽度为100% */
+  box-sizing: border-box; /* 包括padding在内 */
+  overflow: hidden;
 }
 
 .search-input {
@@ -892,13 +907,24 @@ export default {
 }
 
 .filter-panel {
+  position: fixed;          /* 固定在页面上 */
+  top: 105px;               /* 确保筛选框与搜索框下方有足够的间距 */
+  left: 0;
+  right: 0;
+  width: 100%;              /* 使筛选框宽度和页面相同 */
+  max-width: 1200px;        /* 和搜索框容器同宽 */
+  margin: 0 auto;           /* 保持居中 */
   display: flex;
   flex-wrap: wrap;
-  gap: 20px;
-  margin-bottom: 20px;
-  padding: 15px;
+  gap: 10px;
+  padding: 10px 12px;
   background-color: #f8f9fa;
   border-radius: 8px;
+  z-index: 10;               /* 确保在页面其他元素上面 */
+  box-sizing: border-box;   /* 确保宽度包括padding */
+  overflow: hidden;
+  max-height: calc(100vh - 105px);
+  transition: all 0.3s ease;
 }
 
 .filter-section {
@@ -910,24 +936,33 @@ export default {
   width: 100%;
   display: flex;
   justify-content: flex-end;
-  margin-top: 15px;
 }
+
 
 .filter-title {
   font-weight: bold;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
+  margin-right: 12px;
+  font-size: 14px;
+  white-space: nowrap;   /* 防止文字换行 */
+  flex-shrink: 0; 
 }
 
 .filter-options {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
 }
 
 .shop-list {
+  margin-top: 275px; /* 确保商家信息区域位于筛选面板下方 */
+  padding: 10px;     /* 可选：添加内边距，让内容更加美观 */
+  flex: 1;    
+  position: relative;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
+  overflow-y: auto;   /* 使商家列表可以垂直滚动 */
+  max-height: calc(100vh - 410px);  /* 限制商家信息区域的最大高度 */
 }
 
 .shop-card {
