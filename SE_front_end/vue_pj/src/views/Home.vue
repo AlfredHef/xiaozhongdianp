@@ -69,6 +69,7 @@ body {
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
+
 }
 
 /*
@@ -76,7 +77,7 @@ body {
   使用 flex 布局，将内部元素垂直和水平居中显示。
   min-height: 100vh 确保容器至少占满整个视口的高度。
 */
-.centered-container {
+.centered-container { 
   display: flex;
   justify-content: center;
   align-items: center;
