@@ -3,30 +3,30 @@
     <div v-if="loading" class="loading">
       <el-skeleton :rows="10" animated />
     </div>
-    
+
     <div v-else-if="!shop" class="no-data">
       <h2>未找到商家信息</h2>
       <el-button type="primary" @click="goBack">返回搜索页</el-button>
     </div>
-    
+
     <div v-else class="shop-detail">
       <!-- 返回导航 -->
       <div class="navigation">
         <el-button icon="el-icon-arrow-left" @click="goBack">返回搜索页</el-button>
       </div>
-      
+
       <!-- 商家基本信息 -->
       <div class="shop-header">
         <div class="shop-title-area">
           <h1 class="shop-name">{{ shop.name }}</h1>
           <el-tag v-if="shop.category" size="medium" type="success">{{ shop.category.name || shop.categoryName }}</el-tag>
         </div>
-        
+
         <div class="shop-rating">
           <el-rate v-model="shop.rating" disabled text-color="#ff9900" />
           <span class="rating-value">{{ shop.rating }}分</span>
         </div>
-        
+
         <div class="price-info">
           <div class="price-item">
             <span class="price-label">价格区间</span>
@@ -37,13 +37,13 @@
             <span class="price-value">¥{{ shop.averageCost }}</span>
           </div>
         </div>
-        
+
         <div v-if="shop.description" class="shop-description">
           <h3>商家介绍</h3>
           <p>{{ shop.description }}</p>
         </div>
       </div>
-      
+
       <!-- 商家联系信息 -->
       <div class="contact-info">
         <div class="info-item">
@@ -59,15 +59,15 @@
           <span>{{ shop.phone || '暂无联系电话' }}</span>
         </div>
       </div>
-      
+
       <!-- 商家图片展示 -->
       <div class="shop-images-section">
         <h2>商家图片</h2>
-        
+
         <div v-if="!images || images.length === 0" class="no-images">
           <el-empty description="暂无商家图片" />
         </div>
-        
+
         <div v-else>
           <!-- 精选图片轮播 -->
           <div class="featured-images">
@@ -75,58 +75,58 @@
             <el-carousel :interval="4000" type="card" height="300px">
               <el-carousel-item v-for="(image, index) in images" :key="index">
                 <div class="carousel-item">
-                  <img :src="image.imageUrl" :alt="image.description || '商家图片'" class="carousel-image">
+                  <img :src="'/images/' + image.imageUrl" :alt="image.description || '商家图片'" class="carousel-image">
                   <div class="image-description" v-if="image.description">{{ image.description }}</div>
                 </div>
               </el-carousel-item>
             </el-carousel>
           </div>
-          
+
           <!-- 按类别分组展示图片 -->
           <div class="image-categories">
             <!-- 店面环境图片 -->
             <div v-if="getImagesByType('门店外观').length > 0 || getImagesByType('店内环境').length > 0" class="image-category">
               <h3>店铺环境</h3>
               <div class="image-grid">
-                <div 
-                  v-for="(image, index) in [...getImagesByType('门店外观'), ...getImagesByType('店内环境')]" 
-                  :key="'env-'+index" 
+                <div
+                  v-for="(image, index) in [...getImagesByType('门店外观'), ...getImagesByType('店内环境')]"
+                  :key="'env-'+index"
                   class="grid-item"
                   @click="previewImage(image.imageUrl)"
                 >
-                  <img :src="image.imageUrl" :alt="image.description || '环境图片'">
+                  <img :src="'/images/' + image.imageUrl" :alt="image.description || '环境图片'">
                   <div class="image-tag">{{ image.description || '环境图片' }}</div>
                 </div>
               </div>
             </div>
-            
+
             <!-- 菜品图片 -->
             <div v-if="getImagesByType('招牌菜品').length > 0 || getImagesByType('特色美食').length > 0" class="image-category">
               <h3>特色菜品</h3>
               <div class="image-grid">
-                <div 
-                  v-for="(image, index) in [...getImagesByType('招牌菜品'), ...getImagesByType('特色美食')]" 
-                  :key="'food-'+index" 
+                <div
+                  v-for="(image, index) in [...getImagesByType('招牌菜品'), ...getImagesByType('特色美食')]"
+                  :key="'food-'+index"
                   class="grid-item"
                   @click="previewImage(image.imageUrl)"
                 >
-                  <img :src="image.imageUrl" :alt="image.description || '菜品图片'">
+                  <img :src="'/images/' + image.imageUrl" :alt="image.description || '菜品图片'">
                   <div class="image-tag">{{ image.description || '菜品图片' }}</div>
                 </div>
               </div>
             </div>
-            
+
             <!-- 其他图片 -->
             <div v-if="getImagesByType('其他').length > 0" class="image-category">
               <h3>其他图片</h3>
               <div class="image-grid">
-                <div 
-                  v-for="(image, index) in getImagesByType('其他')" 
-                  :key="'other-'+index" 
+                <div
+                  v-for="(image, index) in getImagesByType('其他')"
+                  :key="'other-'+index"
                   class="grid-item"
                   @click="previewImage(image.imageUrl)"
                 >
-                  <img :src="image.imageUrl" :alt="image.description || '其他图片'">
+                  <img :src="'/images/' + image.imageUrl" :alt="image.description || '其他图片'">
                   <div class="image-tag">{{ image.description || '图片' }}</div>
                 </div>
               </div>
@@ -135,7 +135,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- 图片预览 -->
     <el-image-viewer
       v-if="showViewer"
@@ -156,17 +156,17 @@ export default {
   components: {
     ElImageViewer
   },
-  
+
   setup() {
     const route = useRoute();
     const router = useRouter();
-    
+
     const shop = ref(null);
     const images = ref([]);
     const loading = ref(true);
     const showViewer = ref(false);
     const previewUrl = ref('');
-    
+
     // 获取商家详情
     const loadShopDetails = async () => {
       const shopId = route.params.id;
@@ -174,11 +174,11 @@ export default {
         loading.value = false;
         return;
       }
-      
+
       try {
         const response = await ShopService.getShopDetails(shopId);
         console.log('商家详情响应:', response);
-        
+
         // 直接处理服务器返回的数据
         if (response && response.shop) {
           shop.value = response.shop;
@@ -193,16 +193,16 @@ export default {
         loading.value = false;
       }
     };
-    
+
     // 返回搜索页
     const goBack = () => {
       router.push({ name: 'ShopSearch' });
     };
-    
+
     // 按类型获取图片
     const getImagesByType = (type) => {
       if (!images.value || images.value.length === 0) return [];
-      
+
       const typeMap = {
         '门店外观': ['门店外观', '店铺外观', '门面'],
         '店内环境': ['店内环境', '店内', '环境'],
@@ -210,42 +210,42 @@ export default {
         '特色美食': ['特色美食', '菜品', '美食'],
         '其他': []
       };
-      
+
       if (type === '其他') {
         // 返回不属于任何已知类别的图片
         const allKnownTypes = [].concat(...Object.values(typeMap).filter(arr => arr.length > 0));
-        return images.value.filter(img => 
-          !img.description || 
-          !allKnownTypes.some(knownType => 
+        return images.value.filter(img =>
+          !img.description ||
+          !allKnownTypes.some(knownType =>
             img.description.includes(knownType)
           )
         );
       }
-      
+
       // 返回匹配指定类型的图片
-      return images.value.filter(img => 
-        img.description && 
-        typeMap[type].some(keyword => 
+      return images.value.filter(img =>
+        img.description &&
+        typeMap[type].some(keyword =>
           img.description.includes(keyword)
         )
       );
     };
-    
+
     // 预览图片
     const previewImage = (url) => {
       previewUrl.value = url;
       showViewer.value = true;
     };
-    
+
     // 关闭预览
     const closeViewer = () => {
       showViewer.value = false;
     };
-    
+
     onMounted(() => {
       loadShopDetails();
     });
-    
+
     return {
       shop,
       images,
@@ -479,4 +479,4 @@ export default {
   border-radius: 8px;
   text-align: center;
 }
-</style> 
+</style>
