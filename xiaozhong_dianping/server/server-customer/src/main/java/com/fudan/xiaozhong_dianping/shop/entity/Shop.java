@@ -37,6 +37,7 @@ public class Shop {
      */
     private String businessHours;
 
+
     /**
      * 商家的联系电话，方便用户与商家取得联系。
      */
@@ -50,6 +51,7 @@ public class Shop {
     /**
      * 商家的人均消费金额，以元为单位，保留两位小数。
      */
+
     private BigDecimal averageCost;
 
     /**

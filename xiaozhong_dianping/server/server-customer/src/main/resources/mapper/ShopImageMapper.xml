@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.fudan.xiaozhong_dianping.shop.mapper.ShopImageMapper">
 
-    <select id="findImagesByShopId" parameterType="long" resultType="com.fudan.xiaozhong_dianping.shop.entity.ShopImage">
+    <select id="findImagesByShopId" parameterType="java.lang.Long" resultType="com.fudan.xiaozhong_dianping.shop.entity.ShopImage">
         SELECT * FROM shop_image WHERE shop_id = #{shopId}
     </select>
 
