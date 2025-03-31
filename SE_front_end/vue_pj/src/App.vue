@@ -83,9 +83,20 @@ body {
   height: 60px;
   background-color: #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: relative;
-  z-index: 10;
+  position: fixed;  /* 固定在页面顶部 */
+  top: 0;           /* 顶部对齐 */
+  left: 0;          /* 左边对齐 */
+  right: 0;         /* 右边对齐 */
+  z-index: 10;      /* 确保在其他元素之上 */
+  width: 100%;      /* 确保宽度为 100% */
+  box-sizing: border-box; /* 确保padding不会影响整体宽度 */
 }
+
+body {
+  height: 100%;
+  padding-top: 60px;  /* 给页面内容添加上边距，防止内容被header遮挡 */
+}
+
 
 .logo {
   font-size: 24px;
