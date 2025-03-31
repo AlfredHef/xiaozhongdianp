@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>导入商家图片</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 20px 0;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .steps {
+            line-height: 1.6;
+        }
+        .step {
+            margin-bottom: 20px;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.3);
+            border-radius: 50%;
+            border-top-color: #000;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>商家图片导入工具</h1>
+    
+    <div class="steps">
+        <div class="step">
+            <h2>步骤 1: 准备图片</h2>
+            <p>确保您已经将商家图片按照正确的命名规则放置在以下目录:</p>
+            <ul>
+                <li><strong>店铺环境图片:</strong> <code>/images/shops/environment/</code></li>
+                <li><strong>食品图片:</strong> <code>/images/shops/food/</code></li>
+                <li><strong>其他图片:</strong> <code>/images/shops/other/</code></li>
+            </ul>
+            <p>命名规则: <code>{shop_id}_{category}_{sequence}.{extension}</code></p>
+            <p>例如: <code>123_environment_01.jpg</code></p>
+        </div>
+
+        <div class="step">
+            <h2>步骤 2: 点击下方按钮导入图片</h2>
+            <button id="importButton">导入商家图片</button>
+            <span id="loading" style="display:none" class="loading"></span>
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('importButton').addEventListener('click', async function() {
+            const button = document.getElementById('importButton');
+            const resultDiv = document.getElementById('result');
+            const loadingSpinner = document.getElementById('loading');
+            
+            // 禁用按钮并显示加载中
+            button.disabled = true;
+            loadingSpinner.style.display = 'inline-block';
+            resultDiv.innerHTML = '<p>正在导入图片，请稍候...</p>';
+            
+            try {
+                // 设置超时处理
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 60000); // 60秒超时
+                
+                const response = await fetch('/api/shop/import-images', {
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                // 检查响应状态
+                if (!response.ok) {
+                    throw new Error(`服务器返回错误状态码: ${response.status} ${response.statusText}`);
+                }
+                
+                // 检查响应内容类型
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    throw new Error(`服务器返回了非JSON响应: ${text.substring(0, 100)}...`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `<p class="success">${data.message}</p>`;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">导入失败: ${data.message}</p>`;
+                }
+                
+                // 显示完整响应
+                resultDiv.innerHTML += `<h3>导入结果:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                // 处理不同类型的错误
+                if (error.name === 'AbortError') {
+                    resultDiv.innerHTML = `<p class="error">请求超时: 导入操作可能需要较长时间。请检查服务器日志以获取更多信息。</p>`;
+                } else if (error.name === 'SyntaxError' && error.message.includes('Unexpected end of JSON')) {
+                    resultDiv.innerHTML = `<p class="error">JSON解析错误: 服务器返回的数据不完整或格式不正确。请检查服务器日志获取详细信息。</p>`;
+                    resultDiv.innerHTML += `<p>可能的原因:</p><ul>
+                        <li>服务器处理时间过长导致连接中断</li>
+                        <li>服务器端发生错误但未能正确返回错误信息</li>
+                        <li>网络传输问题导致响应不完整</li>
+                    </ul>`;
+                    resultDiv.innerHTML += `<p>建议:</p><ul>
+                        <li>检查服务器日志</li>
+                        <li>确认图片目录结构正确</li>
+                        <li>验证数据库连接是否正常</li>
+                    </ul>`;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">导入过程中发生错误: ${error.message}</p>`;
+                }
+            } finally {
+                // 恢复按钮状态并隐藏加载中
+                button.disabled = false;
+                loadingSpinner.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html> 
