@@ -69,24 +69,33 @@ export default {
             const userData = JSON.parse(userString);
             // 如果有token，尝试从token中解析用户ID和用户名
             if (userData.token) {
-                // 解析JWT token (简单实现，实际应使用jwt库)
                 try {
                     const tokenParts = userData.token.split('.');
                     if (tokenParts.length === 3) {
                         const payload = JSON.parse(atob(tokenParts[1]));
                         console.log('解析的token payload:', payload);
-                        // 假设payload中有用户信息
+                        // 从token中获取用户信息
                         return {
                             ...userData,
-                            id: payload.id || payload.userId || payload.sub || 1, // 尝试获取用户ID
-                            username: payload.username || payload.name || '用户' // 尝试获取用户名
+                            id: payload.id || payload.userId || payload.sub || 1,
+                            username: payload.username || payload.name || userData.username || '用户'
                         };
                     }
                 } catch (e) {
                     console.error('解析token失败:', e);
+                    // 如果token解析失败，返回原始数据中的用户名
+                    return {
+                        ...userData,
+                        username: userData.username || '用户'
+                    };
                 }
             }
-            return userData;
+            // 如果没有token但有用户名，返回原始数据
+            if (userData.username) {
+                return userData;
+            }
+            // 如果什么都没有，返回null
+            return null;
         } catch (e) {
             console.error('解析用户数据失败:', e);
             return null;
