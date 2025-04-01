@@ -97,10 +97,13 @@
     @return List<Shop> 商家实体列表
     -->
     <select id="showShops" resultType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
-        SELECT s.*, c.name as category_name
+        SELECT
+            s.*,
+            c.id AS category_id,
+            c.name AS category_name
         FROM shop s
-        LEFT JOIN category c ON s.category_id = c.id
-        LIMIT #{offset}, #{pageSize}
+                 LEFT JOIN category c ON s.category_id = c.id
+            LIMIT #{offset}, #{pageSize}
     </select>
     <select id="findShopById" resultType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
         SELECT s.*, c.name as category_name

@@ -9,7 +9,7 @@
           @click="goBack"
           class="back-button"
         >
-          返回搜索
+          前往搜索
         </el-button>
       </div>
       <div class="header-center">
@@ -343,21 +343,27 @@ export default {
     };
     
     // 获取商家图片
+    // ShopList.vue 中的 getShopImage 方法
     const getShopImage = (shopData) => {
-      if (!shopData) {
-        console.warn('Shop data is invalid', shopData);
-        return categoryImages.default;
+      console.log('进入getShopImage方法，shopData:', shopData); // 打印整个shopData
+      console.log('shopData是否包含images:', shopData.images);
+      console.log('shopData.shop是否存在:', shopData.shop);
+      console.log('shopData.shop是否包含images:', shopData.shop?.images);
+
+      // 根据实际数据结构获取图片
+      const images = shopData.images;
+
+      console.log('获取到的images数组:', images);
+      console.log('images是否为数组且非空:', Array.isArray(images) && images.length > 0);
+
+      if (Array.isArray(images) && images.length > 0 && images[0].imageUrl) {
+        console.log('使用后端图片:', `http://localhost:8088/static/${images[0].imageUrl}`);
+        return `http://localhost:8088/static/${images[0].imageUrl}`;
       }
-      
-      // 检查是否有图片数据
-      if (shopData.images && shopData.images.length > 0 && shopData.images[0].imageUrl) {
-        return shopData.images[0].imageUrl;
-      }
-      
-      // 如果没有图片，根据分类返回默认图片
-      const shopInfo = shopData.shop || shopData;
+
+      // 根据分类返回默认图片
       const categoryName = getShopCategory(shopData);
-      
+      console.log('使用默认图片，分类:', categoryName);
       return categoryImages[categoryName] || categoryImages.default;
     };
     
