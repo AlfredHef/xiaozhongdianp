@@ -75,7 +75,7 @@
             <el-carousel :interval="4000" type="card" height="300px">
               <el-carousel-item v-for="(image, index) in images" :key="index">
                 <div class="carousel-item">
-                  <img :src="'/images/' + image.imageUrl" :alt="image.description || '商家图片'" class="carousel-image">
+                  <img :src="image.imageUrl" :alt="image.description || '商家图片'" class="carousel-image">
                   <div class="image-description" v-if="image.description">{{ image.description }}</div>
                 </div>
               </el-carousel-item>
@@ -94,7 +94,7 @@
                   class="grid-item"
                   @click="previewImage(image.imageUrl)"
                 >
-                  <img :src="'/images/' + image.imageUrl" :alt="image.description || '环境图片'">
+                  <img :src="image.imageUrl" :alt="image.description || '环境图片'">
                   <div class="image-tag">{{ image.description || '环境图片' }}</div>
                 </div>
               </div>
@@ -110,7 +110,7 @@
                   class="grid-item"
                   @click="previewImage(image.imageUrl)"
                 >
-                  <img :src="'/images/' + image.imageUrl" :alt="image.description || '菜品图片'">
+                  <img :src="image.imageUrl" :alt="image.description || '菜品图片'">
                   <div class="image-tag">{{ image.description || '菜品图片' }}</div>
                 </div>
               </div>
@@ -126,7 +126,7 @@
                   class="grid-item"
                   @click="previewImage(image.imageUrl)"
                 >
-                  <img :src="'/images/' + image.imageUrl" :alt="image.description || '其他图片'">
+                  <img :src="image.imageUrl" :alt="image.description || '其他图片'">
                   <div class="image-tag">{{ image.description || '图片' }}</div>
                 </div>
               </div>

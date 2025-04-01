@@ -24,7 +24,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // 映射 /images/** 到项目静态资源目录
-        registry.addResourceHandler("/images/**")
-                .addResourceLocations("classpath:/static/images/");
+        registry.addResourceHandler("/static/**")
+                .addResourceLocations("classpath:/static/");
     }
 }

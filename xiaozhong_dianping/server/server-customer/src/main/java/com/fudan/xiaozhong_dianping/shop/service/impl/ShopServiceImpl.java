@@ -95,6 +95,9 @@ public class ShopServiceImpl implements ShopService {
 
         // 查询商家图片（需确保ShopImageMapper已定义findImagesByShopId方法）
         List<ShopImage> images = shopImageMapper.findImagesByShopId(shopId);
+        images.forEach(img -> {
+            img.setImageUrl("/static/" + img.getImageUrl()); // 添加前缀
+        });
         result.put("images", images);
 
         return result;
