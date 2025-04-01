@@ -11,11 +11,18 @@
         >
           返回搜索
         </el-button>
+      </div>
+      <div class="header-center">
         <h1>美食商家列表</h1>
       </div>
       <div class="filter-controls">
-        <el-select v-model="pageSize" placeholder="每页显示" @change="handlePageSizeChange">
-          <el-option :value="8" label="每页8条"></el-option>
+        <el-select 
+          v-model="pageSize" 
+          placeholder="每页显示" 
+          @change="handlePageSizeChange"
+          popper-class="page-size-select"
+        >
+          <el-option :value="9" label="每页9条"></el-option>
           <el-option :value="12" label="每页12条"></el-option>
           <el-option :value="16" label="每页16条"></el-option>
           <el-option :value="24" label="每页24条"></el-option>
@@ -30,7 +37,6 @@
 
     <!-- 商家列表 -->
     <div v-else-if="shops.length > 0" class="shops-grid">
-      <div class="success-message">成功加载 {{ shops.length }} 条商家数据</div>
       <div 
         v-for="shopData in shops" 
         :key="getShopId(shopData)"
@@ -99,7 +105,7 @@ export default {
     const shops = ref([]);
     const loading = ref(true);
     const currentPage = ref(1);
-    const pageSize = ref(8);
+    const pageSize = ref(9);
     const total = ref(0);
     const totalPages = computed(() => Math.ceil(total.value / pageSize.value) || 1);
     
@@ -407,11 +413,14 @@ export default {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .shop-list-header {
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -420,28 +429,51 @@ export default {
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  position: relative;
 }
 
 .header-left {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+  flex: 0 0 auto;
 }
 
-.back-button {
-  margin-right: 20px;
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .shop-list-header h1 {
   margin: 0;
-  font-size: 28px;
+  font-size: 32px;
   color: #303133;
-  font-weight: 600;
+  font-weight: 700;
+  background: linear-gradient(45deg, #409EFF, #468ae4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  letter-spacing: 2px;
+  position: relative;
+  padding-bottom: 10px;
+}
+
+.shop-list-header h1::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(45deg, #409EFF, #67C23A);
+  border-radius: 2px;
 }
 
 .filter-controls {
-  display: flex;
-  gap: 15px;
+  flex: 0 0 auto;
+}
+
+.back-button {
+  margin-right: 20px;
 }
 
 .loading-state, .empty-state {
@@ -453,13 +485,17 @@ export default {
 }
 
 .shops-grid {
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
   margin-bottom: 30px;
+  justify-items: center;
 }
 
 .shop-card {
+  width: 100%;
+  max-width: 320px;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
@@ -559,6 +595,7 @@ export default {
 }
 
 .pagination-container {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -575,15 +612,11 @@ export default {
   font-size: 14px;
 }
 
-.success-message {
-  background-color: #f0f9eb;
-  color: #67c23a;
-  padding: 12px 20px;
-  margin-bottom: 20px;
-  border-radius: 8px;
-  text-align: center;
-  width: 100%;
-  font-weight: 500;
-  box-shadow: 0 2px 12px 0 rgba(103, 194, 58, 0.1);
+:deep(.page-size-select) {
+  margin-top: 10px !important;
+}
+
+:deep(.el-select-dropdown) {
+  margin-top: 10px !important;
 }
 </style> 
