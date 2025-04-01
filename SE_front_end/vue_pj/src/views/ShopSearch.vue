@@ -756,11 +756,17 @@ export default {
     
     // 根据商家获取图片
     const getShopImage = (shop) => {
+      console.log('shop对象:', shop); // 打印完整对象
+      console.log('shop.images:', shop.images);
+      console.log('shop.images是否存在:', shop.images !== undefined);
+      console.log('shop.images是否为数组:', Array.isArray(shop.images));
+      console.log('shop.images长度:', shop.images ? shop.images.length : 0);
       // 获取商家对应的图片
       if (shop.images && shop.images.length > 0) {
+        console.log('获取商家对应的图片:', shop.images[0].imageUrl);
         return shop.images[0].imageUrl;
       }
-      
+
       // 如果没有图片，根据分类返回默认图片
       const categoryName = shop.categoryName || shop.category?.name;
       const categoryImages = {
