@@ -63,11 +63,11 @@ public interface ShopService {
 
     /**
      * 删除指定的搜索历史记录
-     * @param userId 用户ID
+     *
      * @param historyId 历史记录ID
      * @return 是否删除成功
      */
-    Boolean deleteSearchHistory(Long userId, Long historyId);
+    Boolean deleteSearchHistory( Long historyId);
 
     /**
      * 清空用户的搜索历史记录

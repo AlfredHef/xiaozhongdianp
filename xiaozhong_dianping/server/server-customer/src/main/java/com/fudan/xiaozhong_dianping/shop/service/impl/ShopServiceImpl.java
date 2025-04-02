@@ -116,7 +116,7 @@ public class ShopServiceImpl implements ShopService {
     }
 
     @Override
-    public Boolean deleteSearchHistory(Long userId, Long historyId) {
+    public Boolean deleteSearchHistory( Long historyId) {
         return searchHistoryMapper.deleteById(historyId) > 0;
     }
 

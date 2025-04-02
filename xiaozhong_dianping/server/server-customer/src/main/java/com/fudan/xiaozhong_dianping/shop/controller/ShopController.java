@@ -1,9 +1,6 @@
 package com.fudan.xiaozhong_dianping.shop.controller;
 
-import com.fudan.result.PageResult;
 import com.fudan.result.Result;
-import com.fudan.xiaozhong_dianping.shop.dto.ShopImportDTO;
-import com.fudan.xiaozhong_dianping.shop.dto.ShopImportWithDescriptionsDTO;
 import com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO;
 import com.fudan.xiaozhong_dianping.shop.entity.SearchHistory;
 import com.fudan.xiaozhong_dianping.shop.entity.Shop;
@@ -11,13 +8,12 @@ import com.fudan.xiaozhong_dianping.shop.service.ShopService;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.stream.Collectors;
 
 // 控制器类，处理与店铺相关的请求
@@ -41,16 +37,16 @@ public class ShopController {
     @ApiOperation(value = "分页查询")
     public Result<List<Map<String, Object>>> page(int pageCurrent, int pageSize) {
         log.info("分页查询，当前页码：{}，每页记录数：{}", pageCurrent, pageSize);
-        
+
         // 计算偏移量
         int offset = (pageCurrent - 1) * pageSize;
-        
+
         // 调用服务层获取分页数据
         List<Shop> shops = shopService.showShops(offset, pageSize);
-        
+
         // 为商家添加图片信息
         List<Map<String, Object>> result = getShopDataWithImages(shops);
-        
+
         return Result.success(result);
     }
 
@@ -72,10 +68,10 @@ public class ShopController {
             // 执行搜索
             List<Shop> shopList = shopService.searchShops(shopPageQueryDTO);
             log.info("搜索完成，找到{}条记录", shopList.size());
-            
+
             // 检查商家分类ID是否存在
             for (Shop shop : shopList) {
-                log.info("商家[{}]的分类ID：{}，分类名称：{}", 
+                log.info("商家[{}]的分类ID：{}，分类名称：{}",
                     shop.getId(), shop.getCategoryId(), shop.getCategoryName());
             }
 
@@ -147,14 +143,13 @@ public class ShopController {
     /**
      * 删除用户的搜索历史记录
      *
-     * @param userId 用户ID
      * @param historyId 历史记录ID
      * @return 操作结果
      */
     @DeleteMapping("/search/history/{historyId}")
-    public Result<Void> deleteSearchHistory(@RequestParam Long userId, @PathVariable Long historyId) {
-        log.info("删除用户的搜索历史记录：userId={}, historyId={}", userId, historyId);
-        shopService.deleteSearchHistory(userId, historyId);
+    public Result<Void> deleteSearchHistory(@PathVariable Long historyId) {
+        log.info("删除用户的搜索历史记录： historyId={}", historyId);
+        shopService.deleteSearchHistory(historyId);
         return Result.success();
     }
 
@@ -165,10 +160,10 @@ public class ShopController {
      * @return 操作结果
      */
     @DeleteMapping("/search/history/clear")
-    public Result<Void> clearSearchHistory(@RequestParam Long userId) {
+    public Result<Boolean> clearSearchHistory(@RequestParam Long userId) {
         log.info("清空用户的搜索历史记录：userId={}", userId);
-        shopService.clearSearchHistory(userId);
-        return Result.success();
+        Boolean result = shopService.clearSearchHistory(userId);
+        return Result.success(result);
     }
 
     /**
