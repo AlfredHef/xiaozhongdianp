@@ -82,6 +82,6 @@ public class Shop {
      */
     private Date updatedAt;
 
-
+private String categoryName;
 
 }
