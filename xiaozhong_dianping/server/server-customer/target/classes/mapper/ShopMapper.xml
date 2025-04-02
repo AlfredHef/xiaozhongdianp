@@ -14,7 +14,12 @@
     @return List<Shop> 符合条件的商家实体列表
     -->
     <select id="searchShops" parameterType="com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO" resultType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
-        SELECT s.*, c.name as category_name
+        SELECT 
+            s.id, s.name, s.address, s.business_hours as businessHours,
+            s.phone, s.description, s.average_cost as averageCost,
+            s.rating, s.price_min as priceMin, s.price_max as priceMax,
+            s.created_at as createdAt, s.updated_at as updatedAt,
+            s.category_id as categoryId, c.name as categoryName
         FROM shop s
         LEFT JOIN category c ON s.category_id = c.id
         WHERE 1 = 1
@@ -97,16 +102,24 @@
     @return List<Shop> 商家实体列表
     -->
     <select id="showShops" resultType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
-        SELECT
-            s.*,
-            c.id AS category_id,
-            c.name AS category_name
+        SELECT 
+            s.id, s.name, s.address, s.business_hours as businessHours,
+            s.phone, s.description, s.average_cost as averageCost,
+            s.rating, s.price_min as priceMin, s.price_max as priceMax,
+            s.created_at as createdAt, s.updated_at as updatedAt,
+            s.category_id as categoryId, c.name as categoryName
         FROM shop s
-                 LEFT JOIN category c ON s.category_id = c.id
-            LIMIT #{offset}, #{pageSize}
+        LEFT JOIN category c ON s.category_id = c.id
+        ORDER BY s.id
+        LIMIT #{offset}, #{pageSize}
     </select>
     <select id="findShopById" resultType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
-        SELECT s.*, c.name as category_name
+        SELECT 
+            s.id, s.name, s.address, s.business_hours as businessHours,
+            s.phone, s.description, s.average_cost as averageCost,
+            s.rating, s.price_min as priceMin, s.price_max as priceMax,
+            s.created_at as createdAt, s.updated_at as updatedAt,
+            s.category_id as categoryId, c.name as categoryName
         FROM shop s
         LEFT JOIN category c ON s.category_id = c.id
         WHERE s.id = #{id}

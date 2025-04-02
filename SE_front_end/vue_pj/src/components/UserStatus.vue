@@ -1,7 +1,7 @@
 <template>
   <div class="user-status" v-if="shouldShow">
     <div class="nav-links">
-      <el-button type="text" @click="$router.push('/shop/list')">商家列表</el-button>
+      <el-button link @click="$router.push('/shop/list')">商家列表</el-button>
     </div>
     <div v-if="isLoggedIn" class="user-info">
       <span>你好,{{ username }}</span>
@@ -17,8 +17,8 @@
       </el-dropdown>
     </div>
     <div v-else class="login-links">
-      <el-button type="text" @click="$router.push('/login')">登录</el-button>
-      <el-button type="text" @click="$router.push('/register')">注册</el-button>
+      <el-button link @click="$router.push('/login')">登录</el-button>
+      <el-button link @click="$router.push('/register')">注册</el-button>
     </div>
   </div>
 </template>

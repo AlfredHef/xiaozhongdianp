@@ -39,11 +39,19 @@ public class ShopController {
      */
     @GetMapping("/page")
     @ApiOperation(value = "分页查询")
-    public Result<List<Shop>> page(int pageCurrent, int pageSize) {
+    public Result<List<Map<String, Object>>> page(int pageCurrent, int pageSize) {
         log.info("分页查询，当前页码：{}，每页记录数：{}", pageCurrent, pageSize);
+        
+        // 计算偏移量
+        int offset = (pageCurrent - 1) * pageSize;
+        
         // 调用服务层获取分页数据
-        List<Shop> list = shopService.showShops(pageCurrent, pageSize);
-        return Result.success(list);
+        List<Shop> shops = shopService.showShops(offset, pageSize);
+        
+        // 为商家添加图片信息
+        List<Map<String, Object>> result = getShopDataWithImages(shops);
+        
+        return Result.success(result);
     }
 
     /**
@@ -64,6 +72,12 @@ public class ShopController {
             // 执行搜索
             List<Shop> shopList = shopService.searchShops(shopPageQueryDTO);
             log.info("搜索完成，找到{}条记录", shopList.size());
+            
+            // 检查商家分类ID是否存在
+            for (Shop shop : shopList) {
+                log.info("商家[{}]的分类ID：{}，分类名称：{}", 
+                    shop.getId(), shop.getCategoryId(), shop.getCategoryName());
+            }
 
             // 为每个商家获取图片信息
             List<Map<String, Object>> result = getShopDataWithImages(shopList);
