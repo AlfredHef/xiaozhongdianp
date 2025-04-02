@@ -56,7 +56,6 @@
         <div class="filter-options">
           <el-radio-group v-model="selectedRating" @change="applyFilter">
             <el-radio value="">全部</el-radio>
-            <el-radio value="5.0">5.0分以上</el-radio>
             <el-radio value="4.5">4.5分以上</el-radio>
             <el-radio value="4.0">4.0分以上</el-radio>
             <el-radio value="3.5">3.5分以上</el-radio>
@@ -111,7 +110,10 @@
             <el-option :value="18" label="18条/页"></el-option>
           </el-select>
         </div>
-        <el-button type="primary" @click="resetFilters">重置筛选条件</el-button>
+        <div>
+          <el-button type="primary" @click="resetFilters">重置筛选条件</el-button>
+          <el-button type="success" @click="debugFilters" v-if="userId === 1">调试筛选</el-button>
+        </div>
       </div>
     </div>
 
@@ -398,13 +400,15 @@ export default {
       showSearchHistory.value = false;
       
       try {
-        // 基础搜索参数
+        // 基础搜索参数 - 确保每次创建新对象，避免参数残留
         const queryParams = {
           name: searchQuery.value,
           pageSize: 100, // 获取更多数据，在前端分页
           pageCurrent: 1, // 从第一页开始获取
           sortBy: sortBy.value
         };
+        
+        console.log('创建新的查询参数对象:', queryParams);
         
         // 只有在用户已登录时才添加userId
         if (userId) {
@@ -420,47 +424,80 @@ export default {
         if (selectedPrice.value) {
           const [min, max] = selectedPrice.value.split('-');
           const minPrice = Number(min);
-          if (!isNaN(minPrice)) {
-            queryParams.minPrice = minPrice;
-          }
           
           if (max && max.includes('+')) {
-            // 处理"200+"这种情况，只设置下限，不设置上限
-            // 或设置一个非常大的上限值
-            console.log('价格筛选 - 设置最小值，无上限:', minPrice);
-            delete queryParams.maxPrice; // 移除上限
-          } else if (max) {
-            const maxPrice = Number(max);
-            if (!isNaN(maxPrice)) {
-              queryParams.maxPrice = maxPrice;
-              console.log('价格筛选 - 范围:', minPrice, '-', maxPrice);
+            // 处理"200+"这种格式（表示200以上）
+            console.log('价格筛选 - 200以上，使用最高价>=200筛选');
+            // 对于200+，我们应该筛选最高价>=200的商家，使用maxPriceMin参数
+            queryParams.maxPriceMin = minPrice; // 商家最高价>=200
+            // 清除可能冲突的参数
+            delete queryParams.minPrice;
+            delete queryParams.maxPrice;
+          } else {
+            // 普通范围筛选
+            if (!isNaN(minPrice)) {
+              queryParams.minPrice = minPrice;
+              console.log('价格筛选 - 最低价 >=', minPrice);
             }
+            
+            if (max) {
+              const maxPrice = Number(max);
+              if (!isNaN(maxPrice)) {
+                queryParams.maxPrice = maxPrice;
+                console.log('价格筛选 - 最高价 <=', maxPrice);
+              }
+            }
+            // 清除可能的自定义参数
+            delete queryParams.maxPriceMin;
           }
+        } else {
+          // 清除以前可能设置的价格筛选参数
+          delete queryParams.minPrice;
+          delete queryParams.maxPrice;
+          delete queryParams.maxPriceMin;
         }
         
-        // 添加人均消费筛选
+        // 添加人均消费筛选 - 人均消费是单一值，不需要交集逻辑
         if (selectedAverageCost.value) {
           const [min, max] = selectedAverageCost.value.split('-');
           const minCost = Number(min);
-          if (!isNaN(minCost)) {
-            queryParams.minAverageCost = minCost;
-          }
           
           if (max && max.includes('+')) {
-            // 处理"200+"这种情况，只设置下限，不设置上限
-            // 或设置一个非常大的上限值
-            console.log('人均消费筛选 - 设置最小值，无上限:', minCost);
-            delete queryParams.maxAverageCost; // 移除上限
-          } else if (max) {
-            const maxCost = Number(max);
-            if (!isNaN(maxCost)) {
-              queryParams.maxAverageCost = maxCost;
-              console.log('人均消费筛选 - 范围:', minCost, '-', maxCost);
+            // 处理"200+"这种格式（表示200以上的人均消费）
+            console.log('人均消费筛选 - 设置下限为:', minCost);
+            
+            // 设置最低人均消费
+            queryParams.minAverageCost = minCost;
+            delete queryParams.maxAverageCost;
+            
+            console.log('人均消费"200+"筛选参数:', { minAverageCost: queryParams.minAverageCost });
+          } else {
+            // 普通范围筛选
+            if (!isNaN(minCost)) {
+              queryParams.minAverageCost = minCost;
+              console.log('人均消费筛选 - 下限 >=', minCost);
+            }
+            
+            if (max) {
+              const maxCost = Number(max);
+              if (!isNaN(maxCost)) {
+                queryParams.maxAverageCost = maxCost;
+                console.log('人均消费筛选 - 上限 <=', maxCost);
+              }
             }
           }
+        } else {
+          // 清除以前可能设置的人均消费筛选参数
+          delete queryParams.minAverageCost;
+          delete queryParams.maxAverageCost;
         }
         
-        console.log('发送搜索请求，最终参数:', queryParams);
+        // 最终记录要发送的请求参数
+        console.log('=======================================');
+        console.log('最终发送的搜索参数:', JSON.stringify(queryParams, null, 2));
+        console.log('=======================================');
+        
+        console.log('发送搜索请求...');
         const response = await ShopService.searchShops(queryParams);
         console.log('搜索结果:', response);
         
@@ -598,7 +635,10 @@ export default {
         if (!isNaN(minRating)) {
           console.log('应用评分筛选 >=', minRating);
           filteredShops = filteredShops.filter(shop => {
-            const rating = Number(shop.rating);
+            // 处理两种可能的数据结构
+            const shopObj = shop.shop || shop;
+            const rating = Number(shopObj.rating);
+            console.log(`商家 ${shopObj.name || '未知'} 评分: ${rating}, 筛选条件: >= ${minRating}`);
             return !isNaN(rating) && rating >= minRating;
           });
         }
@@ -610,47 +650,76 @@ export default {
         const minPrice = Number(min);
         
         if (!isNaN(minPrice)) {
-          console.log('应用价格下限筛选 >=', minPrice);
-          filteredShops = filteredShops.filter(shop => {
-            const shopMinPrice = Number(shop.priceMin);
-            // 店铺最低价格大于等于筛选最低价格
-            return !isNaN(shopMinPrice) && shopMinPrice >= minPrice;
-          });
-        }
-        
-        if (max && !max.includes('+')) {
-          const maxPrice = Number(max);
-          if (!isNaN(maxPrice)) {
-            console.log('应用价格上限筛选 <=', maxPrice);
+          // 检查是否是"200+"这种格式（表示200以上）
+          if (max && max.includes('+')) {
+            console.log('应用价格筛选 >=', minPrice, '（无上限）');
             filteredShops = filteredShops.filter(shop => {
-              const shopMaxPrice = Number(shop.priceMax);
-              // 店铺最高价格小于等于筛选最高价格
-              return !isNaN(shopMaxPrice) && shopMaxPrice <= maxPrice;
+              // 处理两种可能的数据结构
+              const shopObj = shop.shop || shop;
+              const shopMaxPrice = Number(shopObj.priceMax) || 0;
+              // 对于"200+"的筛选，商家的最高价格需要大于等于200
+              console.log(`商家 ${shopObj.name || '未知'} 价格区间: ${shopObj.priceMin}-${shopMaxPrice}, 筛选条件: 最高价 >= ${minPrice}`);
+              // 商家最高价格大于等于筛选价格
+              return !isNaN(shopMaxPrice) && shopMaxPrice >= minPrice;
+            });
+          } else {
+            // 普通范围筛选（如0-50、50-100等）- 只要有交集即可
+            const maxPrice = max ? Number(max) : Infinity;
+            console.log('应用价格区间筛选, 筛选区间:', minPrice, '-', maxPrice);
+            
+            filteredShops = filteredShops.filter(shop => {
+              // 处理两种可能的数据结构
+              const shopObj = shop.shop || shop;
+              const shopMinPrice = Number(shopObj.priceMin) || 0;
+              const shopMaxPrice = Number(shopObj.priceMax) || 0;
+              
+              // 判断两个区间是否有交集
+              // 商家最低价 <= 筛选最高价 且 商家最高价 >= 筛选最低价
+              const hasIntersection = shopMinPrice <= maxPrice && shopMaxPrice >= minPrice;
+              
+              console.log(`商家 ${shopObj.name || '未知'} 价格区间: ${shopMinPrice}-${shopMaxPrice}, 筛选区间: ${minPrice}-${maxPrice}, 有交集: ${hasIntersection}`);
+              
+              return hasIntersection;
             });
           }
         }
       }
       
-      // 应用人均消费筛选
+      // 应用人均消费筛选 - 同样修改为区间交集筛选
       if (selectedAverageCost.value) {
         const [min, max] = selectedAverageCost.value.split('-');
         const minCost = Number(min);
         
         if (!isNaN(minCost)) {
-          console.log('应用人均消费下限筛选 >=', minCost);
-          filteredShops = filteredShops.filter(shop => {
-            const averageCost = Number(shop.averageCost);
-            return !isNaN(averageCost) && averageCost >= minCost;
-          });
-        }
-        
-        if (max && !max.includes('+')) {
-          const maxCost = Number(max);
-          if (!isNaN(maxCost)) {
-            console.log('应用人均消费上限筛选 <=', maxCost);
+          // 检查是否是"200+"这种格式（表示200以上）
+          if (max && max.includes('+')) {
+            console.log('应用人均消费筛选 >=', minCost, '（无上限）');
             filteredShops = filteredShops.filter(shop => {
-              const averageCost = Number(shop.averageCost);
-              return !isNaN(averageCost) && averageCost <= maxCost;
+              // 处理两种可能的数据结构
+              const shopObj = shop.shop || shop;
+              const averageCost = Number(shopObj.averageCost);
+              console.log(`商家 ${shopObj.name || '未知'} 人均消费: ${averageCost}, 筛选条件: >= ${minCost}`);
+              // 人均消费大于等于筛选最低值
+              const result = !isNaN(averageCost) && averageCost >= minCost;
+              console.log(`筛选结果: ${result ? '通过' : '不通过'}`);
+              return result;
+            });
+          } else {
+            // 普通范围筛选 - 对于人均消费，直接判断是否在范围内
+            const maxCost = max ? Number(max) : Infinity;
+            console.log('应用人均消费筛选, 区间:', minCost, '-', maxCost);
+            
+            filteredShops = filteredShops.filter(shop => {
+              // 处理两种可能的数据结构
+              const shopObj = shop.shop || shop;
+              const averageCost = Number(shopObj.averageCost) || 0;
+              
+              // 人均消费在区间内
+              const isInRange = averageCost >= minCost && (max.includes('+') || averageCost <= maxCost);
+              
+              console.log(`商家 ${shopObj.name || '未知'} 人均消费: ${averageCost}, 筛选区间: ${minCost}-${maxCost}, 在范围内: ${isInRange}`);
+              
+              return isInRange;
             });
           }
         }
@@ -661,15 +730,19 @@ export default {
         if (sortBy.value === 'rating_desc') {
           console.log('应用评分降序排序');
           filteredShops.sort((a, b) => {
-            const ratingA = Number(a.rating) || 0;
-            const ratingB = Number(b.rating) || 0;
+            const shopA = a.shop || a;
+            const shopB = b.shop || b;
+            const ratingA = Number(shopA.rating) || 0;
+            const ratingB = Number(shopB.rating) || 0;
             return ratingB - ratingA;
           });
         } else if (sortBy.value === 'average_cost_asc') {
           console.log('应用人均消费升序排序');
           filteredShops.sort((a, b) => {
-            const costA = Number(a.averageCost) || 0;
-            const costB = Number(b.averageCost) || 0;
+            const shopA = a.shop || a;
+            const shopB = b.shop || b;
+            const costA = Number(shopA.averageCost) || 0;
+            const costB = Number(shopB.averageCost) || 0;
             return costA - costB;
           });
         }
@@ -888,6 +961,20 @@ export default {
       }
     };
     
+    // 添加调试筛选函数
+    const debugFilters = () => {
+      console.log('===== 调试筛选条件 =====');
+      console.log('当前筛选条件:');
+      console.log('- 评分:', selectedRating.value);
+      console.log('- 价格区间:', selectedPrice.value);
+      console.log('- 人均消费:', selectedAverageCost.value);
+      console.log('- 排序方式:', sortBy.value);
+      console.log('=======================');
+      
+      // 强制应用筛选
+      applyFilter();
+    };
+    
     return {
       Search,
       searchQuery,
@@ -916,7 +1003,8 @@ export default {
       totalPages,
       isUnmounted,
       handlePageChange,
-      handlePageSizeChange
+      handlePageSizeChange,
+      debugFilters
     };
   }
 };
