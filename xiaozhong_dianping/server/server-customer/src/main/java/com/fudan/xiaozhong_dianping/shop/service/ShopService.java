@@ -8,7 +8,6 @@ import com.fudan.xiaozhong_dianping.shop.entity.ShopImage;
 
 import java.util.List;
 import java.util.Map;
-
 /**
  * ShopService接口定义了与商店搜索相关的服务方法
  */
@@ -41,7 +40,7 @@ public interface ShopService {
     /**
      * 分页查询店铺列表
      *
-     * @param offset 分页偏移量
+     * @param offset 分页查询的起始位置
      * @param pageSize 每页显示的记录数量
      * @return 包含分页数据的店铺列表，列表元素为Shop对象
      *         当无数据时返回空列表（非null）
@@ -84,4 +83,3 @@ public interface ShopService {
     int countShops();
 
 }
-
