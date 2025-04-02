@@ -5,8 +5,9 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * 店铺分页查询数据传输对象
- * 用于封装分页查询店铺信息时的参数条件
+ * 店铺分页查询DTO
+ * 用于封装店铺查询条件和分页信息
+ * 实现了Serializable接口以支持对象的序列化
  */
 @Data
 public class ShopPageQueryDTO implements Serializable {
@@ -20,7 +21,6 @@ public class ShopPageQueryDTO implements Serializable {
 
     /* 每页显示记录数 */
 
-
     // 新增筛选字段
     private Double minRating;    // 最低评分
     private Double maxRating;    // 最高评分
@@ -29,7 +29,12 @@ public class ShopPageQueryDTO implements Serializable {
     private Double minAverageCost; // 最低人均消费
     private Double maxAverageCost; // 最高人均消费
 
+    /**
+     * 获取用户ID
+     *
+     * @return 用户ID
+     */
     public Long getUserId() {
-        return userId;
+        return this.userId;
     }
 }
