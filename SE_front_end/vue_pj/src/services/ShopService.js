@@ -194,33 +194,7 @@ export default {
             throw error;
         }
     },
-    /**
-     * 删除指定搜索历史记录
-     * @param {number} historyId - 历史记录ID
-     * @returns {Promise<Object>} 操作结果
-     */
-    async deleteSearchHistory(historyId) {
-        try {
-            console.log(`正在删除搜索历史记录: historyId=${historyId}`);
-            const response = await axiosInstance.delete(`/shop/search/history/${historyId}`);
 
-            if (response.data.code === 1) {
-                console.log('删除成功');
-            } else {
-                console.warn('删除失败:', response.data.msg);
-            }
-
-            return response.data;
-        } catch (error) {
-            console.error('删除搜索历史失败:', error);
-
-            if (error.response) {
-                return { code: 0, msg: `删除失败: ${error.response.data.msg || '服务器错误'}`, data: null };
-            } else {
-                return { code: 0, msg: '网络错误，请检查连接', data: null };
-            }
-        }
-    },
     /**
      * 清空用户所有搜索历史记录
      * @param {number} userId - 用户ID

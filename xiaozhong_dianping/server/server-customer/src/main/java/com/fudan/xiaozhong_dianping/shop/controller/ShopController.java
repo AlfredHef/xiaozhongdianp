@@ -140,18 +140,7 @@ public class ShopController {
         return Result.success(result);
     }
 
-    /**
-     * 删除用户的搜索历史记录
-     *
-     * @param historyId 历史记录ID
-     * @return 操作结果
-     */
-    @DeleteMapping("/search/history/{historyId}")
-    public Result<Void> deleteSearchHistory(@PathVariable Long historyId) {
-        log.info("删除用户的搜索历史记录： historyId={}", historyId);
-        shopService.deleteSearchHistory(historyId);
-        return Result.success();
-    }
+
 
     /**
      * 清空用户的搜索历史记录

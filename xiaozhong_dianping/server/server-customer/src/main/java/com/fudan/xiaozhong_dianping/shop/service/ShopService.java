@@ -61,13 +61,7 @@ public interface ShopService {
      */
     List<ShopImage> getShopImages(Integer shopId);
 
-    /**
-     * 删除指定的搜索历史记录
-     *
-     * @param historyId 历史记录ID
-     * @return 是否删除成功
-     */
-    Boolean deleteSearchHistory( Long historyId);
+
 
     /**
      * 清空用户的搜索历史记录

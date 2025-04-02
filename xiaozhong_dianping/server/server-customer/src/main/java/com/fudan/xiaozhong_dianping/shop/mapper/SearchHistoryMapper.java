@@ -33,13 +33,7 @@ public interface SearchHistoryMapper {
     @Select("SELECT * FROM search_history WHERE user_id = #{userId} ORDER BY search_time DESC")
     List<SearchHistory> getSearchHistoryByUserId(Long userId);
 
-    /**
-     * 根据ID删除搜索历史记录
-     * @param id 历史记录ID
-     * @return 影响的行数
-     */
-    @Delete("DELETE FROM search_history WHERE id = #{id}")
-    int deleteById(@Param("id") Long id);
+
 
     /**
      * 根据用户ID删除所有搜索历史记录
