@@ -357,8 +357,8 @@ export default {
       console.log('images是否为数组且非空:', Array.isArray(images) && images.length > 0);
 
       if (Array.isArray(images) && images.length > 0 && images[0].imageUrl) {
-        console.log('使用后端图片:', `http://localhost:8088/static/${images[0].imageUrl}`);
-        return `http://localhost:8088/static/${images[0].imageUrl}`;
+        console.log('使用后端图片:', `http://localhost:8088${images[0].imageUrl}`);
+        return `http://localhost:8088${images[0].imageUrl}`;
       }
 
       // 根据分类返回默认图片

@@ -17,7 +17,7 @@
       <div v-if="showSearchHistory && searchHistory.length > 0" class="search-history">
         <div class="history-header">
           <span>搜索历史</span>
-          <el-button type="text" @click="clearSearchHistory">清空</el-button>
+          <el-button link @click="clearSearchHistory">清空</el-button>
         </div>
         <div class="history-list">
           <span 
@@ -55,11 +55,11 @@
         <div class="filter-title">商家评分</div>
         <div class="filter-options">
           <el-radio-group v-model="selectedRating" @change="applyFilter">
-            <el-radio label="">全部</el-radio>
-            <el-radio label="5.0">5.0分以上</el-radio>
-            <el-radio label="4.5">4.5分以上</el-radio>
-            <el-radio label="4.0">4.0分以上</el-radio>
-            <el-radio label="3.5">3.5分以上</el-radio>
+            <el-radio value="">全部</el-radio>
+            <el-radio value="5.0">5.0分以上</el-radio>
+            <el-radio value="4.5">4.5分以上</el-radio>
+            <el-radio value="4.0">4.0分以上</el-radio>
+            <el-radio value="3.5">3.5分以上</el-radio>
           </el-radio-group>
         </div>
       </div>
@@ -68,11 +68,11 @@
         <div class="filter-title">价格区间</div>
         <div class="filter-options">
           <el-radio-group v-model="selectedPrice" @change="applyFilter">
-            <el-radio label="">全部</el-radio>
-            <el-radio label="0-50">￥0-50</el-radio>
-            <el-radio label="50-100">￥50-100</el-radio>
-            <el-radio label="100-200">￥100-200</el-radio>
-            <el-radio label="200+">￥200以上</el-radio>
+            <el-radio value="">全部</el-radio>
+            <el-radio value="0-50">￥0-50</el-radio>
+            <el-radio value="50-100">￥50-100</el-radio>
+            <el-radio value="100-200">￥100-200</el-radio>
+            <el-radio value="200+">￥200以上</el-radio>
           </el-radio-group>
         </div>
       </div>
@@ -81,11 +81,11 @@
         <div class="filter-title">人均消费</div>
         <div class="filter-options">
           <el-radio-group v-model="selectedAverageCost" @change="applyFilter">
-            <el-radio label="">全部</el-radio>
-            <el-radio label="0-50">￥0-50/人</el-radio>
-            <el-radio label="50-100">￥50-100/人</el-radio>
-            <el-radio label="100-200">￥100-200/人</el-radio>
-            <el-radio label="200+">￥200以上/人</el-radio>
+            <el-radio value="">全部</el-radio>
+            <el-radio value="0-50">￥0-50/人</el-radio>
+            <el-radio value="50-100">￥50-100/人</el-radio>
+            <el-radio value="100-200">￥100-200/人</el-radio>
+            <el-radio value="200+">￥200以上/人</el-radio>
           </el-radio-group>
         </div>
       </div>
@@ -94,9 +94,9 @@
         <div class="filter-title">排序方式</div>
         <div class="filter-options">
           <el-radio-group v-model="sortBy" @change="applyFilter">
-            <el-radio label="default">综合排序</el-radio>
-            <el-radio label="rating_desc">评分最高</el-radio>
-            <el-radio label="average_cost_asc">人均消费最低</el-radio>
+            <el-radio value="default">综合排序</el-radio>
+            <el-radio value="rating_desc">评分最高</el-radio>
+            <el-radio value="average_cost_asc">人均消费最低</el-radio>
           </el-radio-group>
         </div>
       </div>
@@ -137,31 +137,32 @@
       </div>
       <div v-else class="shop-list">
         <div 
-          v-for="shop in shops" 
-          :key="shop.id" 
+          v-for="shopData in shops" 
+          :key="shopData.shop ? shopData.shop.id : shopData.id" 
           class="shop-card" 
-          @click="viewShopDetails(shop.id)">
+          @click="viewShopDetails(shopData)">
           <div class="shop-avatar">
-            <img :src="getShopImage(shop)" alt="店铺图片" />
+            <img :src="getShopImage(shopData)" alt="店铺图片" />
           </div>
           <div class="shop-info">
-            <h3 class="shop-name">{{ shop.name || '未命名商家' }}</h3>
+            <h3 class="shop-name">{{ (shopData.shop ? shopData.shop.name : shopData.name) || '未命名商家' }}</h3>
             <div class="shop-rating">
               <el-rate 
-                :model-value="shop.rating || 0" 
+                :model-value="(shopData.shop ? shopData.shop.rating : shopData.rating) || 0" 
                 disabled 
                 text-color="#ff9900" />
-              <span>{{ shop.rating || '暂无评分' }}</span>
+              <span>{{ (shopData.shop ? shopData.shop.rating : shopData.rating) || '暂无评分' }}</span>
             </div>
             <div class="shop-meta">
-              <el-tag size="small" type="success" v-if="shop.category && shop.category.name">{{ shop.category.name }}</el-tag>
-              <el-tag size="small" type="success" v-else-if="shop.categoryName">{{ shop.categoryName }}</el-tag>
-              <el-tag size="small" type="warning">人均￥{{ shop.averageCost || '未知' }}</el-tag>
-              <el-tag size="small" type="info">￥{{ shop.priceMin || '0' }}-￥{{ shop.priceMax || '0' }}</el-tag>
+              <el-tag size="small" type="success" v-if="shopData.shop && shopData.shop.categoryName">{{ shopData.shop.categoryName }}</el-tag>
+              <el-tag size="small" type="success" v-else-if="shopData.categoryName">{{ shopData.categoryName }}</el-tag>
+              <el-tag size="small" type="warning">人均￥{{ (shopData.shop ? shopData.shop.averageCost : shopData.averageCost) || '未知' }}</el-tag>
+              <el-tag size="small" type="info">￥{{ (shopData.shop ? shopData.shop.priceMin : shopData.priceMin) || '0' }}-￥{{ (shopData.shop ? shopData.shop.priceMax : shopData.priceMax) || '0' }}</el-tag>
             </div>
-            <div class="shop-address"><i class="el-icon-location"></i> {{ shop.address || '暂无地址信息' }}</div>
-            <div class="shop-hours"><i class="el-icon-time"></i> {{ shop.businessHours || '暂无营业时间信息' }}</div>
-            <div class="shop-description" v-if="shop.description">{{ shop.description }}</div>
+            <div class="shop-address"><i class="el-icon-location"></i> {{ (shopData.shop ? shopData.shop.address : shopData.address) || '暂无地址信息' }}</div>
+            <div class="shop-hours"><i class="el-icon-time"></i> {{ (shopData.shop ? shopData.shop.businessHours : shopData.businessHours) || '暂无营业时间信息' }}</div>
+            <div class="shop-description" v-if="shopData.shop && shopData.shop.description">{{ shopData.shop.description }}</div>
+            <div class="shop-description" v-else-if="shopData.description">{{ shopData.description }}</div>
           </div>
         </div>
       </div>
@@ -266,10 +267,12 @@ export default {
       
       loading.value = true;
       try {
+        console.log('开始加载商家数据...');
+        
         // 如果已有全部商家数据缓存，直接使用缓存数据
         if (originalShopsCache.value.length > 0) {
           console.log('使用缓存的商家数据，共', originalShopsCache.value.length, '条');
-          allShopsCache.value = [...originalShopsCache.value]; // 复制原始数据
+          allShopsCache.value = [...originalShopsCache.value];
           total.value = allShopsCache.value.length;
           updatePagedShops();
           loading.value = false;
@@ -279,18 +282,23 @@ export default {
         // 获取较大数量的商家数据
         console.log('从服务器请求商家数据');
         const response = await ShopService.getShops(1, 100);
+        console.log('服务器响应数据:', JSON.stringify(response, null, 2));
         
         if (isUnmounted.value) return;
         
         if (response.code === 1 && response.data) {
+          console.log('响应数据结构:', {
+            isArray: Array.isArray(response.data),
+            hasRecords: response.data.records !== undefined,
+            dataType: typeof response.data
+          });
+          
           // 处理不同类型的响应数据结构
           if (Array.isArray(response.data)) {
-            // 直接返回数组的情况
             originalShopsCache.value = response.data;
             allShopsCache.value = [...originalShopsCache.value];
-            console.log(`直接获取到${allShopsCache.value.length}条商家数据`);
+            console.log('数组结构 - 商家数据:', JSON.stringify(allShopsCache.value[0], null, 2));
           } else if (response.data.records) {
-            // 返回包含records字段的分页对象
             originalShopsCache.value = response.data.records;
             allShopsCache.value = [...originalShopsCache.value];
             console.log(`分页获取到${allShopsCache.value.length}条商家数据，总共${response.data.total || '未知'}条`);
@@ -705,14 +713,30 @@ export default {
     };
     
     // 查看商家详情
-    const viewShopDetails = (shopId) => {
+    const viewShopDetails = (shopData) => {
       if (isUnmounted.value) return;
       
       try {
-        if (!shopId) {
-          console.warn('无效的商家ID');
+        if (!shopData) {
+          console.warn('无效的商家数据');
           return;
         }
+        
+        let shopId;
+        // 处理两种可能的数据结构
+        if (shopData.shop && shopData.shop.id) {
+          // 第一种数据结构：{shop: {...}, images: [...]}
+          shopId = shopData.shop.id;
+          console.log('从嵌套结构中获取商家ID:', shopId);
+        } else if (shopData.id) {
+          // 第二种数据结构：直接是商家对象
+          shopId = shopData.id;
+          console.log('直接从商家对象获取ID:', shopId);
+        } else {
+          console.error('无法从数据中提取商家ID:', shopData);
+          return;
+        }
+        
         router.push({ name: 'ShopDetail', params: { id: shopId } });
       } catch (error) {
         console.error('导航到商家详情页失败:', error);
@@ -754,35 +778,88 @@ export default {
       loadShops();
     };
     
-    // 根据商家获取图片
-    const getShopImage = (shop) => {
-      console.log('shop对象:', shop); // 打印完整对象
-      console.log('shop.images:', shop.images);
-      console.log('shop.images是否存在:', shop.images !== undefined);
-      console.log('shop.images是否为数组:', Array.isArray(shop.images));
-      console.log('shop.images长度:', shop.images ? shop.images.length : 0);
-      // 获取商家对应的图片
-      if (shop.images && shop.images.length > 0) {
-        console.log('获取商家对应的图片:', shop.images[0].imageUrl);
-        return shop.images[0].imageUrl;
+    // 获取商家图片
+    const getShopImage = (shopData) => {
+      try {
+        console.log('处理商家图片，数据:', JSON.stringify(shopData, null, 2));
+        
+        if (!shopData) {
+          console.error('shopData为空');
+          return defaultImage;
+        }
+        
+        // 获取正确的shop对象和图片数组
+        let shop, images;
+        
+        // 检查数据结构 - 有两种可能的情况
+        if (shopData.shop && shopData.images) {
+          // 第一种数据结构：{shop: {...}, images: [...]}
+          // 这是后端page和search接口新的统一结构
+          shop = shopData.shop;
+          images = shopData.images;
+          console.log('接口返回shop和images结构:', shop.id);
+        } else if (shopData.id) {
+          // 第二种数据结构：直接是商家对象
+          // 这可能是旧版API或者前端缓存数据
+          shop = shopData;
+          images = [];
+          console.log('接口只返回shop对象:', shop.id);
+        } else {
+          console.error('无法解析商家数据结构:', Object.keys(shopData));
+          return defaultImage;
+        }
+        
+        // 处理图片数据
+        if (Array.isArray(images) && images.length > 0) {
+          console.log(`商家[${shop.id}]有${images.length}张图片`);
+          const imageData = images[0]; // 使用第一张图片
+          
+          if (imageData && imageData.imageUrl) {
+            let imageUrl = imageData.imageUrl;
+            console.log('原始图片URL:', imageUrl);
+            
+            // 统一处理图片URL
+            if (imageUrl.startsWith('http')) {
+              // 如果是完整的URL，直接使用
+              console.log('使用完整URL:', imageUrl);
+              return imageUrl;
+            } else {
+              // 如果是相对路径，添加后端服务器地址
+              // 移除开头的斜杠（如果有）
+              imageUrl = imageUrl.replace(/^\/+/, '');
+              // 添加后端服务器地址
+              imageUrl = `http://localhost:8088/${imageUrl}`;
+              console.log('处理后的图片URL:', imageUrl);
+              return imageUrl;
+            }
+          }
+        } else {
+          console.log(`商家[${shop.id}]没有图片数据`);
+        }
+        
+        // 如果没有图片，返回基于分类的默认图片
+        const categoryName = shop.categoryName || '未分类';
+        console.log('使用默认图片，分类:', categoryName);
+        
+        const categoryImages = {
+          '火锅': 'https://fuss10.elemecdn.com/a/3f/3302e58f9a181d2509f3dc0fa68b0jpeg.jpeg',
+          '奶茶': 'https://fuss10.elemecdn.com/e/5d/4a731a90594a4af544c0c25941171jpeg.jpeg',
+          '烧烤': 'https://shadow.elemecdn.com/app/element/hamburger.9cf7b091-55e9-11e9-a976-7f4d0b07eef6.png',
+          '西餐': 'https://fuss10.elemecdn.com/1/34/19aa98b1fcb2781c4fba33d850549jpeg.jpeg',
+          '中餐': 'https://fuss10.elemecdn.com/0/6f/e35ff375812e6b0020b6b4e8f9583jpeg.jpeg',
+          '快餐': 'https://fuss10.elemecdn.com/9/bb/e27858e973f5d7d3904835f46abbdjpeg.jpeg',
+          '甜品': 'https://fuss10.elemecdn.com/d/e6/c4d93a3805b3ce3f323f7974e6f78jpeg.jpeg',
+          '小吃': 'https://fuss10.elemecdn.com/3/28/bbf893f792f03a54408b3b7a7ebf0jpeg.jpeg',
+          '海鲜': 'https://fuss10.elemecdn.com/0/6f/e35ff375812e6b0020b6b4e8f9583jpeg.jpeg',
+          '自助餐': 'https://fuss10.elemecdn.com/9/bb/e27858e973f5d7d3904835f46abbdjpeg.jpeg',
+          '未分类': 'https://fuss10.elemecdn.com/e/5d/4a731a90594a4af544c0c25941171jpeg.jpeg'
+        };
+        
+        return categoryImages[categoryName] || categoryImages['未分类'];
+      } catch (error) {
+        console.error('获取商家图片时发生错误:', error);
+        return defaultImage;
       }
-
-      // 如果没有图片，根据分类返回默认图片
-      const categoryName = shop.categoryName || shop.category?.name;
-      const categoryImages = {
-        '火锅': 'https://fuss10.elemecdn.com/a/3f/3302e58f9a181d2509f3dc0fa68b0jpeg.jpeg',
-        '奶茶': 'https://fuss10.elemecdn.com/e/5d/4a731a90594a4af544c0c25941171jpeg.jpeg',
-        '烧烤': 'https://shadow.elemecdn.com/app/element/hamburger.9cf7b091-55e9-11e9-a976-7f4d0b07eef6.png',
-        '西餐': 'https://fuss10.elemecdn.com/1/34/19aa98b1fcb2781c4fba33d850549jpeg.jpeg',
-        '中餐': 'https://fuss10.elemecdn.com/0/6f/e35ff375812e6b0020b6b4e8f9583jpeg.jpeg',
-        '快餐': 'https://fuss10.elemecdn.com/9/bb/e27858e973f5d7d3904835f46abbdjpeg.jpeg',
-        '甜品': 'https://fuss10.elemecdn.com/d/e6/c4d93a3805b3ce3f323f7974e6f78jpeg.jpeg',
-        '小吃': 'https://fuss10.elemecdn.com/3/28/bbf893f792f03a54408b3b7a7ebf0jpeg.jpeg',
-        // 默认图片
-        'default': 'https://fuss10.elemecdn.com/e/5d/4a731a90594a4af544c0c25941171jpeg.jpeg'
-      };
-      
-      return categoryImages[categoryName] || categoryImages.default;
     };
     
     // 格式化价格区间显示

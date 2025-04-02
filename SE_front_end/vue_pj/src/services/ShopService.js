@@ -80,9 +80,29 @@ export default {
      */
     async getShops(pageCurrent, pageSize) {
         try {
+            console.log(`正在请求分页列表API: ${API_URL}/shop/page, 参数:`, { pageCurrent, pageSize });
             const response = await axiosInstance.get(`/shop/page`, {
                 params: { pageCurrent, pageSize }
             });
+            
+            // 检查响应结构
+            if (response.data && response.data.code === 1) {
+                console.log('请求成功, 商家数量:', 
+                    response.data.data ? 
+                    (Array.isArray(response.data.data) ? response.data.data.length : '数据不是数组') : 
+                    '没有数据');
+                
+                // 检查返回的商家数据结构
+                if (Array.isArray(response.data.data) && response.data.data.length > 0) {
+                    const sample = response.data.data[0];
+                    console.log('商家数据样本结构:', 
+                        sample.shop && sample.images ? '含shop和images字段' : 
+                        (sample.id ? '直接是商家对象' : '未知结构'));
+                }
+            } else {
+                console.warn('API返回异常状态:', response.data);
+            }
+            
             return response.data;
         } catch (error) {
             console.error('获取商家列表失败:', error);
