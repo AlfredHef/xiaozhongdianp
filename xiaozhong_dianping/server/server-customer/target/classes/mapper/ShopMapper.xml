@@ -21,9 +21,9 @@
         <!-- 动态生成名称模糊查询条件 -->
         <if test="name != null and name != ''">
             AND (
-                s.name LIKE CONCAT('%', #{name}, '%') 
-                OR c.name LIKE CONCAT('%', #{name}, '%')
-                OR s.description LIKE CONCAT('%', #{name}, '%')
+            s.name LIKE CONCAT('%', #{name}, '%')
+            OR c.name LIKE CONCAT('%', #{name}, '%')
+            OR s.description LIKE CONCAT('%', #{name}, '%')
             )
         </if>
         <!-- 动态生成分类精确匹配条件 -->
@@ -69,6 +69,7 @@
         <!-- 分页 -->
         LIMIT #{offset}, #{pageSize}
     </select>
+
     <!--
     统计符合动态条件的商家总数（用于分页）
     @param ShopPageQueryDTO 查询条件参数对象
@@ -105,16 +106,22 @@
                  LEFT JOIN category c ON s.category_id = c.id
             LIMIT #{offset}, #{pageSize}
     </select>
+
+    <!--
+    根据ID查询商家
+    @param id 商家ID
+    @return Shop 商家实体
+    -->
     <select id="findShopById" resultType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
         SELECT s.*, c.name as category_name
         FROM shop s
-        LEFT JOIN category c ON s.category_id = c.id
+                 LEFT JOIN category c ON s.category_id = c.id
         WHERE s.id = #{id}
     </select>
 
     <!--
     获取商家总数
-    @return 商家总数
+    @return int 商家总数
     -->
     <select id="countAllShops" resultType="int">
         SELECT COUNT(*) FROM shop

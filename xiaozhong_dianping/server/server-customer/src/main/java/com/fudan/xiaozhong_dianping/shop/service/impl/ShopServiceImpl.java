@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 @Service
 /**
  * ShopServiceImpl类实现了ShopService接口，提供了一系列与商店相关的服务方法
@@ -37,6 +36,7 @@ public class ShopServiceImpl implements ShopService {
 
     @Autowired
     private ShopImageMapper shopImageMapper; // 新增注入图片Mapper
+
     @Override
     /**
      * 保存用户的搜索历史记录
@@ -74,12 +74,13 @@ public class ShopServiceImpl implements ShopService {
     /**
      * 分页查询店铺信息列表
      *
-     * @param offset 分页偏移量
-     * @param pageSize    每页显示的记录数量
-     * @return            分页查询后的店铺信息集合，包含当前页的店铺数据
+     * @param offset        查询的起始位置，用于分页
+     * @param pageSize      每页显示的记录数量
+     * @return              分页查询后的店铺信息集合，包含当前页的店铺数据
      */
     @Override
     public List<Shop> showShops(int offset, int pageSize) {
+
         // 调用数据访问层获取分页数据
         List<Shop> list = shopMapper.showShops(offset, pageSize);
         return list;
