@@ -9,18 +9,24 @@ import com.fudan.xiaozhong_dianping.shop.mapper.SearchHistoryMapper;
 import com.fudan.xiaozhong_dianping.shop.mapper.ShopImageMapper;
 import com.fudan.xiaozhong_dianping.shop.mapper.ShopMapper;
 import com.fudan.xiaozhong_dianping.shop.service.ShopService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 @Service
 /**
  * ShopServiceImpl类实现了ShopService接口，提供了一系列与商店相关的服务方法
  * 它使用了Spring的@Service注解，标志着它是一个服务层组件
  */
 public class ShopServiceImpl implements ShopService {
+
+    private static final Logger log = LoggerFactory.getLogger(ShopServiceImpl.class);
 
     @Autowired
     /**
@@ -36,7 +42,6 @@ public class ShopServiceImpl implements ShopService {
 
     @Autowired
     private ShopImageMapper shopImageMapper; // 新增注入图片Mapper
-
     @Override
     /**
      * 保存用户的搜索历史记录
@@ -57,6 +62,13 @@ public class ShopServiceImpl implements ShopService {
      */
     public List<Shop> searchShops(ShopPageQueryDTO shopPageQueryDTO) {
         List<Shop> result = shopMapper.searchShops(shopPageQueryDTO);
+        
+        // 打印每个商家的分类信息用于调试
+        for (Shop shop : result) {
+            log.info("搜索结果 - 商家ID: {}, 名称: {}, 分类ID: {}, 分类名称: {}", 
+                shop.getId(), shop.getName(), shop.getCategoryId(), shop.getCategoryName());
+        }
+        
         return result;
     }
 
@@ -74,13 +86,12 @@ public class ShopServiceImpl implements ShopService {
     /**
      * 分页查询店铺信息列表
      *
-     * @param offset        查询的起始位置，用于分页
-     * @param pageSize      每页显示的记录数量
-     * @return              分页查询后的店铺信息集合，包含当前页的店铺数据
+     * @param offset 分页偏移量
+     * @param pageSize    每页显示的记录数量
+     * @return            分页查询后的店铺信息集合，包含当前页的店铺数据
      */
     @Override
     public List<Shop> showShops(int offset, int pageSize) {
-
         // 调用数据访问层获取分页数据
         List<Shop> list = shopMapper.showShops(offset, pageSize);
         return list;
@@ -116,8 +127,35 @@ public class ShopServiceImpl implements ShopService {
 
     @Override
     public List<ShopImage> getShopImages(Integer shopId) {
+        log.info("开始获取商家图片，商家ID: {}", shopId);
+        
         // 将Integer类型的shopId转换为Long类型再传递
-        return shopImageMapper.findImagesByShopId(shopId != null ? shopId.longValue() : null);
+        Long shopIdLong = shopId != null ? shopId.longValue() : null;
+        
+        if (shopIdLong == null) {
+            log.warn("商家ID为空，无法获取图片");
+            return new ArrayList<>();
+        }
+        
+        List<ShopImage> images = shopImageMapper.findImagesByShopId(shopIdLong);
+        log.info("商家[{}]获取到{}张图片", shopId, images.size());
+        
+        // 处理图片URL，只在非完整URL时添加前缀
+        images.forEach(image -> {
+            String imageUrl = image.getImageUrl();
+            if (imageUrl != null && !imageUrl.startsWith("http")) {
+                // 移除开头的斜杠（如果有）
+                while (imageUrl.startsWith("/")) {
+                    imageUrl = imageUrl.substring(1);
+                }
+                // 添加前缀
+                imageUrl = "/static/" + imageUrl;
+                image.setImageUrl(imageUrl);
+                log.debug("处理后的图片URL: {}", imageUrl);
+            }
+        });
+        
+        return images;
     }
 
     @Override

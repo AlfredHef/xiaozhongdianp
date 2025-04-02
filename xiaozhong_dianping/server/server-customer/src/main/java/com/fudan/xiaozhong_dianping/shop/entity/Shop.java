@@ -72,7 +72,7 @@ public class Shop {
     /**
      * 商家所属的分类信息，关联到 Category 类，用于对商家进行分类管理和搜索。
      */
-    private Integer category_id;
+    private Integer categoryId;
     /**
      * 商家信息记录的创建时间，自动记录该商家信息在系统中创建的时刻。
      */
@@ -82,6 +82,6 @@ public class Shop {
      */
     private Date updatedAt;
 
-    private String category_name; // 新增字段
+    private String categoryName; // 新增字段
 
 }

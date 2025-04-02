@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.stream.Collectors;
+
 // 控制器类，处理与店铺相关的请求
 @RequestMapping("/shop")
 @RestController
@@ -32,17 +33,25 @@ public class ShopController {
     /**
      * 分页查询店铺信息
      *
-     * @param offset 分页偏移量
+     * @param pageCurrent 当前页码（从1开始计数）
      * @param pageSize 每页记录数
      * @return 包含分页查询结果和状态信息的响应对象，data属性为店铺列表
      */
     @GetMapping("/page")
     @ApiOperation(value = "分页查询")
-    public Result<List<Shop>> page(int offset, int pageSize) {
-
+    public Result<List<Map<String, Object>>> page(int pageCurrent, int pageSize) {
+        log.info("分页查询，当前页码：{}，每页记录数：{}", pageCurrent, pageSize);
+        
+        // 计算偏移量
+        int offset = (pageCurrent - 1) * pageSize;
+        
         // 调用服务层获取分页数据
-        List<Shop> list = shopService.showShops(offset, pageSize);
-        return Result.success(list);
+        List<Shop> shops = shopService.showShops(offset, pageSize);
+        
+        // 为商家添加图片信息
+        List<Map<String, Object>> result = getShopDataWithImages(shops);
+        
+        return Result.success(result);
     }
 
     /**
@@ -56,16 +65,19 @@ public class ShopController {
     public Result<List<Map<String, Object>>> search(ShopPageQueryDTO shopPageQueryDTO) {
         log.info("搜索店铺，参数：{}", shopPageQueryDTO);
         try {
-            // 设置默认分页参数
             setDefaultPageParams(shopPageQueryDTO);
-            // 验证数值型参数
             validateNumericParams(shopPageQueryDTO);
-            // 保存搜索历史
             saveSearchHistoryIfNeeded(shopPageQueryDTO);
 
             // 执行搜索
             List<Shop> shopList = shopService.searchShops(shopPageQueryDTO);
             log.info("搜索完成，找到{}条记录", shopList.size());
+            
+            // 检查商家分类ID是否存在
+            for (Shop shop : shopList) {
+                log.info("商家[{}]的分类ID：{}，分类名称：{}", 
+                    shop.getId(), shop.getCategoryId(), shop.getCategoryName());
+            }
 
             // 为每个商家获取图片信息
             List<Map<String, Object>> result = getShopDataWithImages(shopList);
