@@ -1,18 +1,22 @@
 // 用于安全管理用户认证状态的Vuex模块
+import { getCookie, setCookie, removeCookie, encodeValue, decodeValue } from '@/utils/cookieStorage';
+import { notifyUserLogin, notifyUserLogout, notifyUserUpdate } from '@/utils/sessionState';
 
-// 从localStorage获取初始状态
+// 从cookie获取初始状态
 const getInitialState = () => {
   try {
-    const token = localStorage.getItem('auth_token');
-    const userStr = localStorage.getItem('auth_user');
-    const user = userStr ? JSON.parse(userStr) : null;
+    // 从cookie获取会话信息
+    const tokenCookie = getCookie('auth_token');
+    const userCookie = getCookie('auth_user');
+    const user = userCookie ? decodeValue(userCookie, true) : null;
+    
     return {
-      token: token || null,
+      token: tokenCookie || null,
       user: user,
-      isAuthenticated: !!token
+      isAuthenticated: !!tokenCookie
     };
   } catch (e) {
-    console.error('从localStorage获取认证状态失败:', e);
+    console.error('从cookie获取认证状态失败:', e);
     return {
       token: null,
       user: null,
@@ -31,21 +35,21 @@ export default {
     SET_TOKEN(state, token) {
       state.token = token;
       state.isAuthenticated = !!token;
-      // 持久化存储token
+      // 安全存储token - 使用cookie而非localStorage
       if (token) {
-        localStorage.setItem('auth_token', token);
+        setCookie('auth_token', token);
       } else {
-        localStorage.removeItem('auth_token');
+        removeCookie('auth_token');
       }
     },
     
     SET_USER(state, user) {
       state.user = user;
-      // 持久化存储用户信息
+      // 安全存储用户信息 - 使用cookie而非localStorage
       if (user) {
-        localStorage.setItem('auth_user', JSON.stringify(user));
+        setCookie('auth_user', encodeValue(user));
       } else {
-        localStorage.removeItem('auth_user');
+        removeCookie('auth_user');
       }
     },
     
@@ -53,17 +57,17 @@ export default {
       state.token = null;
       state.user = null;
       state.isAuthenticated = false;
-      // 清除持久化存储
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_user');
+      // 清除cookie
+      removeCookie('auth_token');
+      removeCookie('auth_user');
     },
   },
   
   actions: {
     // 初始化认证状态
     initAuth({ commit }) {
-      const token = localStorage.getItem('auth_token');
-      const userStr = localStorage.getItem('auth_user');
+      const token = getCookie('auth_token');
+      const userStr = getCookie('auth_user');
       
       if (token) {
         commit('SET_TOKEN', token);
@@ -71,35 +75,50 @@ export default {
       
       if (userStr) {
         try {
-          const user = JSON.parse(userStr);
+          const user = decodeValue(userStr, true);
           commit('SET_USER', user);
         } catch (e) {
           console.error('解析用户信息失败:', e);
           // 如果解析失败，清除可能损坏的数据
-          localStorage.removeItem('auth_user');
+          removeCookie('auth_user');
         }
       }
     },
     
-    // 保存令牌到Vuex状态和localStorage
+    // 保存令牌到Vuex状态和cookie
     saveToken({ commit }, token) {
       commit('SET_TOKEN', token);
     },
     
-    // 保存用户信息到Vuex状态和localStorage
-    saveUser({ commit }, user) {
+    // 保存用户信息到Vuex状态和cookie
+    saveUser({ commit, state }, user) {
       commit('SET_USER', user);
+      
+      // 发送用户登录通知
+      if (user && !state.user) {
+        notifyUserLogin(user);
+      } else if (user) {
+        notifyUserUpdate(user);
+      }
     },
     
     // 登出动作
     logout({ commit }) {
+      // 先发送登出通知
+      notifyUserLogout();
+      // 然后清除状态
       commit('LOGOUT');
     }
   },
   
   getters: {
+    // 获取当前用户
+    currentUser: state => state.user,
+    
+    // 判断是否已认证
     isAuthenticated: state => state.isAuthenticated,
-    token: state => state.token,
-    user: state => state.user
+    
+    // 获取令牌，用于API请求
+    authToken: state => state.token
   }
 }; 
