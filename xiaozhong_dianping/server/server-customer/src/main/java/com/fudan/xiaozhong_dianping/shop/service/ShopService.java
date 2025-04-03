@@ -61,8 +61,6 @@ public interface ShopService {
      */
     List<ShopImage> getShopImages(Integer shopId);
 
-
-
     /**
      * 清空用户的搜索历史记录
      * @param userId 用户ID
@@ -75,5 +73,40 @@ public interface ShopService {
      * @return 商家总数
      */
     int countShops();
-
+    
+    /**
+     * 根据商家类别获取商家列表
+     * @param categoryId 类别ID
+     * @param offset 分页查询的起始位置
+     * @param pageSize 每页显示的记录数量
+     * @return 商家列表
+     */
+    default List<Shop> getShopsByCategory(Long categoryId, int offset, int pageSize) {
+        // 默认实现：返回所有商家，由调用者进行过滤
+        List<Shop> allShops = showShops(offset, pageSize);
+        return allShops.stream()
+                .filter(shop -> categoryId.equals(shop.getCategoryId()))
+                .collect(java.util.stream.Collectors.toList());
+    }
+    
+    /**
+     * 根据商家类别获取商家总数
+     * @param categoryId 类别ID
+     * @return 该类别下的商家总数
+     */
+    default int countShopsByCategory(Long categoryId) {
+        // 默认实现：只统计当前页的结果
+        List<Shop> shopsInCategory = getShopsByCategory(categoryId, 0, Integer.MAX_VALUE);
+        return shopsInCategory.size();
+    }
+    
+    /**
+     * 删除指定的搜索历史记录
+     * @param historyId 搜索历史记录ID
+     * @return 是否删除成功
+     */
+    default Boolean deleteSearchHistory(Long historyId) {
+        // 默认实现：暂不支持
+        return false;
+    }
 }
