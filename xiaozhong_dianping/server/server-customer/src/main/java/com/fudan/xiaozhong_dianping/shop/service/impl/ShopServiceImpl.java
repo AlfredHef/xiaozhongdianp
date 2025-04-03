@@ -12,9 +12,13 @@ import com.fudan.xiaozhong_dianping.shop.service.ShopService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +28,7 @@ import java.util.Map;
  * ShopServiceImpl类实现了ShopService接口，提供了一系列与商店相关的服务方法
  * 它使用了Spring的@Service注解，标志着它是一个服务层组件
  */
-public class ShopServiceImpl implements ShopService {
+public class ShopServiceImpl implements ShopService, ApplicationListener<ContextRefreshedEvent> {
 
     private static final Logger log = LoggerFactory.getLogger(ShopServiceImpl.class);
 
@@ -42,6 +46,52 @@ public class ShopServiceImpl implements ShopService {
 
     @Autowired
     private ShopImageMapper shopImageMapper; // 新增注入图片Mapper
+    
+    /**
+     * 在Spring容器刷新时检查搜索历史表是否存在
+     * 
+     * @param event Spring上下文刷新事件
+     */
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+        try {
+            // 检查表是否存在
+            Integer exists = searchHistoryMapper.checkTableExists();
+            if (exists != null && exists == 1) {
+                log.info("搜索历史表(search_history)存在，可以正常使用");
+                
+                // 进一步检查表的字段结构
+                try {
+                    log.info("开始检查搜索历史表结构...");
+                    
+                    // 模拟搜索历史保存，测试表结构
+                    SearchHistory testHistory = SearchHistory.builder()
+                        .userId(0L) // 测试用户ID
+                        .keyword("test_table_structure")
+                        .searchTime(new Date())
+                        .build();
+                    
+                    // 尝试插入记录
+                    int result = searchHistoryMapper.insert(testHistory);
+                    
+                    if (result > 0) {
+                        log.info("搜索历史表结构验证成功，测试记录ID: {}", testHistory.getId());
+                        // 删除测试数据
+                        searchHistoryMapper.deleteTestRecord(testHistory.getId());
+                    } else {
+                        log.warn("搜索历史表结构测试失败，无法插入测试记录");
+                    }
+                } catch (Exception e) {
+                    log.error("搜索历史表结构测试失败: {}", e.getMessage(), e);
+                }
+            } else {
+                log.error("搜索历史表(search_history)不存在！请检查数据库结构");
+            }
+        } catch (Exception e) {
+            log.error("检查搜索历史表时发生错误: {}", e.getMessage(), e);
+        }
+    }
+
     @Override
     /**
      * 保存用户的搜索历史记录
@@ -50,7 +100,43 @@ public class ShopServiceImpl implements ShopService {
      * @return 如果插入操作成功，则返回true；否则返回false
      */
     public Boolean saveSearchHistory(SearchHistory searchHistory) {
-        return searchHistoryMapper.insert(searchHistory) > 0;
+        try {
+            if (searchHistory == null || searchHistory.getUserId() == null || 
+                searchHistory.getKeyword() == null || searchHistory.getKeyword().trim().isEmpty()) {
+                log.warn("保存搜索历史失败：传入的参数不完整 - {}", searchHistory);
+                return false;
+            }
+            
+            log.info("尝试保存搜索历史: userId={}, keyword={}",
+                    searchHistory.getUserId(), searchHistory.getKeyword());
+            
+            // 确保搜索关键词不超过数据库字段长度限制
+            String keyword = searchHistory.getKeyword().trim();
+            if (keyword.length() > 100) { // 假设数据库字段长度为100
+                keyword = keyword.substring(0, 100);
+                searchHistory.setKeyword(keyword);
+                log.warn("搜索关键词过长，已自动截断: {}", keyword);
+            }
+            
+            // 确保搜索时间存在
+            if (searchHistory.getSearchTime() == null) {
+                searchHistory.setSearchTime(new Date());
+            }
+            
+            int result = searchHistoryMapper.insert(searchHistory);
+            
+            if (result > 0) {
+                log.info("搜索历史保存成功: userId={}, keyword={}", 
+                        searchHistory.getUserId(), searchHistory.getKeyword());
+                return true;
+            } else {
+                log.warn("搜索历史保存失败: 数据库未插入记录");
+                return false;
+            }
+        } catch (Exception e) {
+            log.error("保存搜索历史时发生异常: " + e.getMessage(), e);
+            return false;
+        }
     }
 
     @Override
@@ -80,7 +166,20 @@ public class ShopServiceImpl implements ShopService {
      * @return 返回该用户的搜索历史记录列表
      */
     public List<SearchHistory> getSearchHistoryByUserId(Long userId) {
-        return searchHistoryMapper.getSearchHistoryByUserId(userId);
+        if (userId == null) {
+            log.warn("获取搜索历史记录失败: 用户ID为空");
+            return Collections.emptyList();
+        }
+        
+        try {
+            log.info("查询用户的搜索历史记录: userId={}", userId);
+            List<SearchHistory> historyList = searchHistoryMapper.getSearchHistoryByUserId(userId);
+            log.info("获取到{}条搜索历史记录", historyList.size());
+            return historyList;
+        } catch (Exception e) {
+            log.error("获取搜索历史记录时发生异常: " + e.getMessage(), e);
+            return Collections.emptyList();
+        }
     }
 
     /**
@@ -115,11 +214,22 @@ public class ShopServiceImpl implements ShopService {
         return result;
     }
 
-
-
     @Override
     public Boolean clearSearchHistory(Long userId) {
-        return searchHistoryMapper.deleteByUserId(userId) > 0;
+        if (userId == null) {
+            log.warn("清空搜索历史记录失败: 用户ID为空");
+            return false;
+        }
+        
+        try {
+            log.info("尝试清空用户搜索历史: userId={}", userId);
+            int result = searchHistoryMapper.deleteByUserId(userId);
+            log.info("删除了{}条搜索历史记录", result);
+            return result >= 0; // 即使没有记录被删除，操作仍然是成功的
+        } catch (Exception e) {
+            log.error("清空搜索历史记录时发生异常: " + e.getMessage(), e);
+            return false;
+        }
     }
 
     @Override

@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -55,11 +56,36 @@ public class ShopController {
      * 该方法用于处理GET请求，根据查询条件返回店铺列表
      *
      * @param shopPageQueryDTO 包含搜索条件和分页信息的DTO
+     * @param request 请求对象
      * @return 返回包含店铺列表的分页结果
      */
     @GetMapping("/search")
-    public Result<List<Map<String, Object>>> search(ShopPageQueryDTO shopPageQueryDTO) {
-        log.info("搜索店铺，参数：{}", shopPageQueryDTO);
+    public Result<List<Map<String, Object>>> search(ShopPageQueryDTO shopPageQueryDTO, HttpServletRequest request) {
+        // 记录完整的请求URL和参数
+        log.info("搜索店铺，完整请求URL: {}", request.getRequestURL() + "?" + request.getQueryString());
+        log.info("搜索店铺，绑定后的DTO参数：{}", shopPageQueryDTO);
+        
+        // 验证userId参数
+        if (shopPageQueryDTO.getUserId() != null) {
+            log.info("接收到用户ID: {}, 类型: {}", shopPageQueryDTO.getUserId(), shopPageQueryDTO.getUserId().getClass().getName());
+        } else {
+            // 尝试从原始请求参数获取userId
+            String userIdParam = request.getParameter("userId");
+            log.info("从请求参数获取原始userId: {}", userIdParam);
+            
+            if (userIdParam != null && !userIdParam.isEmpty()) {
+                try {
+                    Long userId = Long.parseLong(userIdParam);
+                    log.info("手动解析userId参数: {}", userId);
+                    shopPageQueryDTO.setUserId(userId);
+                } catch (NumberFormatException e) {
+                    log.warn("userId参数无法转为Long类型: {}", userIdParam);
+                }
+            } else {
+                log.warn("请求中不包含userId参数，搜索历史将不会被记录");
+            }
+        }
+        
         try {
             setDefaultPageParams(shopPageQueryDTO);
             validateNumericParams(shopPageQueryDTO);
@@ -71,7 +97,7 @@ public class ShopController {
 
             // 检查商家分类ID是否存在
             for (Shop shop : shopList) {
-                log.info("商家[{}]的分类ID：{}，分类名称：{}",
+                log.debug("商家[{}]的分类ID：{}，分类名称：{}",
                     shop.getId(), shop.getCategoryId(), shop.getCategoryName());
             }
 
@@ -140,19 +166,28 @@ public class ShopController {
         return Result.success(result);
     }
 
-
-
     /**
-     * 清空用户的搜索历史记录
+     * 清空指定用户的所有搜索历史
      *
      * @param userId 用户ID
      * @return 操作结果
      */
     @DeleteMapping("/search/history/clear")
     public Result<Boolean> clearSearchHistory(@RequestParam Long userId) {
-        log.info("清空用户的搜索历史记录：userId={}", userId);
-        Boolean result = shopService.clearSearchHistory(userId);
-        return Result.success(result);
+        log.info("清空用户的搜索历史记录：{}", userId);
+        try {
+            Boolean result = shopService.clearSearchHistory(userId);
+            if (result) {
+                log.info("用户{}的搜索历史已成功清空", userId);
+                return Result.success(true);
+            } else {
+                log.warn("清空用户{}的搜索历史失败", userId);
+                return Result.error("清空搜索历史失败");
+            }
+        } catch (Exception e) {
+            log.error("清空搜索历史时发生错误", e);
+            return Result.error("系统错误：" + e.getMessage());
+        }
     }
 
     /**
@@ -199,12 +234,52 @@ public class ShopController {
      * @param shopPageQueryDTO 查询参数
      */
     private void saveSearchHistoryIfNeeded(ShopPageQueryDTO shopPageQueryDTO) {
-        if (shopPageQueryDTO.getUserId() != null && shopPageQueryDTO.getName() != null && !shopPageQueryDTO.getName().trim().isEmpty()) {
-            SearchHistory searchHistory = new SearchHistory();
-            searchHistory.setUserId(shopPageQueryDTO.getUserId());
-            searchHistory.setSearchTime(new Date());
-            searchHistory.setKeyword(shopPageQueryDTO.getName().trim());
-            shopService.saveSearchHistory(searchHistory);
+        try {
+            if (shopPageQueryDTO.getUserId() != null && 
+                shopPageQueryDTO.getName() != null && 
+                !shopPageQueryDTO.getName().trim().isEmpty()) {
+                
+                log.info("保存搜索历史 - 用户ID: {}, 关键词: {}", 
+                    shopPageQueryDTO.getUserId(), 
+                    shopPageQueryDTO.getName().trim());
+                
+                SearchHistory searchHistory = SearchHistory.builder()
+                    .userId(shopPageQueryDTO.getUserId())
+                    .keyword(shopPageQueryDTO.getName().trim())
+                    .searchTime(new Date())
+                    .build();
+                
+                try {
+                    Boolean saved = shopService.saveSearchHistory(searchHistory);
+                    if (saved) {
+                        log.info("搜索历史保存成功");
+                    } else {
+                        log.warn("搜索历史保存失败");
+                    }
+                } catch (Exception e) {
+                    log.error("保存搜索历史发生具体错误: {}", e.getMessage(), e);
+                    // 检查是否为外键约束错误
+                    if (e.getMessage() != null && e.getMessage().contains("foreign key constraint")) {
+                        log.error("外键约束错误 - 可能是用户ID不存在: {}", shopPageQueryDTO.getUserId());
+                    }
+                }
+            } else {
+                // 记录更详细的缺失信息
+                if (shopPageQueryDTO.getUserId() == null) {
+                    log.warn("不满足保存搜索历史条件 - 缺少userId");
+                } else if (shopPageQueryDTO.getName() == null) {
+                    log.warn("不满足保存搜索历史条件 - 缺少搜索关键词");
+                } else {
+                    log.warn("不满足保存搜索历史条件 - 搜索关键词为空");
+                }
+                
+                log.debug("不满足保存搜索历史的条件 - userId: {}, keyword: {}", 
+                    shopPageQueryDTO.getUserId(), 
+                    shopPageQueryDTO.getName());
+            }
+        } catch (Exception e) {
+            log.error("保存搜索历史时发生错误", e);
+            // 不抛出异常，避免影响正常的搜索流程
         }
     }
 
@@ -238,5 +313,41 @@ public class ShopController {
         result.put("current", pageCurrent);
         result.put("size", pageSize);
         return result;
+    }
+
+    /**
+     * 测试搜索历史保存功能
+     * 用于手动添加搜索历史记录
+     */
+    @GetMapping("/search/history/test")
+    public Result<?> testAddSearchHistory(@RequestParam Long userId, @RequestParam String keyword) {
+        log.info("测试添加搜索历史 - 用户ID: {}, 关键词: {}", userId, keyword);
+        
+        try {
+            SearchHistory searchHistory = SearchHistory.builder()
+                .userId(userId)
+                .keyword(keyword)
+                .searchTime(new Date())
+                .build();
+            
+            Boolean result = shopService.saveSearchHistory(searchHistory);
+            
+            if (result) {
+                log.info("测试 - 搜索历史保存成功");
+                return Result.success("搜索历史添加成功");
+            } else {
+                log.warn("测试 - 搜索历史保存失败");
+                return Result.error("搜索历史添加失败");
+            }
+        } catch (Exception e) {
+            log.error("测试 - 保存搜索历史时发生错误: {}", e.getMessage(), e);
+            
+            // 检查是否为外键约束错误
+            if (e.getMessage() != null && e.getMessage().contains("foreign key constraint")) {
+                return Result.error("外键约束错误 - 可能是用户ID不存在: " + userId);
+            }
+            
+            return Result.error("添加搜索历史失败: " + e.getMessage());
+        }
     }
 }

@@ -6,6 +6,8 @@
           v-model="searchQuery" 
           placeholder="搜索商家，如'火锅'、'奶茶'、'炸鸡'" 
           @keyup.enter="searchShops"
+          @focus="handleSearchFocus"
+          @clear="handleClear"
           clearable>
           <template #suffix>
             <el-button :icon="Search" circle @click="searchShops"></el-button>
@@ -17,17 +19,28 @@
       <div v-if="showSearchHistory && searchHistory.length > 0" class="search-history">
         <div class="history-header">
           <span>搜索历史</span>
-          <el-button link @click="clearSearchHistory">清空</el-button>
+          <el-button type="text" @click="clearSearchHistory">
+            <el-icon><Delete /></el-icon>
+            清空
+          </el-button>
         </div>
         <div class="history-list">
-          <span 
-            v-for="(item, index) in searchHistory" 
-            :key="index" 
-            class="history-item" 
-            @click="useHistoryItem(item.keyword)">
+          <el-tag
+            v-for="item in searchHistory"
+            :key="item.id"
+            class="history-item"
+            @click="handleHistoryClick(item.keyword)"
+          >
+            <el-icon><Clock /></el-icon>
             {{ item.keyword }}
-          </span>
+          </el-tag>
         </div>
+      </div>
+      
+      <!-- 加载中状态 -->
+      <div v-if="isLoading" class="loading-state">
+        <el-icon class="is-loading"><Loading /></el-icon>
+        加载中...
       </div>
     </div>
 
@@ -190,7 +203,7 @@
 <script>
 import { ref, onMounted, watch, computed, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { Search } from '@element-plus/icons-vue';
+import { Search, Delete, Clock, Loading } from '@element-plus/icons-vue';
 import ShopService from '@/services/ShopService';
 import AuthService from '@/services/AuthService';
 import { useStore } from 'vuex';
@@ -206,8 +219,9 @@ export default {
     const searchQuery = ref('');
     const shops = ref([]);
     const loading = ref(false);
-    const searchHistory = ref([]);
     const showSearchHistory = ref(false);
+    const searchHistory = ref([]);
+    const isLoading = ref(false);
     const defaultImage = 'https://shadow.elemecdn.com/app/element/hamburger.9cf7b091-55e9-11e9-a976-7f4d0b07eef6.png';
     
     // 缓存所有商家数据，避免频繁请求
@@ -236,16 +250,48 @@ export default {
     
     // 用户信息 - 使用计算属性从Vuex中获取
     const user = computed(() => store.getters['auth/user']);
-    const userId = computed(() => user.value?.id || null);
+    const userId = computed(() => {
+      const currentUser = user.value;
+      // 调试用户信息获取
+      console.log('获取当前用户信息:', currentUser);
+      if (!currentUser) {
+        console.warn('用户未登录或用户信息不完整');
+        return null;
+      }
+      
+      // 如果用户对象没有id属性，尝试获取完整的用户信息
+      if (!currentUser.id) {
+        console.warn('用户对象中缺少id字段，尝试从AuthService获取');
+        // 使用AuthService获取完整用户信息
+        const fullUserInfo = AuthService.getUser();
+        if (fullUserInfo && fullUserInfo.id) {
+          console.log('从AuthService获取到用户ID:', fullUserInfo.id);
+          return fullUserInfo.id;
+        }
+        // 在紧急情况下使用硬编码ID (注意：这是临时解决方案，应当尽快修复)
+        console.warn('无法获取用户ID，使用临时ID (1) 作为应急措施');
+        return 1;
+      }
+      
+      // 确保userId是数字类型
+      const idValue = Number(currentUser.id);
+      console.log('从用户对象获取用户ID:', idValue, '类型:', typeof idValue);
+      
+      return idValue;
+    });
     
     // 在setup中添加错误消息状态
     const errorMessage = ref('');
     
-    // 监听搜索框点击，显示历史记录
-    watch(searchQuery, () => {
-      if (searchQuery.value === '') {
-        showSearchHistory.value = true;
-        loadSearchHistory();
+    // 监听搜索框内容变化
+    watch(searchQuery, (newValue) => {
+      console.log('搜索框内容变化:', newValue);
+      if (!newValue || newValue.trim() === '') {
+        if (userId.value) {
+          console.log('搜索框为空，显示搜索历史，用户ID:', userId.value);
+          showSearchHistory.value = true;
+          loadSearchHistory();
+        }
       } else {
         showSearchHistory.value = false;
       }
@@ -373,15 +419,40 @@ export default {
     
     // 加载搜索历史
     const loadSearchHistory = async () => {
-      if (!userId.value) return;
-      
       try {
-        const response = await ShopService.getSearchHistory(userId.value);
-        if (response.code === 1 && response.data) {
-          searchHistory.value = response.data;
+        // 使用计算属性获取用户ID
+        const currentUserId = userId.value;
+        console.log('加载搜索历史 - 当前用户ID:', currentUserId);
+        
+        if (!currentUserId) {
+          console.log('用户未登录或无法获取用户ID，无法加载搜索历史');
+          showSearchHistory.value = false;
+          return;
+        }
+
+        isLoading.value = true;
+        console.log('开始加载搜索历史，用户ID:', currentUserId);
+        
+        const response = await ShopService.getSearchHistory(currentUserId);
+        console.log('搜索历史响应:', response);
+
+        if (response.code === 1 && Array.isArray(response.data)) {
+          searchHistory.value = response.data
+            .sort((a, b) => new Date(b.searchTime) - new Date(a.searchTime))
+            .slice(0, 10);
+          showSearchHistory.value = searchHistory.value.length > 0;
+          console.log('搜索历史加载成功:', searchHistory.value);
+        } else {
+          console.warn('加载搜索历史失败:', response.msg);
+          searchHistory.value = [];
+          showSearchHistory.value = false;
         }
       } catch (error) {
-        console.error('加载搜索历史失败:', error);
+        console.error('加载搜索历史出错:', error);
+        searchHistory.value = [];
+        showSearchHistory.value = false;
+      } finally {
+        isLoading.value = false;
       }
     };
     
@@ -412,7 +483,21 @@ export default {
         
         // 只有在用户已登录时才添加userId
         if (userId.value) {
-          queryParams.userId = userId.value;
+          // 确保userId是数值类型
+          const userIdValue = userId.value;
+          console.log('准备添加用户ID参数:', userIdValue, '类型:', typeof userIdValue);
+          
+          // 尝试将userId转换为数值类型
+          try {
+            queryParams.userId = Number(userIdValue);
+            console.log('转换后的用户ID参数:', queryParams.userId, '类型:', typeof queryParams.userId);
+          } catch (e) {
+            // 如果转换失败，使用原始值
+            console.warn('用户ID转换为数值失败，使用原值:', userIdValue);
+            queryParams.userId = userIdValue;
+          }
+        } else {
+          console.warn('未找到有效的用户ID，搜索历史将不会被记录');
         }
         
         // 添加评分筛选
@@ -598,14 +683,26 @@ export default {
     // 清空搜索历史
     const clearSearchHistory = async () => {
       if (isUnmounted.value) return;
-      if (!userId.value) return;
+      
+      const currentUserId = userId.value;
+      if (!currentUserId) {
+        console.warn('清空搜索历史失败: 无法获取用户ID');
+        return;
+      }
       
       try {
+        console.log('清空搜索历史，用户ID:', currentUserId);
         // 调用后端API清空搜索历史
-        await ShopService.clearSearchHistory(userId.value);
-        searchHistory.value = [];
+        const response = await ShopService.clearSearchHistory(currentUserId);
+        if (response.code === 1) {
+          searchHistory.value = [];
+          showSearchHistory.value = false;
+          console.log('搜索历史清空成功');
+        } else {
+          console.warn('清空搜索历史失败:', response.msg);
+        }
       } catch (error) {
-        console.error('清空搜索历史失败:', error);
+        console.error('清空搜索历史出错:', error);
       }
     };
     
@@ -975,14 +1072,47 @@ export default {
       applyFilter();
     };
     
+    // 在 setup 函数中添加以下内容
+    const handleSearchFocus = async () => {
+      console.log('搜索框获得焦点');
+      if (userId.value) {
+        console.log('用户已登录，显示搜索历史，用户ID:', userId.value);
+        showSearchHistory.value = true;
+        await loadSearchHistory();
+      }
+    };
+    
+    // 修改清空搜索框的处理
+    const handleClear = async () => {
+      console.log('清空搜索框');
+      searchQuery.value = '';
+      if (userId.value) {
+        console.log('清空后显示搜索历史，用户ID:', userId.value);
+        showSearchHistory.value = true;
+        await loadSearchHistory();
+      }
+    };
+    
+    // 修改搜索历史点击处理方法
+    const handleHistoryClick = (keyword) => {
+      console.log('点击搜索历史:', keyword, '用户ID:', userId.value);
+      searchQuery.value = keyword;
+      showSearchHistory.value = false;
+      searchShops();
+    };
+    
     return {
       Search,
+      Delete,
+      Clock,
+      Loading,
       searchQuery,
       shops,
       loading,
       errorMessage,
       searchHistory,
       showSearchHistory,
+      isLoading,
       selectedRating,
       selectedPrice,
       selectedAverageCost,
@@ -1004,7 +1134,10 @@ export default {
       isUnmounted,
       handlePageChange,
       handlePageSizeChange,
-      debugFilters
+      debugFilters,
+      handleSearchFocus,
+      handleClear,
+      handleHistoryClick
     };
   }
 };

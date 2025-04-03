@@ -134,7 +134,30 @@ export default {
                 pageCurrent: cleanParams.pageCurrent || 1
             };
             
-            console.log('发送搜索请求，参数:', params); 
+            // 处理用户ID - 确保转换为数字类型
+            if (params.userId) {
+                // 记录原始值用于调试
+                const userIdType = typeof params.userId;
+                const userIdValue = params.userId;
+                
+                // 确保userId是数字类型
+                params.userId = Number(params.userId);
+                
+                console.log(`发送搜索请求，userId转换: ${userIdType}类型(${userIdValue}) => number类型(${params.userId})`);
+            } else {
+                console.warn('发送搜索请求，未包含userId参数，搜索历史将不会被记录');
+                
+                // 尝试从Vuex获取用户ID
+                if (window && window.$store) {
+                    const user = window.$store.getters['auth/user'];
+                    if (user && user.id) {
+                        params.userId = Number(user.id);
+                        console.log(`从Vuex自动获取用户ID: ${params.userId}`);
+                    }
+                }
+            }
+            
+            console.log('发送搜索请求，最终参数:', params); 
             const response = await axiosInstance.get(`/shop/search`, { params });
             console.log('搜索响应:', response.data);
             
@@ -163,19 +186,61 @@ export default {
     },
 
     /**
-     * 获取搜索历史
+     * 获取用户的搜索历史
      * @param {number} userId - 用户ID
-     * @returns {Promise<Object>} 搜索历史记录
+     * @returns {Promise<Object>} 搜索历史数据
      */
     async getSearchHistory(userId) {
         try {
+            // 确保userId是数字类型
+            let userIdParam = userId;
+            
+            // 如果未提供userId，尝试从Vuex获取
+            if (!userIdParam && window && window.$store) {
+                const user = window.$store.getters['auth/user'];
+                if (user && user.id) {
+                    userIdParam = user.id;
+                    console.log('从Vuex获取用户ID:', userIdParam);
+                }
+            }
+            
+            // 确保转换为数字类型
+            if (userIdParam) {
+                userIdParam = Number(userIdParam);
+            }
+            
+            if (!userIdParam) {
+                console.error('获取搜索历史失败: 无法获取用户ID');
+                return { code: 0, msg: '未登录或无法获取用户ID', data: [] };
+            }
+            
+            console.log('获取搜索历史，用户ID:', userIdParam);
             const response = await axiosInstance.get(`/shop/search/history`, {
-                params: { userId }
+                params: { userId: userIdParam }
             });
+            console.log('搜索历史响应:', response.data);
             return response.data;
         } catch (error) {
             console.error('获取搜索历史失败:', error);
-            throw error;
+            
+            // 提供更详细的错误信息，但不抛出异常
+            if (error.response) {
+                // 服务器返回了错误状态码
+                console.error(`服务器返回错误: ${error.response.status}`);
+                return { 
+                    code: 0, 
+                    msg: `获取搜索历史失败: ${error.response.data?.message || error.response.data?.msg || '服务器错误'}`, 
+                    data: [] 
+                };
+            } else if (error.request) {
+                // 请求发送了但没有收到响应
+                console.error('没有收到服务器响应，请检查网络连接或后端服务是否运行');
+                return { code: 0, msg: '网络错误，请检查连接', data: [] };
+            } else {
+                // 请求设置时发生错误
+                console.error(`请求错误: ${error.message}`);
+                return { code: 0, msg: `请求错误: ${error.message}`, data: [] };
+            }
         }
     },
 
@@ -202,9 +267,31 @@ export default {
      */
     async clearSearchHistory(userId) {
         try {
-            console.log(`正在清空用户的搜索历史记录: userId=${userId}`);
+            // 确保userId是数字类型
+            let userIdParam = userId;
+            
+            // 如果未提供userId，尝试从Vuex获取
+            if (!userIdParam && window && window.$store) {
+                const user = window.$store.getters['auth/user'];
+                if (user && user.id) {
+                    userIdParam = user.id;
+                    console.log('从Vuex获取用户ID:', userIdParam);
+                }
+            }
+            
+            // 确保转换为数字类型
+            if (userIdParam) {
+                userIdParam = Number(userIdParam);
+            }
+            
+            if (!userIdParam) {
+                console.error('清空搜索历史失败: 无法获取用户ID');
+                return { code: 0, msg: '未登录或无法获取用户ID', data: null };
+            }
+            
+            console.log(`正在清空用户的搜索历史记录: userId=${userIdParam}`);
             const response = await axiosInstance.delete(`/shop/search/history/clear`, {
-                params: { userId }
+                params: { userId: userIdParam }
             });
 
             if (response.data.code === 1) {
