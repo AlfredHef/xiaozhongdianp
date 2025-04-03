@@ -137,22 +137,70 @@ public class ShopServiceImpl implements ShopService {
         List<ShopImage> images = shopImageMapper.findImagesByShopId(shopIdLong);
         log.info("商家[{}]获取到{}张图片", shopId, images.size());
         
-        // 处理图片URL，只在非完整URL时添加前缀
-        images.forEach(image -> {
-            String imageUrl = image.getImageUrl();
-            if (imageUrl != null && !imageUrl.startsWith("http")) {
-                // 移除开头的斜杠（如果有）
-                while (imageUrl.startsWith("/")) {
-                    imageUrl = imageUrl.substring(1);
-                }
-                // 添加前缀
-                imageUrl = "/static/" + imageUrl;
-                image.setImageUrl(imageUrl);
-                log.debug("处理后的图片URL: {}", imageUrl);
-            }
-        });
+        // 处理图片URL
+        processImageUrls(images);
         
         return images;
+    }
+    
+    /**
+     * 处理图片URL列表
+     * 提取方法以减少控制流嵌套
+     * 
+     * @param images 需要处理URL的图片列表
+     */
+    private void processImageUrls(List<ShopImage> images) {
+        if (images == null || images.isEmpty()) {
+            return;
+        }
+        
+        for (ShopImage image : images) {
+            processImageUrl(image);
+        }
+    }
+    
+    /**
+     * 处理单个图片URL
+     * 如果不是http开头的URL，添加前缀
+     * 
+     * @param image 需要处理的图片对象
+     */
+    private void processImageUrl(ShopImage image) {
+        if (image == null) {
+            return;
+        }
+        
+        String imageUrl = image.getImageUrl();
+        if (imageUrl == null || imageUrl.startsWith("http")) {
+            return;
+        }
+        
+        // 移除开头的斜杠
+        imageUrl = removeLeadingSlashes(imageUrl);
+        
+        // 添加前缀
+        imageUrl = "/static/" + imageUrl;
+        image.setImageUrl(imageUrl);
+        log.debug("处理后的图片URL: {}", imageUrl);
+    }
+    
+    /**
+     * 移除字符串开头的所有斜杠
+     * 
+     * @param input 输入字符串
+     * @return 处理后的字符串
+     */
+    private String removeLeadingSlashes(String input) {
+        if (input == null) {
+            return "";
+        }
+        
+        int startIndex = 0;
+        while (startIndex < input.length() && input.charAt(startIndex) == '/') {
+            startIndex++;
+        }
+        
+        return startIndex > 0 ? input.substring(startIndex) : input;
     }
 
     @Override

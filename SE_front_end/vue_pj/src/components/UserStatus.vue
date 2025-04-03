@@ -24,9 +24,11 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import AuthService from '@/services/AuthService';
+import { USER_EVENTS, addEventListener } from '@/utils/sessionState';
+import { useStore } from 'vuex';
 
 export default {
   name: 'UserStatus',
@@ -39,16 +41,20 @@ export default {
   },
   setup(props) {
     const router = useRouter();
+    const store = useStore();
     const user = ref(null);
     const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png';
     
-    // 计算属性：是否已登录
-    const isLoggedIn = computed(() => !!user.value);
+    // 计算属性：是否已登录 - 优先使用Vuex状态
+    const isLoggedIn = computed(() => {
+      return store.getters['auth/isAuthenticated'] || !!user.value;
+    });
     
-    // 计算属性：用户名
+    // 计算属性：用户名 - 优先使用Vuex状态
     const username = computed(() => {
+      const vuexUser = store.getters['auth/currentUser'];
+      if (vuexUser) return vuexUser.username || '用户';
       if (!user.value) return '';
-      // 如果获取到的user对象中有username属性，则使用，否则使用默认值
       return user.value.username || '用户';
     });
     
@@ -62,17 +68,69 @@ export default {
     // 初始化时获取用户信息
     onMounted(() => {
       loadUserInfo();
+      
+      // 监听用户登录事件
+      const loginUnsubscribe = addEventListener(USER_EVENTS.LOGIN, (userData) => {
+        console.log('收到用户登录事件:', userData);
+        user.value = userData;
+      });
+      
+      // 监听用户登出事件
+      const logoutUnsubscribe = addEventListener(USER_EVENTS.LOGOUT, () => {
+        console.log('收到用户登出事件');
+        user.value = null;
+      });
+      
+      // 监听用户更新事件
+      const updateUnsubscribe = addEventListener(USER_EVENTS.UPDATE, (userData) => {
+        console.log('收到用户信息更新事件:', userData);
+        user.value = userData;
+      });
+      
+      // 组件卸载时清除监听器
+      onUnmounted(() => {
+        loginUnsubscribe();
+        logoutUnsubscribe();
+        updateUnsubscribe();
+      });
+      
+      // 初始化Vuex认证状态
+      if (store && store.dispatch) {
+        store.dispatch('auth/initAuth');
+      }
     });
     
     // 加载用户信息
     const loadUserInfo = () => {
+      // 优先从Vuex状态获取
+      const vuexUser = store.getters['auth/currentUser'];
+      if (vuexUser) {
+        user.value = vuexUser;
+        console.log('从Vuex获取用户信息:', user.value);
+        return;
+      }
+      
+      // 如果Vuex中没有，尝试从AuthService获取
       user.value = AuthService.getUser();
-      console.log('当前登录用户信息:', user.value);
+      if (user.value) {
+        console.log('从AuthService获取用户信息:', user.value);
+        // 更新Vuex状态
+        if (store && store.dispatch) {
+          store.dispatch('auth/saveUser', user.value);
+        }
+      } else {
+        console.log('未获取到用户信息');
+      }
     };
     
     // 退出登录
     const logout = () => {
-      AuthService.logout();
+      // 使用Vuex action处理登出
+      if (store && store.dispatch) {
+        store.dispatch('auth/logout');
+      } else {
+        AuthService.logout();
+      }
       user.value = null;
       router.push('/login');
     };
@@ -94,7 +152,8 @@ export default {
       logout,
       viewProfile,
       viewOrders,
-      shouldShow
+      shouldShow,
+      loadUserInfo
     };
   }
 };

@@ -33,8 +33,14 @@
 
 <script>
 import AuthService from "../services/AuthService";
+import { useStore } from 'vuex';
+import { notifyUserLogin } from '@/utils/sessionState';
 
 export default {
+  setup() {
+    const store = useStore();
+    return { store };
+  },
   data() {
     return {
       username: "",
@@ -61,19 +67,29 @@ export default {
         await AuthService.verifyCaptcha(this.captchaInput, this.captchaId); // 向后端验证验证码
 
         // 如果验证码验证通过，调用登录接口
-        const loginResponse = await AuthService.login(this.username, this.password, this.captchaId, this.captchaInput);
+        const userData = await AuthService.login(this.username, this.password, this.captchaId, this.captchaInput);
 
-        // 判断后端返回的 token 是否有效
-        if (loginResponse && loginResponse.token) {
-          // 用户登录成功，数据已经由AuthService保存到localStorage
+        // 判断返回的用户信息是否有效
+        if (userData && userData.token) {
           console.log("登录成功，用户名:", this.username);
+          
+          // 确保更新Vuex状态
+          if (this.store && this.store.dispatch) {
+            this.store.dispatch('auth/saveToken', userData.token);
+            this.store.dispatch('auth/saveUser', userData);
+          } else {
+            // 兼容旧版：手动通知用户登录事件
+            notifyUserLogin(userData);
+          }
+          
           // 跳转到首页
           this.$router.push("/shop/list");
         } else {
-          throw new Error("登录失败，未返回 token");
+          throw new Error("登录失败，未返回用户信息");
         }
       } catch (error) {
-        alert("登录失败，请检查用户名、密码和验证码！");
+        const errorMsg = error.message || "登录失败，请检查用户名、密码和验证码！";
+        alert(errorMsg);
         this.refreshCaptcha();  // 刷新验证码
       }
     },
