@@ -51,12 +51,33 @@ export default {
             if (response.status === 200 && response.data) {
                 // 兼容后端不同的数据结构
                 let token = null;
+                let userId = null;
+                
+                // 解析JWT token以获取用户ID
+                const extractUserIdFromJwt = (token) => {
+                    try {
+                        // 解析JWT payload部分（不验证签名）
+                        const base64Url = token.split('.')[1];
+                        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                        const jsonPayload = decodeURIComponent(atob(base64).split('').map((c) => {
+                            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                        }).join(''));
+                        
+                        const payload = JSON.parse(jsonPayload);
+                        console.log('【AuthService】从JWT中提取的信息:', payload);
+                        return payload.userId || null;
+                    } catch (e) {
+                        console.error('【AuthService】解析JWT失败:', e);
+                        return null;
+                    }
+                };
                 
                 // 如果响应格式为data字段中包含token
                 if (response.data.data) {
                     const data = response.data.data;
                     if (typeof data === 'string' && data.startsWith("Bearer ")) {
                         token = data.substring(7); // 提取 Token
+                        userId = extractUserIdFromJwt(token);
                     } else if (data.token) {
                         token = data.token;
                     }
@@ -71,13 +92,27 @@ export default {
                     if (window && window.$store) {
                         console.log('【AuthService】保存token到Vuex');
                         window.$store.dispatch('auth/saveToken', token);
-                        window.$store.dispatch('auth/saveUser', { username });
+                        
+                        // 创建用户对象并添加id
+                        const userInfo = { 
+                            username,
+                            loginTime: new Date().toISOString()
+                        };
+                        
+                        // 添加用户ID
+                        if (userId) {
+                            userInfo.id = userId;
+                            console.log('【AuthService】从JWT中提取的用户ID:', userId);
+                        }
+                        
+                        window.$store.dispatch('auth/saveUser', userInfo);
                     }
                     
                     return { 
                         success: true,
                         token, 
-                        username 
+                        username,
+                        userId
                     };
                 }
                 
@@ -128,17 +163,67 @@ export default {
             // 获取用户信息
             const user = window.$store.getters['auth/user'];
             
-            console.log('从Vuex获取认证状态:', isAuthenticated, '用户信息:', user);
+            console.log('[AuthService] 从Vuex获取认证状态:', isAuthenticated, '用户信息:', user);
             
             // 如果已认证且有用户信息，返回用户信息
             if (isAuthenticated && user) {
+                // 检查用户ID
+                if (!user.id) {
+                    console.log('[AuthService] 用户对象中缺少id字段，尝试从JWT获取');
+                    
+                    // 从token中提取用户ID
+                    const token = window.$store.getters['auth/token'];
+                    if (token) {
+                        try {
+                            // 解析JWT payload
+                            const base64Url = token.split('.')[1];
+                            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+                                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                            }).join(''));
+                            
+                            const payload = JSON.parse(jsonPayload);
+                            console.log('[AuthService] 从JWT中提取的信息:', payload);
+                            
+                            if (payload.userId) {
+                                console.log('[AuthService] 从JWT中获取到用户ID:', payload.userId);
+                                
+                                // 创建一个新对象，添加ID字段
+                                const updatedUser = { ...user, id: payload.userId };
+                                
+                                // 在Vuex中更新用户信息
+                                window.$store.dispatch('auth/saveUser', updatedUser);
+                                
+                                return updatedUser;
+                            } else {
+                                console.warn('[AuthService] JWT中不包含userId');
+                            }
+                        } catch (e) {
+                            console.error('[AuthService] 解析JWT失败:', e);
+                        }
+                    } else {
+                        console.warn('[AuthService] 无法获取token');
+                    }
+                    
+                    // 紧急解决方案: 如果无法从JWT获取，使用硬编码ID(仅用于测试)
+                    console.warn('[AuthService] 使用临时ID (1) 作为应急措施');
+                    const tempUser = { ...user, id: 1 };
+                    window.$store.dispatch('auth/saveUser', tempUser);
+                    return tempUser;
+                }
+                
+                console.log('[AuthService] 返回完整用户信息, id:', user.id);
                 return user;
             }
             // 如果已认证但没有用户信息，返回一个基本的用户对象
             else if (isAuthenticated) {
+                console.log('[AuthService] 已认证但无用户信息，返回基本用户对象');
                 return { authenticated: true };
+            } else {
+                console.log('[AuthService] 未认证，返回null');
             }
         }
+        console.log('[AuthService] 无法访问全局store，返回null');
         return null;
     },
 

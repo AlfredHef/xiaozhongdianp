@@ -10,13 +10,15 @@ import java.io.Serializable;
  */
 @Data
 public class ShopPageQueryDTO implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     private String name;        // 搜索关键词
     private String category;    // 分类名称
     private Integer pageCurrent;     // 当前页码
     private Integer pageSize;   // 每页大小
     private Integer offset;     // 分页偏移量
     private String sortBy;      // 排序字段
-    private Long userId;
+    private Long userId;        // 用户ID，用于记录搜索历史
 
     /* 每页显示记录数 */
 
@@ -28,8 +30,5 @@ public class ShopPageQueryDTO implements Serializable {
     private Double maxPrice;     // 最高价格
     private Double minAverageCost; // 最低人均消费
     private Double maxAverageCost; // 最高人均消费
-
-    public Long getUserId() {
-        return userId;
-    }
+    private Double maxPriceMin;  // 最高价格的最小值（用于"200+"这种筛选）
 }

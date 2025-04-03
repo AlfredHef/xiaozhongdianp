@@ -69,3 +69,12 @@ fudan:
 #      username: budouer
 #      password: 'BuDou&123'
 
+# 配置日志级别
+logging:
+  level:
+    root: INFO
+    com.fudan.xiaozhong_dianping.shop: DEBUG  # 提高shop相关包的日志级别为DEBUG
+    com.fudan.xiaozhong_dianping.shop.controller.ShopController: DEBUG
+    com.fudan.xiaozhong_dianping.shop.service.impl.ShopServiceImpl: DEBUG
+    com.fudan.xiaozhong_dianping.shop.mapper: DEBUG  # 设置Mapper层的日志级别，可以查看SQL执行
+
