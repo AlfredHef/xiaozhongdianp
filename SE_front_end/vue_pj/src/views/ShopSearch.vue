@@ -193,12 +193,14 @@ import { useRouter } from 'vue-router';
 import { Search } from '@element-plus/icons-vue';
 import ShopService from '@/services/ShopService';
 import AuthService from '@/services/AuthService';
+import { useStore } from 'vuex';
 
 export default {
   name: 'ShopSearch',
   
   setup() {
     const router = useRouter();
+    const store = useStore();
     
     // 搜索相关
     const searchQuery = ref('');
@@ -232,11 +234,9 @@ export default {
     // 组件卸载标志
     const isUnmounted = ref(false);
     
-    // 用户信息
-    const user = AuthService.getUser();
-    console.log('AuthService.getUser()返回的用户信息:', user);
-    const userId = user?.id || null; // 添加可选链操作符，确保安全访问
-    console.log('提取的用户ID:', userId);
+    // 用户信息 - 使用计算属性从Vuex中获取
+    const user = computed(() => store.getters['auth/user']);
+    const userId = computed(() => user.value?.id || null);
     
     // 在setup中添加错误消息状态
     const errorMessage = ref('');
@@ -373,10 +373,10 @@ export default {
     
     // 加载搜索历史
     const loadSearchHistory = async () => {
-      if (!userId) return;
+      if (!userId.value) return;
       
       try {
-        const response = await ShopService.getSearchHistory(userId);
+        const response = await ShopService.getSearchHistory(userId.value);
         if (response.code === 1 && response.data) {
           searchHistory.value = response.data;
         }
@@ -411,8 +411,8 @@ export default {
         console.log('创建新的查询参数对象:', queryParams);
         
         // 只有在用户已登录时才添加userId
-        if (userId) {
-          queryParams.userId = userId;
+        if (userId.value) {
+          queryParams.userId = userId.value;
         }
         
         // 添加评分筛选
@@ -598,11 +598,11 @@ export default {
     // 清空搜索历史
     const clearSearchHistory = async () => {
       if (isUnmounted.value) return;
-      if (!userId) return;
+      if (!userId.value) return;
       
       try {
         // 调用后端API清空搜索历史
-        await ShopService.clearSearchHistory(userId);
+        await ShopService.clearSearchHistory(userId.value);
         searchHistory.value = [];
       } catch (error) {
         console.error('清空搜索历史失败:', error);
