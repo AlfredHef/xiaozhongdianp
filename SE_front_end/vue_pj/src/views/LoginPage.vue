@@ -54,26 +54,50 @@ export default {
     async login() {
       // 清除错误信息
       this.captchaError = "";
+      console.log('登录表单提交:', this.username);
 
-      // 验证验证码
       try {
         // 先验证验证码
         await AuthService.verifyCaptcha(this.captchaInput, this.captchaId); // 向后端验证验证码
 
         // 如果验证码验证通过，调用登录接口
         const loginResponse = await AuthService.login(this.username, this.password, this.captchaId, this.captchaInput);
+        console.log('登录响应:', loginResponse);
 
         // 判断后端返回的 token 是否有效
         if (loginResponse && loginResponse.token) {
-          // 用户登录成功，数据已经由AuthService保存到localStorage
+          // 不再使用localStorage，改用Vuex存储
           console.log("登录成功，用户名:", this.username);
+          
+          // 将token存入Vuex store
+          this.$store.dispatch('auth/saveToken', loginResponse.token);
+          // 保存用户信息
+          this.$store.dispatch('auth/saveUser', { 
+            username: this.username,
+            // 添加其他可能需要的用户信息
+            loginTime: new Date().toISOString()
+          });
+          
+          // 强制更新用户状态组件
+          if (window.$updateUserStatus && typeof window.$updateUserStatus === 'function') {
+            window.$updateUserStatus();
+          }
+          
+          // 登录成功显示提示
+          this.$message ? 
+            this.$message.success(`欢迎回来，${this.username}`) : 
+            alert(`登录成功，欢迎回来，${this.username}`);
+            
           // 跳转到首页
           this.$router.push("/shop/list");
         } else {
           throw new Error("登录失败，未返回 token");
         }
       } catch (error) {
-        alert("登录失败，请检查用户名、密码和验证码！");
+        console.error('登录失败:', error);
+        // 显示友好的错误提示
+        const errorMsg = error.message || "登录失败，请检查用户名、密码和验证码！";
+        this.$message ? this.$message.error(errorMsg) : alert(errorMsg);
         this.refreshCaptcha();  // 刷新验证码
       }
     },

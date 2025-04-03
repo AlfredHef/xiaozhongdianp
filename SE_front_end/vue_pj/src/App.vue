@@ -26,6 +26,17 @@ export default {
     // 使用ref初始化currentPath，避免直接依赖$route
     const currentPath = ref('/');
     
+    // 创建一个更新用户状态的方法
+    const updateUserStatus = () => {
+      console.log('触发用户状态更新');
+      // 通过事件总线或其他机制通知UserStatus组件更新
+      const event = new CustomEvent('update-user-status');
+      window.dispatchEvent(event);
+    };
+    
+    // 将方法挂载到window对象上，以便其他组件调用
+    window.$updateUserStatus = updateUserStatus;
+    
     // 在onMounted生命周期钩子中安全地获取路由信息
     onMounted(() => {
       try {
