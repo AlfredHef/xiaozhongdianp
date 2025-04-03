@@ -12,13 +12,9 @@ import com.fudan.xiaozhong_dianping.shop.service.ShopService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +24,7 @@ import java.util.Map;
  * ShopServiceImpl类实现了ShopService接口，提供了一系列与商店相关的服务方法
  * 它使用了Spring的@Service注解，标志着它是一个服务层组件
  */
-public class ShopServiceImpl implements ShopService, ApplicationListener<ContextRefreshedEvent> {
+public class ShopServiceImpl implements ShopService {
 
     private static final Logger log = LoggerFactory.getLogger(ShopServiceImpl.class);
 
@@ -46,52 +42,6 @@ public class ShopServiceImpl implements ShopService, ApplicationListener<Context
 
     @Autowired
     private ShopImageMapper shopImageMapper; // 新增注入图片Mapper
-    
-    /**
-     * 在Spring容器刷新时检查搜索历史表是否存在
-     * 
-     * @param event Spring上下文刷新事件
-     */
-    @Override
-    public void onApplicationEvent(ContextRefreshedEvent event) {
-        try {
-            // 检查表是否存在
-            Integer exists = searchHistoryMapper.checkTableExists();
-            if (exists != null && exists == 1) {
-                log.info("搜索历史表(search_history)存在，可以正常使用");
-                
-                // 进一步检查表的字段结构
-                try {
-                    log.info("开始检查搜索历史表结构...");
-                    
-                    // 模拟搜索历史保存，测试表结构
-                    SearchHistory testHistory = SearchHistory.builder()
-                        .userId(0L) // 测试用户ID
-                        .keyword("test_table_structure")
-                        .searchTime(new Date())
-                        .build();
-                    
-                    // 尝试插入记录
-                    int result = searchHistoryMapper.insert(testHistory);
-                    
-                    if (result > 0) {
-                        log.info("搜索历史表结构验证成功，测试记录ID: {}", testHistory.getId());
-                        // 删除测试数据
-                        searchHistoryMapper.deleteTestRecord(testHistory.getId());
-                    } else {
-                        log.warn("搜索历史表结构测试失败，无法插入测试记录");
-                    }
-                } catch (Exception e) {
-                    log.error("搜索历史表结构测试失败: {}", e.getMessage(), e);
-                }
-            } else {
-                log.error("搜索历史表(search_history)不存在！请检查数据库结构");
-            }
-        } catch (Exception e) {
-            log.error("检查搜索历史表时发生错误: {}", e.getMessage(), e);
-        }
-    }
-
     @Override
     /**
      * 保存用户的搜索历史记录
@@ -100,43 +50,7 @@ public class ShopServiceImpl implements ShopService, ApplicationListener<Context
      * @return 如果插入操作成功，则返回true；否则返回false
      */
     public Boolean saveSearchHistory(SearchHistory searchHistory) {
-        try {
-            if (searchHistory == null || searchHistory.getUserId() == null || 
-                searchHistory.getKeyword() == null || searchHistory.getKeyword().trim().isEmpty()) {
-                log.warn("保存搜索历史失败：传入的参数不完整 - {}", searchHistory);
-                return false;
-            }
-            
-            log.info("尝试保存搜索历史: userId={}, keyword={}",
-                    searchHistory.getUserId(), searchHistory.getKeyword());
-            
-            // 确保搜索关键词不超过数据库字段长度限制
-            String keyword = searchHistory.getKeyword().trim();
-            if (keyword.length() > 100) { // 假设数据库字段长度为100
-                keyword = keyword.substring(0, 100);
-                searchHistory.setKeyword(keyword);
-                log.warn("搜索关键词过长，已自动截断: {}", keyword);
-            }
-            
-            // 确保搜索时间存在
-            if (searchHistory.getSearchTime() == null) {
-                searchHistory.setSearchTime(new Date());
-            }
-            
-            int result = searchHistoryMapper.insert(searchHistory);
-            
-            if (result > 0) {
-                log.info("搜索历史保存成功: userId={}, keyword={}", 
-                        searchHistory.getUserId(), searchHistory.getKeyword());
-                return true;
-            } else {
-                log.warn("搜索历史保存失败: 数据库未插入记录");
-                return false;
-            }
-        } catch (Exception e) {
-            log.error("保存搜索历史时发生异常: " + e.getMessage(), e);
-            return false;
-        }
+        return searchHistoryMapper.insert(searchHistory) > 0;
     }
 
     @Override
@@ -166,20 +80,7 @@ public class ShopServiceImpl implements ShopService, ApplicationListener<Context
      * @return 返回该用户的搜索历史记录列表
      */
     public List<SearchHistory> getSearchHistoryByUserId(Long userId) {
-        if (userId == null) {
-            log.warn("获取搜索历史记录失败: 用户ID为空");
-            return Collections.emptyList();
-        }
-        
-        try {
-            log.info("查询用户的搜索历史记录: userId={}", userId);
-            List<SearchHistory> historyList = searchHistoryMapper.getSearchHistoryByUserId(userId);
-            log.info("获取到{}条搜索历史记录", historyList.size());
-            return historyList;
-        } catch (Exception e) {
-            log.error("获取搜索历史记录时发生异常: " + e.getMessage(), e);
-            return Collections.emptyList();
-        }
+        return searchHistoryMapper.getSearchHistoryByUserId(userId);
     }
 
     /**
@@ -214,22 +115,11 @@ public class ShopServiceImpl implements ShopService, ApplicationListener<Context
         return result;
     }
 
+
+
     @Override
     public Boolean clearSearchHistory(Long userId) {
-        if (userId == null) {
-            log.warn("清空搜索历史记录失败: 用户ID为空");
-            return false;
-        }
-        
-        try {
-            log.info("尝试清空用户搜索历史: userId={}", userId);
-            int result = searchHistoryMapper.deleteByUserId(userId);
-            log.info("删除了{}条搜索历史记录", result);
-            return result >= 0; // 即使没有记录被删除，操作仍然是成功的
-        } catch (Exception e) {
-            log.error("清空搜索历史记录时发生异常: " + e.getMessage(), e);
-            return false;
-        }
+        return searchHistoryMapper.deleteByUserId(userId) > 0;
     }
 
     @Override
@@ -247,22 +137,70 @@ public class ShopServiceImpl implements ShopService, ApplicationListener<Context
         List<ShopImage> images = shopImageMapper.findImagesByShopId(shopIdLong);
         log.info("商家[{}]获取到{}张图片", shopId, images.size());
         
-        // 处理图片URL，只在非完整URL时添加前缀
-        images.forEach(image -> {
-            String imageUrl = image.getImageUrl();
-            if (imageUrl != null && !imageUrl.startsWith("http")) {
-                // 移除开头的斜杠（如果有）
-                while (imageUrl.startsWith("/")) {
-                    imageUrl = imageUrl.substring(1);
-                }
-                // 添加前缀
-                imageUrl = "/static/" + imageUrl;
-                image.setImageUrl(imageUrl);
-                log.debug("处理后的图片URL: {}", imageUrl);
-            }
-        });
+        // 处理图片URL
+        processImageUrls(images);
         
         return images;
+    }
+    
+    /**
+     * 处理图片URL列表
+     * 提取方法以减少控制流嵌套
+     * 
+     * @param images 需要处理URL的图片列表
+     */
+    private void processImageUrls(List<ShopImage> images) {
+        if (images == null || images.isEmpty()) {
+            return;
+        }
+        
+        for (ShopImage image : images) {
+            processImageUrl(image);
+        }
+    }
+    
+    /**
+     * 处理单个图片URL
+     * 如果不是http开头的URL，添加前缀
+     * 
+     * @param image 需要处理的图片对象
+     */
+    private void processImageUrl(ShopImage image) {
+        if (image == null) {
+            return;
+        }
+        
+        String imageUrl = image.getImageUrl();
+        if (imageUrl == null || imageUrl.startsWith("http")) {
+            return;
+        }
+        
+        // 移除开头的斜杠
+        imageUrl = removeLeadingSlashes(imageUrl);
+        
+        // 添加前缀
+        imageUrl = "/static/" + imageUrl;
+        image.setImageUrl(imageUrl);
+        log.debug("处理后的图片URL: {}", imageUrl);
+    }
+    
+    /**
+     * 移除字符串开头的所有斜杠
+     * 
+     * @param input 输入字符串
+     * @return 处理后的字符串
+     */
+    private String removeLeadingSlashes(String input) {
+        if (input == null) {
+            return "";
+        }
+        
+        int startIndex = 0;
+        while (startIndex < input.length() && input.charAt(startIndex) == '/') {
+            startIndex++;
+        }
+        
+        return startIndex > 0 ? input.substring(startIndex) : input;
     }
 
     @Override

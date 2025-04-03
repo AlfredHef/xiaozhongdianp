@@ -33,8 +33,14 @@
 
 <script>
 import AuthService from "../services/AuthService";
+import { useStore } from 'vuex';
+import { notifyUserLogin } from '@/utils/sessionState';
 
 export default {
+  setup() {
+    const store = useStore();
+    return { store };
+  },
   data() {
     return {
       username: "",
@@ -54,50 +60,36 @@ export default {
     async login() {
       // 清除错误信息
       this.captchaError = "";
-      console.log('登录表单提交:', this.username);
 
+      // 验证验证码
       try {
         // 先验证验证码
         await AuthService.verifyCaptcha(this.captchaInput, this.captchaId); // 向后端验证验证码
 
         // 如果验证码验证通过，调用登录接口
-        const loginResponse = await AuthService.login(this.username, this.password, this.captchaId, this.captchaInput);
-        console.log('登录响应:', loginResponse);
+        const userData = await AuthService.login(this.username, this.password, this.captchaId, this.captchaInput);
 
-        // 判断后端返回的 token 是否有效
-        if (loginResponse && loginResponse.token) {
-          // 不再使用localStorage，改用Vuex存储
+        // 判断返回的用户信息是否有效
+        if (userData && userData.token) {
           console.log("登录成功，用户名:", this.username);
           
-          // 将token存入Vuex store
-          this.$store.dispatch('auth/saveToken', loginResponse.token);
-          // 保存用户信息
-          this.$store.dispatch('auth/saveUser', { 
-            username: this.username,
-            // 添加其他可能需要的用户信息
-            loginTime: new Date().toISOString()
-          });
-          
-          // 强制更新用户状态组件
-          if (window.$updateUserStatus && typeof window.$updateUserStatus === 'function') {
-            window.$updateUserStatus();
+          // 确保更新Vuex状态
+          if (this.store && this.store.dispatch) {
+            this.store.dispatch('auth/saveToken', userData.token);
+            this.store.dispatch('auth/saveUser', userData);
+          } else {
+            // 兼容旧版：手动通知用户登录事件
+            notifyUserLogin(userData);
           }
           
-          // 登录成功显示提示
-          this.$message ? 
-            this.$message.success(`欢迎回来，${this.username}`) : 
-            alert(`登录成功，欢迎回来，${this.username}`);
-            
           // 跳转到首页
           this.$router.push("/shop/list");
         } else {
-          throw new Error("登录失败，未返回 token");
+          throw new Error("登录失败，未返回用户信息");
         }
       } catch (error) {
-        console.error('登录失败:', error);
-        // 显示友好的错误提示
         const errorMsg = error.message || "登录失败，请检查用户名、密码和验证码！";
-        this.$message ? this.$message.error(errorMsg) : alert(errorMsg);
+        alert(errorMsg);
         this.refreshCaptcha();  // 刷新验证码
       }
     },
