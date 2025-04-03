@@ -29,82 +29,127 @@ export default {
     },
 
     //****// 登录接口，传递验证码
-    async login(username, password, captchaId, captchaText) {
+    async login(username, password, captchaId = null, captchaText = null) {
         try {
-            const response = await axios.post(`${API_URL}/user/login`, {
+            console.log('【AuthService】尝试登录:', username);
+            // 准备请求数据
+            const requestData = {
                 username,
-                password,
-                captchaId,
-                captchaText
-            });
+                password
+            };
+            
+            // 如果提供了验证码信息，则添加到请求中
+            if (captchaId && captchaText) {
+                requestData.captchaId = captchaId;
+                requestData.captchaText = captchaText;
+            }
+            
+            const response = await axios.post(`${API_URL}/user/login`, requestData);
+            console.log('【AuthService】登录响应:', response);
 
             // 校验状态码和响应数据
-            if (response.status === 200 && response.data && response.data.data) {
-                const data = response.data.data;
-                if (data.startsWith("Bearer ")) {
-                    const token = data.substring(7); // 提取 Token
-                    localStorage.setItem('user', JSON.stringify({ 
-                        token, 
-                        username // 保存用户名，便于显示
-                    }));
-                    return { token, username };
-                } else {
-                    throw new Error('登录失败，返回的 Token 格式不正确');
+            if (response.status === 200 && response.data) {
+                // 兼容后端不同的数据结构
+                let token = null;
+                
+                // 如果响应格式为data字段中包含token
+                if (response.data.data) {
+                    const data = response.data.data;
+                    if (typeof data === 'string' && data.startsWith("Bearer ")) {
+                        token = data.substring(7); // 提取 Token
+                    } else if (data.token) {
+                        token = data.token;
+                    }
+                } 
+                // 如果响应直接包含token
+                else if (response.data.token) {
+                    token = response.data.token;
                 }
+                
+                if (token) {
+                    // 如果需要，这里可以添加保存到Vuex的代码
+                    if (window && window.$store) {
+                        console.log('【AuthService】保存token到Vuex');
+                        window.$store.dispatch('auth/saveToken', token);
+                        window.$store.dispatch('auth/saveUser', { username });
+                    }
+                    
+                    return { 
+                        success: true,
+                        token, 
+                        username 
+                    };
+                }
+                
+                // 如果没找到token但状态码正确，可能是其他成功情况
+                if (response.data.code === 200 || response.data.success) {
+                    return {
+                        success: true,
+                        message: response.data.message || '登录成功'
+                    };
+                }
+                
+                throw new Error(response.data.message || '登录失败，返回的数据格式不正确');
             } else {
                 throw new Error(`登录失败，状态码：${response.status}`);
             }
         } catch (error) {
-            console.error('Login error:', error.response?.data?.message || error.message);
-            throw error; // 保留原始错误信息
+            console.error('Login error:', error);
+            // 格式化错误信息
+            const errorMsg = error.response?.data?.message || 
+                            error.response?.data?.msg || 
+                            error.message || 
+                            '登录失败';
+            return {
+                success: false,
+                message: errorMsg
+            };
         }
     },
 
     //****// 获取存储的用户信息（如 token）
     getUser() {
-        const userString = localStorage.getItem('user');
-        if (!userString) return null;
-
+        // 不从localStorage获取敏感信息
+        // 改为从Vuex或其他安全存储机制获取
         try {
-            const userData = JSON.parse(userString);
-            // 如果有token，尝试从token中解析用户ID和用户名
-            if (userData.token) {
-                try {
-                    const tokenParts = userData.token.split('.');
-                    if (tokenParts.length === 3) {
-                        const payload = JSON.parse(atob(tokenParts[1]));
-                        console.log('解析的token payload:', payload);
-                        // 从token中获取用户信息
-                        return {
-                            ...userData,
-                            id: payload.id || payload.userId || payload.sub || 1,
-                            username: payload.username || payload.name || userData.username || '用户'
-                        };
-                    }
-                } catch (e) {
-                    console.error('解析token失败:', e);
-                    // 如果token解析失败，返回原始数据中的用户名
-                    return {
-                        ...userData,
-                        username: userData.username || '用户'
-                    };
-                }
-            }
-            // 如果没有token但有用户名，返回原始数据
-            if (userData.username) {
-                return userData;
-            }
-            // 如果什么都没有，返回null
-            return null;
+            return this._secureGetUserData();
         } catch (e) {
-            console.error('解析用户数据失败:', e);
+            console.error('获取用户数据失败:', e);
             return null;
         }
     },
 
+    // 新增一个内部方法用于安全获取用户数据
+    _secureGetUserData() {
+        // 从Vuex中获取用户信息
+        if (window && window.$store) {
+            // 获取认证状态
+            const isAuthenticated = window.$store.getters['auth/isAuthenticated'];
+            // 获取用户信息
+            const user = window.$store.getters['auth/user'];
+            
+            console.log('从Vuex获取认证状态:', isAuthenticated, '用户信息:', user);
+            
+            // 如果已认证且有用户信息，返回用户信息
+            if (isAuthenticated && user) {
+                return user;
+            }
+            // 如果已认证但没有用户信息，返回一个基本的用户对象
+            else if (isAuthenticated) {
+                return { authenticated: true };
+            }
+        }
+        return null;
+    },
+
     // 注销方法，清除 Token
     logout() {
-        localStorage.removeItem('user');
+        // 不再使用localStorage
+        // localStorage.removeItem('user');
+        // 改用更安全的方式处理登出
+        if (window && window.$store) {
+            window.$store.dispatch('auth/logout');
+        }
     },
 
     // 注册接口，传递验证码
