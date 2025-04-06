@@ -1,12 +1,12 @@
 <template>
-  <div class="app-container">
-    <header class="app-header">
+  <div class="app-container" :class="{'home-page': currentPath === '/'}">
+    <header class="app-header" v-if="currentPath !== '/'">
       <div class="logo">
         <router-link to="/">软旦餐厅</router-link>
       </div>
       <UserStatus :current-path="currentPath" />
     </header>
-    <main class="app-content">
+    <main class="app-content" :class="{'no-header': currentPath === '/'}">
       <router-view></router-view>
     </main>
   </div>
@@ -79,6 +79,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;
   background-color: #f5f7fa;
+  padding-top: 50px; /* 默认为导航栏预留空间 */
+}
+
+/* 首页时不需要为导航栏预留空间 */
+.home-page + .app-content {
+  padding-top: 0 !important;
 }
 
 .app-container {
@@ -103,11 +109,11 @@ body {
   box-sizing: border-box; /* 确保padding不会影响整体宽度 */
 }
 
-body {
+/* 除了首页外的页面，需要为固定的header预留空间 */
+.app-container:not(.home-page) body {
   padding-top: 50px; /* 与header高度一致 */
   height: calc(100vh - 50px); /* 可选：根据需求决定是否设置 */
 }
-
 
 .logo {
   font-size: 24px;
@@ -121,5 +127,9 @@ body {
 
 .app-content {
   flex: 1;
+}
+
+.no-header {
+  padding-top: 0; /* 首页不需要为导航栏预留空间 */
 }
 </style>

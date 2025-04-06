@@ -61,7 +61,16 @@ public class ShopServiceImpl implements ShopService {
      * @return 返回查询到的商店列表
      */
     public List<Shop> searchShops(ShopPageQueryDTO shopPageQueryDTO) {
+        // 记录搜索参数
+        log.info("执行搜索，原始关键词：{}", shopPageQueryDTO.getName());
+        if (shopPageQueryDTO.getExpandedKeywords() != null) {
+            log.info("扩展后的关键词列表：{}", shopPageQueryDTO.getExpandedKeywords());
+        } else {
+            log.warn("未找到扩展的关键词列表");
+        }
+        
         List<Shop> result = shopMapper.searchShops(shopPageQueryDTO);
+        log.info("搜索完成，找到 {} 条记录", result.size());
         
         // 打印每个商家的分类信息用于调试
         for (Shop shop : result) {
@@ -206,6 +215,77 @@ public class ShopServiceImpl implements ShopService {
     @Override
     public int countShops() {
         return shopMapper.countAllShops();
+    }
+
+    /**
+     * 添加测试数据
+     * 用于测试模糊搜索功能
+     * 
+     * @return 是否添加成功
+     */
+    @Override
+    public boolean addDemoShops() {
+        try {
+            log.info("准备添加测试数据");
+            
+            // 导入BigDecimal类
+            java.math.BigDecimal bd;
+            
+            // 添加测试用的火锅店数据
+            Shop hotPotShop = new Shop();
+            hotPotShop.setName("老北京火锅店");
+            hotPotShop.setAddress("北京市海淀区中关村大街1号");
+            hotPotShop.setBusinessHours("10:00-22:00");
+            hotPotShop.setPhone("010-12345678");
+            hotPotShop.setDescription("正宗老北京火锅，各种口味任您选择");
+            hotPotShop.setAverageCost(new java.math.BigDecimal("88.0"));
+            hotPotShop.setRating(new java.math.BigDecimal("4.5"));
+            hotPotShop.setPriceMin(new java.math.BigDecimal("50.0"));
+            hotPotShop.setPriceMax(new java.math.BigDecimal("150.0"));
+            hotPotShop.setCategoryId(1); // 假设1是火锅分类
+            
+            // 添加测试用的汤面店数据
+            Shop noodleShop = new Shop();
+            noodleShop.setName("香汤面馆");
+            noodleShop.setAddress("上海市静安区南京西路100号");
+            noodleShop.setBusinessHours("07:00-21:00");
+            noodleShop.setPhone("021-87654321");
+            noodleShop.setDescription("各种美味汤面，香气扑鼻");
+            noodleShop.setAverageCost(new java.math.BigDecimal("35.0"));
+            noodleShop.setRating(new java.math.BigDecimal("4.2"));
+            noodleShop.setPriceMin(new java.math.BigDecimal("25.0"));
+            noodleShop.setPriceMax(new java.math.BigDecimal("60.0"));
+            noodleShop.setCategoryId(2); // 假设2是面食分类
+            
+            // 添加测试用的奶茶店数据
+            Shop milkTeaShop = new Shop();
+            milkTeaShop.setName("甜心奶茶店");
+            milkTeaShop.setAddress("广州市天河区天河路5号");
+            milkTeaShop.setBusinessHours("09:00-23:00");
+            milkTeaShop.setPhone("020-56781234");
+            milkTeaShop.setDescription("正宗台湾奶茶，香浓可口");
+            milkTeaShop.setAverageCost(new java.math.BigDecimal("20.0"));
+            milkTeaShop.setRating(new java.math.BigDecimal("4.8"));
+            milkTeaShop.setPriceMin(new java.math.BigDecimal("15.0"));
+            milkTeaShop.setPriceMax(new java.math.BigDecimal("30.0"));
+            milkTeaShop.setCategoryId(3); // 假设3是饮品分类
+            
+            // 保存测试数据到数据库
+            // 实际插入数据
+            shopMapper.insertShop(hotPotShop);
+            log.info("添加测试火锅店: {} 成功", hotPotShop.getName());
+            
+            shopMapper.insertShop(noodleShop);
+            log.info("添加测试面馆: {} 成功", noodleShop.getName());
+            
+            shopMapper.insertShop(milkTeaShop);
+            log.info("添加测试奶茶店: {} 成功", milkTeaShop.getName());
+            
+            return true;
+        } catch (Exception e) {
+            log.error("插入测试数据时出错: {}", e.getMessage(), e);
+            return false;
+        }
     }
 
 }

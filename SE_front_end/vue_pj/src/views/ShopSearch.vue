@@ -4,9 +4,10 @@
       <div class="search-input">
         <el-input 
           v-model="searchQuery" 
-          placeholder="搜索商家，如'火锅'、'奶茶'、'炸鸡'" 
+          placeholder="搜索商家名称、分类等" 
           @keyup.enter="searchShops"
           @focus="handleSearchFocus"
+          @input="handleSearchInput"
           @clear="handleClear"
           clearable>
           <template #suffix>
@@ -33,6 +34,23 @@
           >
             <el-icon><Clock /></el-icon>
             {{ item.keyword }}
+          </el-tag>
+        </div>
+      </div>
+      
+      <!-- 相似关键词提示 -->
+      <div v-if="showSimilarKeywords && similarKeywords.length > 0" class="similar-keywords">
+        <div class="similar-header">
+          <span>您是否想搜：</span>
+        </div>
+        <div class="similar-list">
+          <el-tag
+            v-for="keyword in similarKeywords"
+            :key="keyword"
+            class="similar-item"
+            @click="useSimilarKeyword(keyword)"
+          >
+            {{ keyword }}
           </el-tag>
         </div>
       </div>
@@ -223,6 +241,10 @@ export default {
     const searchHistory = ref([]);
     const isLoading = ref(false);
     const defaultImage = 'https://shadow.elemecdn.com/app/element/hamburger.9cf7b091-55e9-11e9-a976-7f4d0b07eef6.png';
+    
+    // 相似关键词相关
+    const showSimilarKeywords = ref(false);
+    const similarKeywords = ref([]);
     
     // 缓存所有商家数据，避免频繁请求
     const allShopsCache = ref([]);
@@ -1101,6 +1123,48 @@ export default {
       searchShops();
     };
     
+    // 监听搜索框输入，获取相似关键词
+    const handleSearchInput = async (value) => {
+      if (value && value.trim().length >= 2) {
+        // 获取相似关键词
+        await getSimilarKeywords(value);
+      } else {
+        showSimilarKeywords.value = false;
+        similarKeywords.value = [];
+      }
+    };
+
+    // 获取相似关键词
+    const getSimilarKeywords = async (keyword) => {
+      try {
+        if (!keyword || keyword.trim().length < 2) return;
+        
+        console.log('获取相似关键词，关键词:', keyword);
+        const response = await ShopService.getSimilarKeywords(keyword.trim());
+        
+        if (response && response.code === 1 && response.data && response.data.length > 0) {
+          console.log('获取到相似关键词:', response.data);
+          similarKeywords.value = response.data;
+          showSimilarKeywords.value = true;
+        } else {
+          console.log('没有找到相似关键词');
+          similarKeywords.value = [];
+          showSimilarKeywords.value = false;
+        }
+      } catch (error) {
+        console.error('获取相似关键词出错:', error);
+        similarKeywords.value = [];
+        showSimilarKeywords.value = false;
+      }
+    };
+
+    // 使用相似关键词进行搜索
+    const useSimilarKeyword = (keyword) => {
+      searchQuery.value = keyword;
+      showSimilarKeywords.value = false;
+      searchShops();
+    };
+    
     return {
       Search,
       Delete,
@@ -1137,7 +1201,13 @@ export default {
       debugFilters,
       handleSearchFocus,
       handleClear,
-      handleHistoryClick
+      handleHistoryClick,
+      // 相似关键词相关
+      showSimilarKeywords,
+      similarKeywords,
+      handleSearchInput,
+      getSimilarKeywords,
+      useSimilarKeyword
     };
   }
 };
@@ -1474,6 +1544,42 @@ body {
 
 .retry-button {
   margin-top: 15px;
+}
+
+.similar-keywords {
+  position: absolute;
+  width: 100%;
+  max-width: 800px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  margin-top: 10px;
+  z-index: 100;
+}
+
+.similar-header {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  color: #606266;
+  font-size: 14px;
+}
+
+.similar-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.similar-item {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.similar-item:hover {
+  background-color: #409EFF;
+  color: white;
 }
 
 @media screen and (max-width: 768px) {

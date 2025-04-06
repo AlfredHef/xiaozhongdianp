@@ -26,9 +26,22 @@
         <!-- 动态生成名称模糊查询条件 -->
         <if test="name != null and name != ''">
             AND (
-                s.name LIKE CONCAT('%', #{name}, '%') 
-                OR c.name LIKE CONCAT('%', #{name}, '%')
-                OR s.description LIKE CONCAT('%', #{name}, '%')
+                <choose>
+                    <when test="expandedKeywords != null and expandedKeywords.size() > 0">
+                        <!-- 使用扩展关键词进行搜索 -->
+                        <foreach collection="expandedKeywords" item="keyword" separator=" OR ">
+                            s.name LIKE #{keyword} 
+                            OR c.name LIKE #{keyword}
+                            OR s.description LIKE #{keyword}
+                        </foreach>
+                    </when>
+                    <otherwise>
+                        <!-- 降级方案：如果没有扩展关键词，使用原始关键词 -->
+                        s.name LIKE CONCAT('%', #{name}, '%') 
+                        OR c.name LIKE CONCAT('%', #{name}, '%')
+                        OR s.description LIKE CONCAT('%', #{name}, '%')
+                    </otherwise>
+                </choose>
             )
         </if>
         <!-- 动态生成分类精确匹配条件 -->
@@ -82,16 +95,34 @@
     @return int 符合条件的结果总数
     -->
     <select id="countShops" parameterType="com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO" resultType="int">
-        SELECT COUNT(*) FROM shop
-        JOIN category ON shop.category_id = category.id
+        SELECT COUNT(*) 
+        FROM shop s
+        JOIN category c ON s.category_id = c.id
         WHERE 1 = 1
         <!-- 动态生成名称模糊查询条件（商家名称或分类名称） -->
         <if test="name != null and name != ''">
-            AND (shop.name LIKE CONCAT('%', #{name}, '%') OR category.name LIKE CONCAT('%', #{name}, '%'))
+            AND (
+                <choose>
+                    <when test="expandedKeywords != null and expandedKeywords.size() > 0">
+                        <!-- 使用扩展关键词进行搜索 -->
+                        <foreach collection="expandedKeywords" item="keyword" separator=" OR ">
+                            s.name LIKE #{keyword} 
+                            OR c.name LIKE #{keyword}
+                            OR s.description LIKE #{keyword}
+                        </foreach>
+                    </when>
+                    <otherwise>
+                        <!-- 降级方案：如果没有扩展关键词，使用原始关键词 -->
+                        s.name LIKE CONCAT('%', #{name}, '%') 
+                        OR c.name LIKE CONCAT('%', #{name}, '%')
+                        OR s.description LIKE CONCAT('%', #{name}, '%')
+                    </otherwise>
+                </choose>
+            )
         </if>
         <!-- 动态生成分类精确匹配条件 -->
         <if test="category != null and category != ''">
-            AND category.name = #{category}
+            AND c.name = #{category}
         </if>
     </select>
 
@@ -132,5 +163,20 @@
     <select id="countAllShops" resultType="int">
         SELECT COUNT(*) FROM shop
     </select>
+
+    <!--
+    插入一条商家记录
+    @param shop 商家实体对象
+    @return 影响的行数
+    -->
+    <insert id="insertShop" parameterType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
+        INSERT INTO shop (
+            name, address, business_hours, phone, description, 
+            average_cost, rating, price_min, price_max, category_id
+        ) VALUES (
+            #{name}, #{address}, #{businessHours}, #{phone}, #{description},
+            #{averageCost}, #{rating}, #{priceMin}, #{priceMax}, #{categoryId}
+        )
+    </insert>
 
 </mapper>

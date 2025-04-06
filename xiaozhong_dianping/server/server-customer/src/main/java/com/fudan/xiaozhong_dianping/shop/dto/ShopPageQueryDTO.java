@@ -3,6 +3,7 @@ package com.fudan.xiaozhong_dianping.shop.dto;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * 店铺分页查询数据传输对象
@@ -19,6 +20,8 @@ public class ShopPageQueryDTO implements Serializable {
     private Integer offset;     // 分页偏移量
     private String sortBy;      // 排序字段
     private Long userId;        // 用户ID，用于记录搜索历史
+    
+    private List<String> expandedKeywords; // 扩展关键词列表，用于形近字搜索
 
     /* 每页显示记录数 */
 
