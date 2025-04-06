@@ -7,6 +7,7 @@
           placeholder="搜索商家名称、分类等" 
           @keyup.enter="searchShops"
           @focus="handleSearchFocus"
+          @blur="handleSearchBlur"
           @input="handleSearchInput"
           @clear="handleClear"
           clearable>
@@ -37,6 +38,7 @@
             :key="item.id"
             class="history-item"
             @click="handleHistoryClick(item.keyword)"
+            @mousedown.prevent
           >
             <el-icon><Clock /></el-icon>
             {{ item.keyword }}
@@ -55,6 +57,7 @@
             :key="keyword"
             class="similar-item"
             @click="useSimilarKeyword(keyword)"
+            @mousedown.prevent
           >
             {{ keyword }}
           </el-tag>
@@ -342,13 +345,13 @@ export default {
     watch(searchQuery, (newValue) => {
       console.log('搜索框内容变化:', newValue);
       if (!newValue || newValue.trim() === '') {
-        if (userId.value) {
-          console.log('搜索框为空，显示搜索历史，用户ID:', userId.value);
+        if (userId.value && document.activeElement === document.querySelector('.search-input .el-input__inner')) {
+          console.log('搜索框为空且聚焦中，显示搜索历史，用户ID:', userId.value);
           showSearchHistory.value = true;
           loadSearchHistory();
         }
       } else {
-        showSearchHistory.value = false;
+        showSimilarKeywords.value = false;
       }
     });
     
@@ -1127,12 +1130,22 @@ export default {
       }
     };
     
+    // 添加搜索框失去焦点的处理函数
+    const handleSearchBlur = () => {
+      console.log('搜索框失去焦点');
+      // 使用setTimeout延迟隐藏，以便能够点击历史记录
+      setTimeout(() => {
+        showSearchHistory.value = false;
+        showSimilarKeywords.value = false;
+      }, 200);
+    };
+    
     // 修改清空搜索框的处理
     const handleClear = async () => {
       console.log('清空搜索框');
       searchQuery.value = '';
-      if (userId.value) {
-        console.log('清空后显示搜索历史，用户ID:', userId.value);
+      if (userId.value && document.activeElement === document.querySelector('.search-input .el-input__inner')) {
+        console.log('清空后且搜索框仍聚焦，显示搜索历史，用户ID:', userId.value);
         showSearchHistory.value = true;
         await loadSearchHistory();
       }
@@ -1232,6 +1245,7 @@ export default {
       handlePageSizeChange,
       debugFilters,
       handleSearchFocus,
+      handleSearchBlur,
       handleClear,
       handleHistoryClick,
       // 相似关键词相关
