@@ -152,7 +152,6 @@
         </div>
         <div>
           <el-button type="primary" @click="resetFilters">重置筛选条件</el-button>
-          <el-button type="success" @click="debugFilters" v-if="userId === 1">调试筛选</el-button>
         </div>
       </div>
     </div>
@@ -310,30 +309,22 @@ export default {
     const user = computed(() => store.getters['auth/currentUser']);
     const userId = computed(() => {
       const currentUser = user.value;
-      // 调试用户信息获取
-      console.log('获取当前用户信息:', currentUser);
       if (!currentUser) {
-        console.warn('用户未登录或用户信息不完整');
         return null;
       }
       
       // 如果用户对象没有id属性，尝试获取完整的用户信息
       if (!currentUser.id) {
-        console.warn('用户对象中缺少id字段，尝试从AuthService获取');
         // 使用AuthService获取完整用户信息
         const fullUserInfo = AuthService.getUser();
         if (fullUserInfo && fullUserInfo.id) {
-          console.log('从AuthService获取到用户ID:', fullUserInfo.id);
           return fullUserInfo.id;
         }
-        // 在紧急情况下使用硬编码ID (注意：这是临时解决方案，应当尽快修复)
-        console.warn('无法获取用户ID，使用临时ID (1) 作为应急措施');
         return 1;
       }
       
       // 确保userId是数字类型
       const idValue = Number(currentUser.id);
-      console.log('从用户对象获取用户ID:', idValue, '类型:', typeof idValue);
       
       return idValue;
     });
@@ -343,10 +334,8 @@ export default {
     
     // 监听搜索框内容变化
     watch(searchQuery, (newValue) => {
-      console.log('搜索框内容变化:', newValue);
       if (!newValue || newValue.trim() === '') {
         if (userId.value && document.activeElement === document.querySelector('.search-input .el-input__inner')) {
-          console.log('搜索框为空且聚焦中，显示搜索历史，用户ID:', userId.value);
           showSearchHistory.value = true;
           loadSearchHistory();
         }
@@ -373,11 +362,8 @@ export default {
       
       loading.value = true;
       try {
-        console.log('开始加载商家数据...');
-        
         // 如果已有全部商家数据缓存，直接使用缓存数据
         if (originalShopsCache.value.length > 0) {
-          console.log('使用缓存的商家数据，共', originalShopsCache.value.length, '条');
           allShopsCache.value = [...originalShopsCache.value];
           total.value = allShopsCache.value.length;
           updatePagedShops();
@@ -386,28 +372,18 @@ export default {
         }
         
         // 获取较大数量的商家数据
-        console.log('从服务器请求商家数据');
         const response = await ShopService.getShops(1, 100);
-        console.log('服务器响应数据:', JSON.stringify(response, null, 2));
         
         if (isUnmounted.value) return;
         
         if (response.code === 1 && response.data) {
-          console.log('响应数据结构:', {
-            isArray: Array.isArray(response.data),
-            hasRecords: response.data.records !== undefined,
-            dataType: typeof response.data
-          });
-          
           // 处理不同类型的响应数据结构
           if (Array.isArray(response.data)) {
             originalShopsCache.value = response.data;
             allShopsCache.value = [...originalShopsCache.value];
-            console.log('数组结构 - 商家数据:', JSON.stringify(allShopsCache.value[0], null, 2));
           } else if (response.data.records) {
             originalShopsCache.value = response.data.records;
             allShopsCache.value = [...originalShopsCache.value];
-            console.log(`分页获取到${allShopsCache.value.length}条商家数据，总共${response.data.total || '未知'}条`);
           } else if (typeof response.data === 'object') {
             // 尝试从返回对象中找到数组
             const arrayFields = Object.entries(response.data)
@@ -416,35 +392,29 @@ export default {
             if (arrayFields) {
               originalShopsCache.value = arrayFields[1];
               allShopsCache.value = [...originalShopsCache.value];
-              console.log(`从对象字段获取到${allShopsCache.value.length}条商家数据`);
             } else {
               originalShopsCache.value = [response.data]; // 单个对象
               allShopsCache.value = [...originalShopsCache.value];
-              console.log('获取到单个商家数据，转换为数组');
             }
           }
           
           // 设置总数据并进行前端分页
           if (allShopsCache.value.length > 0) {
-            console.log(`成功缓存了 ${allShopsCache.value.length} 条商家数据`);
             total.value = allShopsCache.value.length;
             
             // 前端分页
             updatePagedShops();
           } else {
-            console.warn('获取到的商家数据为空');
             shops.value = [];
             total.value = 0;
           }
         } else {
-          console.error('获取商家列表失败:', response);
           shops.value = [];
           total.value = 0;
         }
       } catch (error) {
         if (isUnmounted.value) return;
         
-        console.error('加载商家失败:', error);
         shops.value = [];
         total.value = 0;
       } finally {
@@ -471,8 +441,6 @@ export default {
       } else {
         shops.value = allShopsCache.value.slice(startIndex, endIndex);
       }
-      
-      console.log(`显示${startIndex + 1}到${Math.min(endIndex, allShopsCache.value.length)}条记录，共${allShopsCache.value.length}条`);
     };
     
     // 加载搜索历史
@@ -480,33 +448,26 @@ export default {
       try {
         // 使用计算属性获取用户ID
         const currentUserId = userId.value;
-        console.log('加载搜索历史 - 当前用户ID:', currentUserId);
         
         if (!currentUserId) {
-          console.log('用户未登录或无法获取用户ID，无法加载搜索历史');
           showSearchHistory.value = false;
           return;
         }
 
         isLoading.value = true;
-        console.log('开始加载搜索历史，用户ID:', currentUserId);
         
         const response = await ShopService.getSearchHistory(currentUserId);
-        console.log('搜索历史响应:', response);
 
         if (response.code === 1 && Array.isArray(response.data)) {
           searchHistory.value = response.data
             .sort((a, b) => new Date(b.searchTime) - new Date(a.searchTime))
             .slice(0, 10);
           showSearchHistory.value = searchHistory.value.length > 0;
-          console.log('搜索历史加载成功:', searchHistory.value);
         } else {
-          console.warn('加载搜索历史失败:', response.msg);
           searchHistory.value = [];
           showSearchHistory.value = false;
         }
       } catch (error) {
-        console.error('加载搜索历史出错:', error);
         searchHistory.value = [];
         showSearchHistory.value = false;
       } finally {
@@ -537,25 +498,18 @@ export default {
           sortBy: sortBy.value
         };
         
-        console.log('创建新的查询参数对象:', queryParams);
-        
         // 只有在用户已登录时才添加userId
         if (userId.value) {
           // 确保userId是数值类型
           const userIdValue = userId.value;
-          console.log('准备添加用户ID参数:', userIdValue, '类型:', typeof userIdValue);
           
           // 尝试将userId转换为数值类型
           try {
             queryParams.userId = Number(userIdValue);
-            console.log('转换后的用户ID参数:', queryParams.userId, '类型:', typeof queryParams.userId);
           } catch (e) {
             // 如果转换失败，使用原始值
-            console.warn('用户ID转换为数值失败，使用原值:', userIdValue);
             queryParams.userId = userIdValue;
           }
-        } else {
-          console.warn('未找到有效的用户ID，搜索历史将不会被记录');
         }
         
         // 添加评分筛选
@@ -568,7 +522,6 @@ export default {
           // 检查是否是"200+"这种格式（表示200以上）
           if (selectedPrice.value.includes('+')) {
             const minPrice = Number(selectedPrice.value.replace('+', ''));
-            console.log('价格筛选 - 200以上，改用区间200-9999筛选');
             // 对于200+，使用一个较大的上限值代替无上限
             queryParams.minPrice = minPrice;
             queryParams.maxPrice = 9999;
@@ -579,7 +532,6 @@ export default {
             const [min, max] = selectedPrice.value.split('-');
             const minPrice = Number(min);
             const maxPrice = max ? Number(max) : Infinity;
-            console.log('应用价格区间筛选, 筛选区间:', minPrice, '-', maxPrice);
             
             queryParams.minPrice = minPrice;
             queryParams.maxPrice = maxPrice;
@@ -598,13 +550,10 @@ export default {
           // 检查是否是"200+"这种格式（表示200以上的人均消费）
           if (selectedAverageCost.value.includes('+')) {
             const minCost = Number(selectedAverageCost.value.replace('+', ''));
-            console.log('人均消费筛选 - 设置区间为:', minCost, '-9999');
             
             // 设置人均消费区间
             queryParams.minAverageCost = minCost;
             queryParams.maxAverageCost = 9999;
-            
-            console.log('人均消费"200+"筛选参数:', { minAverageCost: queryParams.minAverageCost, maxAverageCost: queryParams.maxAverageCost });
           } else if (selectedAverageCost.value.includes('-')) {
             // 普通范围筛选
             const [min, max] = selectedAverageCost.value.split('-');
@@ -613,7 +562,6 @@ export default {
             
             queryParams.minAverageCost = minCost;
             queryParams.maxAverageCost = maxCost;
-            console.log('人均消费筛选区间:', minCost, '-', maxCost);
           }
         } else {
           // 清除以前可能设置的人均消费筛选参数
@@ -621,14 +569,7 @@ export default {
           delete queryParams.maxAverageCost;
         }
         
-        // 最终记录要发送的请求参数
-        console.log('=======================================');
-        console.log('最终发送的搜索参数:', JSON.stringify(queryParams, null, 2));
-        console.log('=======================================');
-        
-        console.log('发送搜索请求...');
         const response = await ShopService.searchShops(queryParams);
-        console.log('搜索结果:', response);
         
         // 检查组件是否已卸载
         if (isUnmounted.value) return;
@@ -647,12 +588,10 @@ export default {
             // 直接返回数组的情况
             allShopsCache.value = response.data;
             total.value = response.data.length;
-            console.log(`直接获取到${allShopsCache.value.length}条商家数据`);
           } else if (response.data && response.data.records) {
             // 返回包含records字段的分页对象
             allShopsCache.value = response.data.records;
             total.value = response.data.total || response.data.records.length;
-            console.log(`分页获取到${allShopsCache.value.length}条商家数据，总共${total.value}条`);
           } else if (response.data) {
             // 其他情况，尝试适配
             allShopsCache.value = response.data || [];
@@ -661,7 +600,6 @@ export default {
             allShopsCache.value = [];
             shops.value = [];
             total.value = 0;
-            console.error('响应中没有有效的数据');
           }
           
           // 更新显示的分页数据
@@ -670,10 +608,7 @@ export default {
           } else {
             shops.value = [];
           }
-          
-          console.log('更新后的商家列表:', shops.value);
         } else {
-          console.error('搜索响应格式不符合预期:', response);
           errorMessage.value = '获取数据格式错误，请联系管理员';
           allShopsCache.value = [];
           shops.value = [];
@@ -683,7 +618,6 @@ export default {
         // 检查组件是否已卸载
         if (isUnmounted.value) return;
         
-        console.error('搜索商家失败:', error);
         errorMessage.value = '搜索时发生意外错误，请稍后再试';
         allShopsCache.value = [];
         shops.value = [];
@@ -754,16 +688,8 @@ export default {
     const filterCachedShops = () => {
       if (isUnmounted.value) return [];
       
-      console.log('开始前端筛选，筛选条件:', {
-        rating: selectedRating.value,
-        price: selectedPrice.value,
-        averageCost: selectedAverageCost.value,
-        sortBy: sortBy.value
-      });
-      
       // 如果没有缓存数据，返回空数组
       if (allShopsCache.value.length === 0) {
-        console.warn('缓存数据为空，无法进行筛选');
         return [];
       }
       
@@ -774,12 +700,10 @@ export default {
       if (selectedRating.value) {
         const minRating = Number(selectedRating.value);
         if (!isNaN(minRating)) {
-          console.log('应用评分筛选 >=', minRating);
           filteredShops = filteredShops.filter(shop => {
             // 处理两种可能的数据结构
             const shopObj = shop.shop || shop;
             const rating = Number(shopObj.rating);
-            console.log(`商家 ${shopObj.name || '未知'} 评分: ${rating}, 筛选条件: >= ${minRating}`);
             return !isNaN(rating) && rating >= minRating;
           });
         }
@@ -790,23 +714,19 @@ export default {
         // 检查是否是"200+"这种格式（表示200以上）
         if (selectedPrice.value.includes('+')) {
           const minPrice = Number(selectedPrice.value.replace('+', ''));
-          console.log('应用价格筛选 >=', minPrice, '（价格200以上）');
           filteredShops = filteredShops.filter(shop => {
             // 处理两种可能的数据结构
             const shopObj = shop.shop || shop;
             const shopMinPrice = Number(shopObj.priceMin) || 0;
             
             // 对于"200+"筛选，要求商家最低价>=200
-            const result = shopMinPrice >= minPrice;
-            console.log(`商家 ${shopObj.name || '未知'} 价格区间: ${shopObj.priceMin}-${shopObj.priceMax}, 筛选条件: 最低价>=${minPrice}, 筛选结果: ${result ? '通过' : '不通过'}`);
-            return result;
+            return shopMinPrice >= minPrice;
           });
         } else if (selectedPrice.value.includes('-')) {
           // 普通范围筛选（如0-50、50-100等）- 只要有交集即可
           const [min, max] = selectedPrice.value.split('-');
           const minPrice = Number(min);
           const maxPrice = max ? Number(max) : Infinity;
-          console.log('应用价格区间筛选, 筛选区间:', minPrice, '-', maxPrice);
           
           filteredShops = filteredShops.filter(shop => {
             // 处理两种可能的数据结构
@@ -816,11 +736,7 @@ export default {
             
             // 判断两个区间是否有交集
             // 商家最低价 <= 筛选最高价 且 商家最高价 >= 筛选最低价
-            const hasIntersection = shopMinPrice <= maxPrice && shopMaxPrice >= minPrice;
-            
-            console.log(`商家 ${shopObj.name || '未知'} 价格区间: ${shopMinPrice}-${shopMaxPrice}, 筛选区间: ${minPrice}-${maxPrice}, 有交集: ${hasIntersection}`);
-            
-            return hasIntersection;
+            return shopMinPrice <= maxPrice && shopMaxPrice >= minPrice;
           });
         }
       }
@@ -830,23 +746,19 @@ export default {
         // 检查是否是"200+"这种格式（表示200以上）
         if (selectedAverageCost.value.includes('+')) {
           const minCost = Number(selectedAverageCost.value.replace('+', ''));
-          console.log('应用人均消费筛选 >=', minCost, '（人均200以上）');
           filteredShops = filteredShops.filter(shop => {
             // 处理两种可能的数据结构
             const shopObj = shop.shop || shop;
             const averageCost = Number(shopObj.averageCost) || 0;
             
             // 对于"200+"筛选，要求人均消费>=200
-            const result = averageCost >= minCost;
-            console.log(`商家 ${shopObj.name || '未知'} 人均消费: ${averageCost}, 筛选条件: >=${minCost}, 筛选结果: ${result ? '通过' : '不通过'}`);
-            return result;
+            return averageCost >= minCost;
           });
         } else if (selectedAverageCost.value.includes('-')) {
           // 普通范围筛选 - 对于人均消费，直接判断是否在范围内
           const [min, max] = selectedAverageCost.value.split('-');
           const minCost = Number(min);
           const maxCost = Number(max);
-          console.log('应用人均消费筛选, 区间:', minCost, '-', maxCost);
           
           filteredShops = filteredShops.filter(shop => {
             // 处理两种可能的数据结构
@@ -854,11 +766,7 @@ export default {
             const averageCost = Number(shopObj.averageCost) || 0;
             
             // 人均消费在区间内
-            const isInRange = averageCost >= minCost && averageCost <= maxCost;
-            
-            console.log(`商家 ${shopObj.name || '未知'} 人均消费: ${averageCost}, 筛选区间: ${minCost}-${maxCost}, 在范围内: ${isInRange}`);
-            
-            return isInRange;
+            return averageCost >= minCost && averageCost <= maxCost;
           });
         }
       }
@@ -866,7 +774,6 @@ export default {
       // 应用排序
       if (sortBy.value !== 'default') {
         if (sortBy.value === 'rating_desc') {
-          console.log('应用评分降序排序');
           filteredShops.sort((a, b) => {
             const shopA = a.shop || a;
             const shopB = b.shop || b;
@@ -875,7 +782,6 @@ export default {
             return ratingB - ratingA;
           });
         } else if (sortBy.value === 'average_cost_asc') {
-          console.log('应用人均消费升序排序');
           filteredShops.sort((a, b) => {
             const shopA = a.shop || a;
             const shopB = b.shop || b;
@@ -886,7 +792,6 @@ export default {
         }
       }
       
-      console.log(`筛选后还剩 ${filteredShops.length} 条数据`);
       return filteredShops;
     };
     
@@ -936,7 +841,6 @@ export default {
       
       try {
         if (!shopData) {
-          console.warn('无效的商家数据');
           return;
         }
         
@@ -945,19 +849,16 @@ export default {
         if (shopData.shop && shopData.shop.id) {
           // 第一种数据结构：{shop: {...}, images: [...]}
           shopId = shopData.shop.id;
-          console.log('从嵌套结构中获取商家ID:', shopId);
         } else if (shopData.id) {
           // 第二种数据结构：直接是商家对象
           shopId = shopData.id;
-          console.log('直接从商家对象获取ID:', shopId);
         } else {
-          console.error('无法从数据中提取商家ID:', shopData);
           return;
         }
         
         router.push({ name: 'ShopDetail', params: { id: shopId } });
       } catch (error) {
-        console.error('导航到商家详情页失败:', error);
+        // 错误处理
       }
     };
     
@@ -999,10 +900,7 @@ export default {
     // 获取商家图片
     const getShopImage = (shopData) => {
       try {
-        console.log('处理商家图片，数据:', JSON.stringify(shopData, null, 2));
-        
         if (!shopData) {
-          console.error('shopData为空');
           return defaultImage;
         }
         
@@ -1015,31 +913,25 @@ export default {
           // 这是后端page和search接口新的统一结构
           shop = shopData.shop;
           images = shopData.images;
-          console.log('接口返回shop和images结构:', shop.id);
         } else if (shopData.id) {
           // 第二种数据结构：直接是商家对象
           // 这可能是旧版API或者前端缓存数据
           shop = shopData;
           images = [];
-          console.log('接口只返回shop对象:', shop.id);
         } else {
-          console.error('无法解析商家数据结构:', Object.keys(shopData));
           return defaultImage;
         }
         
         // 处理图片数据
         if (Array.isArray(images) && images.length > 0) {
-          console.log(`商家[${shop.id}]有${images.length}张图片`);
           const imageData = images[0]; // 使用第一张图片
           
           if (imageData && imageData.imageUrl) {
             let imageUrl = imageData.imageUrl;
-            console.log('原始图片URL:', imageUrl);
             
             // 统一处理图片URL
             if (imageUrl.startsWith('http')) {
               // 如果是完整的URL，直接使用
-              console.log('使用完整URL:', imageUrl);
               return imageUrl;
             } else {
               // 如果是相对路径，添加后端服务器地址
@@ -1047,17 +939,13 @@ export default {
               imageUrl = imageUrl.replace(/^\/+/, '');
               // 添加后端服务器地址
               imageUrl = `http://localhost:8088/${imageUrl}`;
-              console.log('处理后的图片URL:', imageUrl);
               return imageUrl;
             }
           }
-        } else {
-          console.log(`商家[${shop.id}]没有图片数据`);
         }
         
         // 如果没有图片，返回基于分类的默认图片
         const categoryName = shop.categoryName || '未分类';
-        console.log('使用默认图片，分类:', categoryName);
         
         const categoryImages = {
           '火锅': 'https://fuss10.elemecdn.com/a/3f/3302e58f9a181d2509f3dc0fa68b0jpeg.jpeg',
@@ -1075,7 +963,6 @@ export default {
         
         return categoryImages[categoryName] || categoryImages['未分类'];
       } catch (error) {
-        console.error('获取商家图片时发生错误:', error);
         return defaultImage;
       }
     };
@@ -1106,25 +993,9 @@ export default {
       }
     };
     
-    // 添加调试筛选函数
-    const debugFilters = () => {
-      console.log('===== 调试筛选条件 =====');
-      console.log('当前筛选条件:');
-      console.log('- 评分:', selectedRating.value);
-      console.log('- 价格区间:', selectedPrice.value);
-      console.log('- 人均消费:', selectedAverageCost.value);
-      console.log('- 排序方式:', sortBy.value);
-      console.log('=======================');
-      
-      // 强制应用筛选
-      applyFilter();
-    };
-    
     // 在 setup 函数中添加以下内容
     const handleSearchFocus = async () => {
-      console.log('搜索框获得焦点');
       if (userId.value) {
-        console.log('用户已登录，显示搜索历史，用户ID:', userId.value);
         showSearchHistory.value = true;
         await loadSearchHistory();
       }
@@ -1132,7 +1003,6 @@ export default {
     
     // 添加搜索框失去焦点的处理函数
     const handleSearchBlur = () => {
-      console.log('搜索框失去焦点');
       // 使用setTimeout延迟隐藏，以便能够点击历史记录
       setTimeout(() => {
         showSearchHistory.value = false;
@@ -1142,10 +1012,8 @@ export default {
     
     // 修改清空搜索框的处理
     const handleClear = async () => {
-      console.log('清空搜索框');
       searchQuery.value = '';
       if (userId.value && document.activeElement === document.querySelector('.search-input .el-input__inner')) {
-        console.log('清空后且搜索框仍聚焦，显示搜索历史，用户ID:', userId.value);
         showSearchHistory.value = true;
         await loadSearchHistory();
       }
@@ -1153,7 +1021,6 @@ export default {
     
     // 修改搜索历史点击处理方法
     const handleHistoryClick = (keyword) => {
-      console.log('点击搜索历史:', keyword, '用户ID:', userId.value);
       searchQuery.value = keyword;
       showSearchHistory.value = false;
       searchShops();
@@ -1175,20 +1042,16 @@ export default {
       try {
         if (!keyword || keyword.trim().length < 2) return;
         
-        console.log('获取相似关键词，关键词:', keyword);
         const response = await ShopService.getSimilarKeywords(keyword.trim());
         
         if (response && response.code === 1 && response.data && response.data.length > 0) {
-          console.log('获取到相似关键词:', response.data);
           similarKeywords.value = response.data;
           showSimilarKeywords.value = true;
         } else {
-          console.log('没有找到相似关键词');
           similarKeywords.value = [];
           showSimilarKeywords.value = false;
         }
       } catch (error) {
-        console.error('获取相似关键词出错:', error);
         similarKeywords.value = [];
         showSimilarKeywords.value = false;
       }
@@ -1243,7 +1106,6 @@ export default {
       isUnmounted,
       handlePageChange,
       handlePageSizeChange,
-      debugFilters,
       handleSearchFocus,
       handleSearchBlur,
       handleClear,
