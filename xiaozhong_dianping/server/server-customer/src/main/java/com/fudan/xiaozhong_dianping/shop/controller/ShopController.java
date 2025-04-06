@@ -35,19 +35,32 @@ public class ShopController {
      */
     @GetMapping("/page")
     @ApiOperation(value = "分页查询")
-    public Result<List<Map<String, Object>>> page(int pageCurrent, int pageSize) {
-        log.info("分页查询，当前页码：{}，每页记录数：{}", pageCurrent, pageSize);
+    public Result<List<Map<String, Object>>> page(
+            @RequestParam(required = false) Integer pageCurrent,
+            @RequestParam(required = false) Integer pageSize) {
+        try {
+            // 检查参数是否为空
+            if (pageCurrent == null || pageSize == null) {
+                String errorMessage = "分页查询参数缺失，pageCurrent和pageSize不能为空";
+                log.error(errorMessage);
+                return Result.error(errorMessage);
+            }
 
-        // 计算偏移量
-        int offset = (pageCurrent - 1) * pageSize;
+            // 计算偏移量
+            int offset = (pageCurrent - 1) * pageSize;
 
-        // 调用服务层获取分页数据
-        List<Shop> shops = shopService.showShops(offset, pageSize);
+            // 调用服务层获取分页数据
+            List<Shop> shops = shopService.showShops(offset, pageSize);
 
-        // 为商家添加图片信息
-        List<Map<String, Object>> result = getShopDataWithImages(shops);
+            // 为商家添加图片信息
+            List<Map<String, Object>> result = getShopDataWithImages(shops);
 
-        return Result.success(result);
+            return Result.success(result);
+        } catch (Exception e) {
+            String errorMessage = "分页查询时发生错误：" + e.getMessage();
+            log.error(errorMessage, e);
+            return Result.error(errorMessage);
+        }
     }
 
     /**
