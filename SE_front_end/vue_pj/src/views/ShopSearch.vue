@@ -17,15 +17,21 @@
       </div>
       
       <!-- 搜索历史记录 -->
-      <div v-if="showSearchHistory && searchHistory.length > 0" class="search-history">
+      <div v-if="showSearchHistory && searchHistory.length > 0" class="search-history" :class="{'search-history-collapsed': !historyExpanded}">
         <div class="history-header">
           <span>搜索历史</span>
-          <el-button type="text" @click="clearSearchHistory">
-            <el-icon><Delete /></el-icon>
-            清空
-          </el-button>
+          <div class="history-actions">
+            <el-button type="text" @click="toggleHistoryExpand">
+              <el-icon><component :is="historyExpanded ? 'ArrowUp' : 'ArrowDown'" /></el-icon>
+              {{ historyExpanded ? '收起' : '展开' }}
+            </el-button>
+            <el-button type="text" @click="clearSearchHistory">
+              <el-icon><Delete /></el-icon>
+              清空
+            </el-button>
+          </div>
         </div>
-        <div class="history-list">
+        <div class="history-list" v-show="historyExpanded">
           <el-tag
             v-for="item in searchHistory"
             :key="item.id"
@@ -221,7 +227,7 @@
 <script>
 import { ref, onMounted, watch, computed, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { Search, Delete, Clock, Loading } from '@element-plus/icons-vue';
+import { Search, Delete, Clock, Loading, ArrowDown, ArrowUp } from '@element-plus/icons-vue';
 import ShopService from '@/services/ShopService';
 import AuthService from '@/services/AuthService';
 import { useStore } from 'vuex';
@@ -240,6 +246,7 @@ export default {
     const showSearchHistory = ref(false);
     const searchHistory = ref([]);
     const isLoading = ref(false);
+    const historyExpanded = ref(true); // 默认展开搜索历史
     const defaultImage = 'https://shadow.elemecdn.com/app/element/hamburger.9cf7b091-55e9-11e9-a976-7f4d0b07eef6.png';
     
     // 相似关键词相关
@@ -271,7 +278,7 @@ export default {
     const isUnmounted = ref(false);
     
     // 用户信息 - 使用计算属性从Vuex中获取
-    const user = computed(() => store.getters['auth/user']);
+    const user = computed(() => store.getters['auth/currentUser']);
     const userId = computed(() => {
       const currentUser = user.value;
       // 调试用户信息获取
@@ -1165,17 +1172,25 @@ export default {
       searchShops();
     };
     
+    // 收起/展开搜索历史
+    const toggleHistoryExpand = () => {
+      historyExpanded.value = !historyExpanded.value;
+    };
+    
     return {
       Search,
       Delete,
       Clock,
       Loading,
+      ArrowDown,
+      ArrowUp,
       searchQuery,
       shops,
       loading,
       errorMessage,
       searchHistory,
       showSearchHistory,
+      historyExpanded,
       isLoading,
       selectedRating,
       selectedPrice,
@@ -1184,6 +1199,7 @@ export default {
       searchShops,
       useHistoryItem,
       clearSearchHistory,
+      toggleHistoryExpand,
       applyFilter,
       viewShopDetails,
       resetFilters,
@@ -1233,13 +1249,14 @@ body {
   top: 0;
   z-index: 100;
   padding: 15px 0;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 
 .search-input {
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
+  position: relative;
 }
 
 .search-input :deep(.el-input__wrapper) {
@@ -1255,7 +1272,7 @@ body {
 
 .search-history {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 5px);
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
@@ -1264,7 +1281,17 @@ body {
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   padding: 15px;
-  margin-top: 10px;
+  margin-top: 0;
+  z-index: 101;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.search-history-collapsed {
+  padding: 10px 15px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  max-height: 40px; /* 调整收起后的高度 */
+  opacity: 0.5; /* 稍微降低透明度 */
 }
 
 .history-header {
@@ -1274,18 +1301,44 @@ body {
   margin-bottom: 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid #ebeef5;
+  transition: all 0.3s ease;
 }
 
-.history-header span {
-  font-size: 14px;
-  color: #606266;
-  font-weight: 500;
+.search-history-collapsed .history-header {
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.history-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.history-actions :deep(.el-button) {
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.history-actions :deep(.el-button):hover {
+  background-color: #f0f2f500;
+  border-radius: 4px;
+}
+
+.history-actions :deep(.el-icon) {
+  margin-right: 4px;
 }
 
 .history-list {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  transition: all 0.3s ease-in-out;
+  overflow: hidden;
+  max-height: 300px; /* 设置展开时的最大高度 */
 }
 
 .history-item {
@@ -1580,6 +1633,12 @@ body {
 .similar-item:hover {
   background-color: #409EFF;
   color: white;
+}
+
+.history-header span {
+  font-size: 14px;
+  color: #606266;
+  font-weight: 500;
 }
 
 @media screen and (max-width: 768px) {

@@ -149,7 +149,7 @@ export default {
                 
                 // 尝试从Vuex获取用户ID
                 if (window && window.$store) {
-                    const user = window.$store.getters['auth/user'];
+                    const user = window.$store.getters['auth/currentUser'];
                     if (user && user.id) {
                         params.userId = Number(user.id);
                         console.log(`从Vuex自动获取用户ID: ${params.userId}`);
@@ -197,7 +197,7 @@ export default {
             
             // 如果未提供userId，尝试从Vuex获取
             if (!userIdParam && window && window.$store) {
-                const user = window.$store.getters['auth/user'];
+                const user = window.$store.getters['auth/currentUser'];
                 if (user && user.id) {
                     userIdParam = user.id;
                     console.log('从Vuex获取用户ID:', userIdParam);
@@ -272,7 +272,7 @@ export default {
             
             // 如果未提供userId，尝试从Vuex获取
             if (!userIdParam && window && window.$store) {
-                const user = window.$store.getters['auth/user'];
+                const user = window.$store.getters['auth/currentUser'];
                 if (user && user.id) {
                     userIdParam = user.id;
                     console.log('从Vuex获取用户ID:', userIdParam);
