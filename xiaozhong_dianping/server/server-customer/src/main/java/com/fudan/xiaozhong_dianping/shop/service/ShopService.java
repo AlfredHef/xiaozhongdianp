@@ -76,4 +76,12 @@ public interface ShopService {
      */
     int countShops();
 
+    /**
+     * 添加测试数据
+     * 用于测试模糊搜索功能
+     * 
+     * @return 是否添加成功
+     */
+    boolean addDemoShops();
+
 }

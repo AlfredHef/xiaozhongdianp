@@ -53,5 +53,13 @@ public interface ShopMapper {
      */
     int countAllShops();
 
+    /**
+     * 插入一条商家记录
+     * 
+     * @param shop 商家信息
+     * @return 影响的行数
+     */
+    int insertShop(Shop shop);
+
 }
 

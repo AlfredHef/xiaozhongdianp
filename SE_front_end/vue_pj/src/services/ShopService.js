@@ -149,7 +149,7 @@ export default {
                 
                 // 尝试从Vuex获取用户ID
                 if (window && window.$store) {
-                    const user = window.$store.getters['auth/user'];
+                    const user = window.$store.getters['auth/currentUser'];
                     if (user && user.id) {
                         params.userId = Number(user.id);
                         console.log(`从Vuex自动获取用户ID: ${params.userId}`);
@@ -197,7 +197,7 @@ export default {
             
             // 如果未提供userId，尝试从Vuex获取
             if (!userIdParam && window && window.$store) {
-                const user = window.$store.getters['auth/user'];
+                const user = window.$store.getters['auth/currentUser'];
                 if (user && user.id) {
                     userIdParam = user.id;
                     console.log('从Vuex获取用户ID:', userIdParam);
@@ -272,7 +272,7 @@ export default {
             
             // 如果未提供userId，尝试从Vuex获取
             if (!userIdParam && window && window.$store) {
-                const user = window.$store.getters['auth/user'];
+                const user = window.$store.getters['auth/currentUser'];
                 if (user && user.id) {
                     userIdParam = user.id;
                     console.log('从Vuex获取用户ID:', userIdParam);
@@ -311,6 +311,45 @@ export default {
             }
         }
     },
+
+    /**
+     * 获取相似关键词
+     * @param {string} keyword - 原始关键词
+     * @returns {Promise<Object>} 相似关键词数据
+     */
+    async getSimilarKeywords(keyword) {
+        try {
+            if (!keyword || keyword.trim() === '') {
+                return { code: 1, data: [] };
+            }
+            
+            console.log('获取相似关键词，原始关键词:', keyword);
+            const response = await axiosInstance.get(`/shop/search/similar`, {
+                params: { keyword: keyword.trim() }
+            });
+            console.log('相似关键词响应:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('获取相似关键词失败:', error);
+            
+            // 提供更详细的错误信息，但不抛出异常
+            if (error.response) {
+                console.error(`服务器返回错误: ${error.response.status}`);
+                return { 
+                    code: 0, 
+                    msg: `获取相似关键词失败: ${error.response.data?.message || error.response.data?.msg || '服务器错误'}`, 
+                    data: [] 
+                };
+            } else if (error.request) {
+                console.error('没有收到服务器响应，请检查网络连接');
+                return { code: 0, msg: '网络错误，请检查连接', data: [] };
+            } else {
+                console.error(`请求错误: ${error.message}`);
+                return { code: 0, msg: `请求错误: ${error.message}`, data: [] };
+            }
+        }
+    },
+
     /**
      * 获取商家列表
      * @param {number} [pageCurrent=1] - 当前页码

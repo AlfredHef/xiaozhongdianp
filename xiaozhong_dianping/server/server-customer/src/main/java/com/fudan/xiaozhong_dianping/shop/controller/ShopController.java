@@ -1,6 +1,7 @@
 package com.fudan.xiaozhong_dianping.shop.controller;
 
 import com.fudan.result.Result;
+import com.fudan.xiaozhong_dianping.common.utils.SimilarCharsUtil;
 import com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO;
 import com.fudan.xiaozhong_dianping.shop.entity.SearchHistory;
 import com.fudan.xiaozhong_dianping.shop.entity.Shop;
@@ -25,6 +26,9 @@ public class ShopController {
     // 自动注入ShopService，用于处理店铺相关的业务逻辑
     @Autowired
     private ShopService shopService;
+
+    @Autowired
+    private SimilarCharsUtil similarCharsUtil;
 
     /**
      * 分页查询店铺信息
@@ -100,6 +104,9 @@ public class ShopController {
         
         // 验证并修正数值型参数
         validateNumericParams(queryDTO);
+        
+        // 扩展搜索关键词，添加形近字匹配
+        expandSearchKeywords(queryDTO);
         
         // 保存搜索历史（如果需要）
         saveSearchHistoryIfNeeded(queryDTO);
@@ -388,5 +395,130 @@ public class ShopController {
         result.put("current", pageCurrent);
         result.put("size", pageSize);
         return result;
+    }
+
+    /**
+     * 扩展搜索关键词，支持形近字搜索
+     * @param queryDTO 查询参数
+     */
+    private void expandSearchKeywords(ShopPageQueryDTO queryDTO) {
+        String keyword = queryDTO.getName();
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            try {
+                log.info("开始扩展关键词: {}", keyword);
+                
+                // 保存原始关键词
+                String originalKeyword = keyword.trim();
+                
+                // 获取扩展后的关键词列表（包含形近字变体）
+                List<String> expandedKeywords = similarCharsUtil.getExpandedKeywords(originalKeyword);
+                
+                // 打印每个扩展关键词，用于调试
+                StringBuilder keywordsStr = new StringBuilder();
+                for (String kw : expandedKeywords) {
+                    keywordsStr.append(kw).append(", ");
+                }
+                log.info("原始关键词: {}, 扩展关键词: {}", originalKeyword, keywordsStr.toString());
+                
+                // 明确设置扩展关键词
+                queryDTO.setExpandedKeywords(expandedKeywords);
+                
+                // 验证扩展关键词是否成功设置
+                if (queryDTO.getExpandedKeywords() == null) {
+                    log.error("扩展关键词设置失败，仍为null");
+                } else {
+                    log.info("扩展关键词设置成功，数量: {}", queryDTO.getExpandedKeywords().size());
+                }
+            } catch (Exception e) {
+                log.error("扩展关键词时发生错误: {}", e.getMessage(), e);
+                // 出错时使用原始关键词
+                queryDTO.setExpandedKeywords(List.of("%" + keyword.trim() + "%"));
+                log.info("使用原始关键词作为备选: {}", keyword.trim());
+            }
+        } else {
+            log.warn("关键词为空，无法扩展");
+        }
+    }
+
+    /**
+     * 获取与给定关键词相似的推荐关键词
+     * 
+     * @param keyword 用户输入的关键词
+     * @return 相似关键词列表
+     */
+    @GetMapping("/search/similar")
+    public Result<List<String>> getSimilarKeywords(@RequestParam String keyword) {
+        log.info("获取相似关键词，原始关键词：{}", keyword);
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return Result.success(List.of());
+        }
+        
+        try {
+            List<String> similarKeywords = similarCharsUtil.getSimilarKeywords(keyword.trim());
+            return Result.success(similarKeywords);
+        } catch (Exception e) {
+            log.error("获取相似关键词时发生错误：", e);
+            return Result.error("获取相似关键词失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 添加测试数据，方便测试模糊搜索功能
+     * 仅用于开发测试环境
+     * 
+     * @return 添加结果
+     */
+    @GetMapping("/test/add-demo-data")
+    public Result<String> addDemoData() {
+        log.info("开始添加测试数据");
+        try {
+            // 进行测试数据初始化
+            boolean result = shopService.addDemoShops();
+            if (result) {
+                log.info("测试数据添加成功");
+                return Result.success("测试数据添加成功");
+            } else {
+                log.error("测试数据添加失败");
+                return Result.error("测试数据添加失败");
+            }
+        } catch (Exception e) {
+            log.error("添加测试数据时发生错误: {}", e.getMessage(), e);
+            return Result.error("添加测试数据时发生错误: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 测试模糊搜索功能
+     * 
+     * @param keyword 关键词
+     * @return 搜索结果
+     */
+    @GetMapping("/test/fuzzy-search")
+    public Result<List<Map<String, Object>>> testFuzzySearch(@RequestParam String keyword) {
+        log.info("测试模糊搜索功能，关键词: {}", keyword);
+        try {
+            // 创建查询参数
+            ShopPageQueryDTO queryDTO = new ShopPageQueryDTO();
+            queryDTO.setName(keyword);
+            queryDTO.setPageCurrent(1);
+            queryDTO.setPageSize(100);
+            
+            // 手动调用扩展关键词方法
+            expandSearchKeywords(queryDTO);
+            
+            log.info("扩展后的关键词: {}", queryDTO.getExpandedKeywords());
+            
+            // 执行搜索
+            List<Shop> shopList = shopService.searchShops(queryDTO);
+            log.info("搜索结果数量: {}", shopList.size());
+            
+            // 转换结果
+            List<Map<String, Object>> result = getShopDataWithImages(shopList);
+            
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("测试模糊搜索时发生错误: {}", e.getMessage(), e);
+            return Result.error("测试失败: " + e.getMessage());
+        }
     }
 }

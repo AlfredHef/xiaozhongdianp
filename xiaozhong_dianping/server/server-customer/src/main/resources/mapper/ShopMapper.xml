@@ -26,9 +26,22 @@
         <!-- 动态生成名称模糊查询条件 -->
         <if test="name != null and name != ''">
             AND (
-                s.name LIKE CONCAT('%', #{name}, '%') 
-                OR c.name LIKE CONCAT('%', #{name}, '%')
-                OR s.description LIKE CONCAT('%', #{name}, '%')
+                <choose>
+                    <when test="expandedKeywords != null and expandedKeywords.size() > 0">
+                        <!-- 使用扩展关键词进行搜索 -->
+                        <foreach collection="expandedKeywords" item="keyword" separator=" OR ">
+                            s.name LIKE #{keyword} 
+                            OR c.name LIKE #{keyword}
+                            OR s.description LIKE #{keyword}
+                        </foreach>
+                    </when>
+                    <otherwise>
+                        <!-- 降级方案：如果没有扩展关键词，使用原始关键词 -->
+                        s.name LIKE CONCAT('%', #{name}, '%') 
+                        OR c.name LIKE CONCAT('%', #{name}, '%')
+                        OR s.description LIKE CONCAT('%', #{name}, '%')
+                    </otherwise>
+                </choose>
             )
         </if>
         <!-- 动态生成分类精确匹配条件 -->
@@ -42,18 +55,49 @@
         <if test="maxRating != null">
             AND s.rating &lt;= #{maxRating}
         </if>
-        <!-- 价格区间筛选 -->
-        <if test="minPrice != null">
-            AND s.price_min &gt;= #{minPrice}
+        <!-- 价格区间筛选 - 使用价格区间交集判断 -->
+        <if test="minPrice != null and maxPrice != null">
+            AND (
+                <!-- 价格区间有交集的情况 -->
+                <choose>
+                    <!-- 特殊情况: 如果minPrice=200且maxPrice=9999 (代表"200以上"筛选条件) -->
+                    <when test="minPrice == 200 and maxPrice == 9999">
+                        <!-- 要求商家最低价格至少为200 -->
+                        s.price_min &gt;= #{minPrice}
+                    </when>
+                    <otherwise>
+                        <!-- 标准区间交集逻辑 -->
+                        s.price_max &gt;= #{minPrice} AND s.price_min &lt;= #{maxPrice}
+                    </otherwise>
+                </choose>
+            )
         </if>
-        <if test="maxPrice != null">
-            AND s.price_max &lt;= #{maxPrice}
+        <if test="minPrice != null and maxPrice == null">
+            AND s.price_max &gt;= #{minPrice}
         </if>
-        <!-- 人均消费筛选 -->
-        <if test="minAverageCost != null">
+        <if test="minPrice == null and maxPrice != null">
+            AND s.price_min &lt;= #{maxPrice}
+        </if>
+        <!-- 人均消费筛选 - 对于200以上使用特殊处理 -->
+        <if test="minAverageCost != null and maxAverageCost != null">
+            AND (
+                <choose>
+                    <!-- 特殊情况: 如果minAverageCost=200且maxAverageCost=9999 (代表"200以上"筛选条件) -->
+                    <when test="minAverageCost == 200 and maxAverageCost == 9999">
+                        <!-- 要求人均消费至少为200 -->
+                        s.average_cost &gt;= #{minAverageCost}
+                    </when>
+                    <otherwise>
+                        <!-- 标准区间筛选 -->
+                        s.average_cost BETWEEN #{minAverageCost} AND #{maxAverageCost}
+                    </otherwise>
+                </choose>
+            )
+        </if>
+        <if test="minAverageCost != null and maxAverageCost == null">
             AND s.average_cost &gt;= #{minAverageCost}
         </if>
-        <if test="maxAverageCost != null">
+        <if test="minAverageCost == null and maxAverageCost != null">
             AND s.average_cost &lt;= #{maxAverageCost}
         </if>
         <!-- 动态排序逻辑 -->
@@ -82,16 +126,86 @@
     @return int 符合条件的结果总数
     -->
     <select id="countShops" parameterType="com.fudan.xiaozhong_dianping.shop.dto.ShopPageQueryDTO" resultType="int">
-        SELECT COUNT(*) FROM shop
-        JOIN category ON shop.category_id = category.id
+        SELECT COUNT(*) 
+        FROM shop s
+        JOIN category c ON s.category_id = c.id
         WHERE 1 = 1
         <!-- 动态生成名称模糊查询条件（商家名称或分类名称） -->
         <if test="name != null and name != ''">
-            AND (shop.name LIKE CONCAT('%', #{name}, '%') OR category.name LIKE CONCAT('%', #{name}, '%'))
+            AND (
+                <choose>
+                    <when test="expandedKeywords != null and expandedKeywords.size() > 0">
+                        <!-- 使用扩展关键词进行搜索 -->
+                        <foreach collection="expandedKeywords" item="keyword" separator=" OR ">
+                            s.name LIKE #{keyword} 
+                            OR c.name LIKE #{keyword}
+                            OR s.description LIKE #{keyword}
+                        </foreach>
+                    </when>
+                    <otherwise>
+                        <!-- 降级方案：如果没有扩展关键词，使用原始关键词 -->
+                        s.name LIKE CONCAT('%', #{name}, '%') 
+                        OR c.name LIKE CONCAT('%', #{name}, '%')
+                        OR s.description LIKE CONCAT('%', #{name}, '%')
+                    </otherwise>
+                </choose>
+            )
         </if>
         <!-- 动态生成分类精确匹配条件 -->
         <if test="category != null and category != ''">
-            AND category.name = #{category}
+            AND c.name = #{category}
+        </if>
+        <!-- 添加评分筛选 -->
+        <if test="minRating != null">
+            AND s.rating &gt;= #{minRating}
+        </if>
+        <if test="maxRating != null">
+            AND s.rating &lt;= #{maxRating}
+        </if>
+        <!-- 添加价格区间筛选 - 使用价格区间交集判断 -->
+        <if test="minPrice != null and maxPrice != null">
+            AND (
+                <!-- 价格区间有交集的情况 -->
+                <choose>
+                    <!-- 特殊情况: 如果minPrice=200且maxPrice=9999 (代表"200以上"筛选条件) -->
+                    <when test="minPrice == 200 and maxPrice == 9999">
+                        <!-- 要求商家最低价格至少为200 -->
+                        s.price_min &gt;= #{minPrice}
+                    </when>
+                    <otherwise>
+                        <!-- 标准区间交集逻辑 -->
+                        s.price_max &gt;= #{minPrice} AND s.price_min &lt;= #{maxPrice}
+                    </otherwise>
+                </choose>
+            )
+        </if>
+        <if test="minPrice != null and maxPrice == null">
+            AND s.price_max &gt;= #{minPrice}
+        </if>
+        <if test="minPrice == null and maxPrice != null">
+            AND s.price_min &lt;= #{maxPrice}
+        </if>
+        <!-- 添加人均消费筛选 - 对于200以上使用特殊处理 -->
+        <if test="minAverageCost != null and maxAverageCost != null">
+            AND (
+                <choose>
+                    <!-- 特殊情况: 如果minAverageCost=200且maxAverageCost=9999 (代表"200以上"筛选条件) -->
+                    <when test="minAverageCost == 200 and maxAverageCost == 9999">
+                        <!-- 要求人均消费至少为200 -->
+                        s.average_cost &gt;= #{minAverageCost}
+                    </when>
+                    <otherwise>
+                        <!-- 标准区间筛选 -->
+                        s.average_cost BETWEEN #{minAverageCost} AND #{maxAverageCost}
+                    </otherwise>
+                </choose>
+            )
+        </if>
+        <if test="minAverageCost != null and maxAverageCost == null">
+            AND s.average_cost &gt;= #{minAverageCost}
+        </if>
+        <if test="minAverageCost == null and maxAverageCost != null">
+            AND s.average_cost &lt;= #{maxAverageCost}
         </if>
     </select>
 
@@ -132,5 +246,20 @@
     <select id="countAllShops" resultType="int">
         SELECT COUNT(*) FROM shop
     </select>
+
+    <!--
+    插入一条商家记录
+    @param shop 商家实体对象
+    @return 影响的行数
+    -->
+    <insert id="insertShop" parameterType="com.fudan.xiaozhong_dianping.shop.entity.Shop">
+        INSERT INTO shop (
+            name, address, business_hours, phone, description, 
+            average_cost, rating, price_min, price_max, category_id
+        ) VALUES (
+            #{name}, #{address}, #{businessHours}, #{phone}, #{description},
+            #{averageCost}, #{rating}, #{priceMin}, #{priceMax}, #{categoryId}
+        )
+    </insert>
 
 </mapper>
