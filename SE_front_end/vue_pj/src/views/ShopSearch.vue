@@ -18,7 +18,7 @@
       </div>
       
       <!-- 搜索历史记录 -->
-      <div v-if="showSearchHistory && searchHistory.length > 0" class="search-history" :class="{'search-history-collapsed': !historyExpanded}">
+      <div v-if="showSearchHistory && searchHistory.length > 0" class="search-history">
         <div class="history-header">
           <span>搜索历史</span>
           <div class="history-actions">
@@ -522,21 +522,28 @@ export default {
           // 检查是否是"200+"这种格式（表示200以上）
           if (selectedPrice.value.includes('+')) {
             const minPrice = Number(selectedPrice.value.replace('+', ''));
-            // 对于200+，使用一个较大的上限值代替无上限
-            queryParams.minPrice = minPrice;
-            queryParams.maxPrice = 9999;
-            // 清除可能冲突的参数
-            delete queryParams.maxPriceMin;
+            filteredShops = filteredShops.filter(shop => {
+              // 处理两种可能的数据结构
+              const shopObj = shop.shop || shop;
+              const shopMaxPrice = Number(shopObj.priceMax) || 0;
+              
+              // 对于"200+"筛选，要求商家最高价>=200（即价格区间与200以上有交集）
+              return shopMaxPrice >= minPrice;
+            });
           } else if (selectedPrice.value.includes('-')) {
             // 普通范围筛选（如0-50、50-100等）- 只要有交集即可
             const [min, max] = selectedPrice.value.split('-');
             const minPrice = Number(min);
             const maxPrice = max ? Number(max) : Infinity;
             
-            queryParams.minPrice = minPrice;
-            queryParams.maxPrice = maxPrice;
-            // 清除可能的自定义参数
-            delete queryParams.maxPriceMin;
+            filteredShops = filteredShops.filter(shop => {
+              // 处理两种可能的数据结构
+              const shopObj = shop.shop || shop;
+              const shopMaxPrice = Number(shopObj.priceMax) || 0;
+              
+              // 对于"200+"筛选，要求商家最高价>=200（即价格区间与200以上有交集）
+              return shopMaxPrice >= minPrice;
+            });
           }
         } else {
           // 清除以前可能设置的价格筛选参数
@@ -717,10 +724,10 @@ export default {
           filteredShops = filteredShops.filter(shop => {
             // 处理两种可能的数据结构
             const shopObj = shop.shop || shop;
-            const shopMinPrice = Number(shopObj.priceMin) || 0;
+            const shopMaxPrice = Number(shopObj.priceMax) || 0;
             
-            // 对于"200+"筛选，要求商家最低价>=200
-            return shopMinPrice >= minPrice;
+            // 对于"200+"筛选，要求商家最高价>=200（即价格区间与200以上有交集）
+            return shopMaxPrice >= minPrice;
           });
         } else if (selectedPrice.value.includes('-')) {
           // 普通范围筛选（如0-50、50-100等）- 只要有交集即可
@@ -731,12 +738,10 @@ export default {
           filteredShops = filteredShops.filter(shop => {
             // 处理两种可能的数据结构
             const shopObj = shop.shop || shop;
-            const shopMinPrice = Number(shopObj.priceMin) || 0;
             const shopMaxPrice = Number(shopObj.priceMax) || 0;
             
-            // 判断两个区间是否有交集
-            // 商家最低价 <= 筛选最高价 且 商家最高价 >= 筛选最低价
-            return shopMinPrice <= maxPrice && shopMaxPrice >= minPrice;
+            // 对于"200+"筛选，要求商家最高价>=200（即价格区间与200以上有交集）
+            return shopMaxPrice >= minPrice;
           });
         }
       }
@@ -1003,11 +1008,11 @@ export default {
     
     // 添加搜索框失去焦点的处理函数
     const handleSearchBlur = () => {
-      // 使用setTimeout延迟隐藏，以便能够点击历史记录
+      // 使用setTimeout延迟，以便能够点击历史记录
       setTimeout(() => {
         showSearchHistory.value = false;
         showSimilarKeywords.value = false;
-      }, 200);
+      }, 300);
     };
     
     // 修改清空搜索框的处理
@@ -1067,6 +1072,13 @@ export default {
     // 收起/展开搜索历史
     const toggleHistoryExpand = () => {
       historyExpanded.value = !historyExpanded.value;
+      
+      // 如果是收起操作，设置延时后完全隐藏搜索历史框
+      if (!historyExpanded.value) {
+        setTimeout(() => {
+          showSearchHistory.value = false;
+        }, 300);
+      }
     };
     
     return {
@@ -1175,15 +1187,8 @@ body {
   padding: 15px;
   margin-top: 0;
   z-index: 101;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
   overflow: hidden;
-}
-
-.search-history-collapsed {
-  padding: 10px 15px 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  max-height: 40px; /* 调整收起后的高度 */
-  opacity: 0.5; /* 稍微降低透明度 */
 }
 
 .history-header {
@@ -1194,12 +1199,6 @@ body {
   padding-bottom: 8px;
   border-bottom: 1px solid #ebeef5;
   transition: all 0.3s ease;
-}
-
-.search-history-collapsed .history-header {
-  margin-bottom: 0;
-  border-bottom: none;
-  padding-bottom: 0;
 }
 
 .history-actions {
@@ -1228,9 +1227,8 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  transition: all 0.3s ease-in-out;
+  transition: max-height 0.3s ease;
   overflow: hidden;
-  max-height: 300px; /* 设置展开时的最大高度 */
 }
 
 .history-item {
