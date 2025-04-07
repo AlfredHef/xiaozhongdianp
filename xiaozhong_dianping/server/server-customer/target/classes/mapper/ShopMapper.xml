@@ -55,18 +55,49 @@
         <if test="maxRating != null">
             AND s.rating &lt;= #{maxRating}
         </if>
-        <!-- 价格区间筛选 -->
-        <if test="minPrice != null">
-            AND s.price_min &gt;= #{minPrice}
+        <!-- 价格区间筛选 - 使用价格区间交集判断 -->
+        <if test="minPrice != null and maxPrice != null">
+            AND (
+                <!-- 价格区间有交集的情况 -->
+                <choose>
+                    <!-- 特殊情况: 如果minPrice=200且maxPrice=9999 (代表"200以上"筛选条件) -->
+                    <when test="minPrice == 200 and maxPrice == 9999">
+                        <!-- 要求商家最高价格大于等于200，表示有交集 -->
+                        s.price_max &gt;= #{minPrice}
+                    </when>
+                    <otherwise>
+                        <!-- 标准区间交集逻辑 -->
+                        s.price_max &gt;= #{minPrice} AND s.price_min &lt;= #{maxPrice}
+                    </otherwise>
+                </choose>
+            )
         </if>
-        <if test="maxPrice != null">
-            AND s.price_max &lt;= #{maxPrice}
+        <if test="minPrice != null and maxPrice == null">
+            AND s.price_max &gt;= #{minPrice}
         </if>
-        <!-- 人均消费筛选 -->
-        <if test="minAverageCost != null">
+        <if test="minPrice == null and maxPrice != null">
+            AND s.price_min &lt;= #{maxPrice}
+        </if>
+        <!-- 人均消费筛选 - 对于200以上使用特殊处理 -->
+        <if test="minAverageCost != null and maxAverageCost != null">
+            AND (
+                <choose>
+                    <!-- 特殊情况: 如果minAverageCost=200且maxAverageCost=9999 (代表"200以上"筛选条件) -->
+                    <when test="minAverageCost == 200 and maxAverageCost == 9999">
+                        <!-- 要求人均消费至少为200 -->
+                        s.average_cost &gt;= #{minAverageCost}
+                    </when>
+                    <otherwise>
+                        <!-- 标准区间筛选 -->
+                        s.average_cost BETWEEN #{minAverageCost} AND #{maxAverageCost}
+                    </otherwise>
+                </choose>
+            )
+        </if>
+        <if test="minAverageCost != null and maxAverageCost == null">
             AND s.average_cost &gt;= #{minAverageCost}
         </if>
-        <if test="maxAverageCost != null">
+        <if test="minAverageCost == null and maxAverageCost != null">
             AND s.average_cost &lt;= #{maxAverageCost}
         </if>
         <!-- 动态排序逻辑 -->
@@ -123,6 +154,58 @@
         <!-- 动态生成分类精确匹配条件 -->
         <if test="category != null and category != ''">
             AND c.name = #{category}
+        </if>
+        <!-- 添加评分筛选 -->
+        <if test="minRating != null">
+            AND s.rating &gt;= #{minRating}
+        </if>
+        <if test="maxRating != null">
+            AND s.rating &lt;= #{maxRating}
+        </if>
+        <!-- 添加价格区间筛选 - 使用价格区间交集判断 -->
+        <if test="minPrice != null and maxPrice != null">
+            AND (
+                <!-- 价格区间有交集的情况 -->
+                <choose>
+                    <!-- 特殊情况: 如果minPrice=200且maxPrice=9999 (代表"200以上"筛选条件) -->
+                    <when test="minPrice == 200 and maxPrice == 9999">
+                        <!-- 要求商家最高价格大于等于200，表示有交集 -->
+                        s.price_max &gt;= #{minPrice}
+                    </when>
+                    <otherwise>
+                        <!-- 标准区间交集逻辑 -->
+                        s.price_max &gt;= #{minPrice} AND s.price_min &lt;= #{maxPrice}
+                    </otherwise>
+                </choose>
+            )
+        </if>
+        <if test="minPrice != null and maxPrice == null">
+            AND s.price_max &gt;= #{minPrice}
+        </if>
+        <if test="minPrice == null and maxPrice != null">
+            AND s.price_min &lt;= #{maxPrice}
+        </if>
+        <!-- 添加人均消费筛选 - 对于200以上使用特殊处理 -->
+        <if test="minAverageCost != null and maxAverageCost != null">
+            AND (
+                <choose>
+                    <!-- 特殊情况: 如果minAverageCost=200且maxAverageCost=9999 (代表"200以上"筛选条件) -->
+                    <when test="minAverageCost == 200 and maxAverageCost == 9999">
+                        <!-- 要求人均消费至少为200 -->
+                        s.average_cost &gt;= #{minAverageCost}
+                    </when>
+                    <otherwise>
+                        <!-- 标准区间筛选 -->
+                        s.average_cost BETWEEN #{minAverageCost} AND #{maxAverageCost}
+                    </otherwise>
+                </choose>
+            )
+        </if>
+        <if test="minAverageCost != null and maxAverageCost == null">
+            AND s.average_cost &gt;= #{minAverageCost}
+        </if>
+        <if test="minAverageCost == null and maxAverageCost != null">
+            AND s.average_cost &lt;= #{maxAverageCost}
         </if>
     </select>
 

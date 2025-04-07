@@ -62,8 +62,8 @@
                 <choose>
                     <!-- 特殊情况: 如果minPrice=200且maxPrice=9999 (代表"200以上"筛选条件) -->
                     <when test="minPrice == 200 and maxPrice == 9999">
-                        <!-- 要求商家最低价格至少为200 -->
-                        s.price_min &gt;= #{minPrice}
+                        <!-- 要求商家最高价格大于等于200，表示有交集 -->
+                        s.price_max &gt;= #{minPrice}
                     </when>
                     <otherwise>
                         <!-- 标准区间交集逻辑 -->
@@ -169,8 +169,8 @@
                 <choose>
                     <!-- 特殊情况: 如果minPrice=200且maxPrice=9999 (代表"200以上"筛选条件) -->
                     <when test="minPrice == 200 and maxPrice == 9999">
-                        <!-- 要求商家最低价格至少为200 -->
-                        s.price_min &gt;= #{minPrice}
+                        <!-- 要求商家最高价格大于等于200，表示有交集 -->
+                        s.price_max &gt;= #{minPrice}
                     </when>
                     <otherwise>
                         <!-- 标准区间交集逻辑 -->
