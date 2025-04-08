@@ -75,22 +75,54 @@ public class SimilarCharsUtil {
             return Collections.emptyList();
         }
         
-        System.out.println("原始关键词: " + keyword);
+        logKeywordInfo(keyword);
+        ensureMapInitialized();
         
-        // 确保HashMap已经初始化，打印出当前字符映射表大小
+        List<String> expandedKeywords = new ArrayList<>();
+        // 添加原始关键词
+        expandedKeywords.add("%" + keyword + "%");
+        logKeywordAdded("%" + keyword + "%");
+        
+        // 生成形近字替换关键词
+        addSimilarCharVariations(keyword, expandedKeywords);
+        
+        // 特殊处理"火锅"和"火郭"
+        addSpecialKeywordVariations(keyword, expandedKeywords);
+        
+        logFinalKeywords(expandedKeywords);
+        return expandedKeywords;
+    }
+    
+    /**
+     * 记录关键词信息
+     */
+    private void logKeywordInfo(String keyword) {
+        System.out.println("原始关键词: " + keyword);
         System.out.println("形近字映射表大小: " + SIMILAR_CHARS_MAP.size());
+    }
+    
+    /**
+     * 确保映射表已初始化
+     */
+    private void ensureMapInitialized() {
         if (SIMILAR_CHARS_MAP.isEmpty()) {
             System.out.println("警告: 形近字映射表为空，初始化可能失败");
             // 尝试手动初始化
             init();
         }
-        
-        List<String> expandedKeywords = new ArrayList<>();
-        // 添加原始关键词
-        expandedKeywords.add("%" + keyword + "%");
-        System.out.println("添加原始关键词: %" + keyword + "%");
-        
-        // 生成形近字替换关键词
+    }
+    
+    /**
+     * 记录添加的关键词
+     */
+    private void logKeywordAdded(String keyword) {
+        System.out.println("添加关键词: " + keyword);
+    }
+    
+    /**
+     * 添加形近字变体
+     */
+    private void addSimilarCharVariations(String keyword, List<String> expandedKeywords) {
         char[] chars = keyword.toCharArray();
         
         for (int i = 0; i < chars.length; i++) {
@@ -98,29 +130,43 @@ public class SimilarCharsUtil {
             System.out.println("处理字符: " + c + " 位置: " + i);
             
             Set<Character> similarChars = SIMILAR_CHARS_MAP.get(c);
-            
-            if (similarChars != null && !similarChars.isEmpty()) {
-                System.out.println("找到形近字: " + similarChars);
-                
-                for (char similarChar : similarChars) {
-                    if (similarChar == c) {
-                        System.out.println("跳过相同字符: " + similarChar);
-                        continue; // 跳过相同字符
-                    }
-                    
-                    char[] newChars = keyword.toCharArray();
-                    newChars[i] = similarChar;
-                    String newKeyword = new String(newChars);
-                    String expandedPattern = "%" + newKeyword + "%";
-                    expandedKeywords.add(expandedPattern);
-                    System.out.println("添加扩展关键词: " + expandedPattern);
-                }
-            } else {
+            if (similarChars == null || similarChars.isEmpty()) {
                 System.out.println("未找到字符'" + c + "'的形近字");
+                continue;
             }
+            
+            System.out.println("找到形近字: " + similarChars);
+            addVariationsForChar(keyword, i, c, similarChars, expandedKeywords);
         }
-        
-        // 特殊处理"火锅"和"火郭"
+    }
+    
+    /**
+     * 为特定字符添加形近字变体
+     */
+    private void addVariationsForChar(String keyword, int position, char originalChar, 
+                                     Set<Character> similarChars, List<String> expandedKeywords) {
+        for (char similarChar : similarChars) {
+            // 跳过相同字符
+            if (similarChar == originalChar) {
+                System.out.println("跳过相同字符: " + similarChar);
+                continue;
+            }
+            
+            // 创建变体
+            char[] newChars = keyword.toCharArray();
+            newChars[position] = similarChar;
+            String newKeyword = new String(newChars);
+            String expandedPattern = "%" + newKeyword + "%";
+            
+            expandedKeywords.add(expandedPattern);
+            System.out.println("添加扩展关键词: " + expandedPattern);
+        }
+    }
+    
+    /**
+     * 添加特殊关键词变体
+     */
+    private void addSpecialKeywordVariations(String keyword, List<String> expandedKeywords) {
         if (keyword.equals("火郭")) {
             expandedKeywords.add("%火锅%");
             System.out.println("特别添加: %火锅%");
@@ -128,9 +174,13 @@ public class SimilarCharsUtil {
             expandedKeywords.add("%火郭%");
             System.out.println("特别添加: %火郭%");
         }
-        
+    }
+    
+    /**
+     * 记录最终的关键词列表
+     */
+    private void logFinalKeywords(List<String> expandedKeywords) {
         System.out.println("最终扩展关键词: " + expandedKeywords);
-        return expandedKeywords;
     }
     
     /**
