@@ -74,7 +74,7 @@
     <!-- 搜索结果统计 -->
     <div class="search-summary" v-if="!loading && searchQuery.trim() !== ''">
       <div class="result-count">
-        找到 <strong>{{ shops.length }}</strong> 条结果
+        找到 <strong>{{ total }}</strong> 条结果，共 <strong>{{ totalPages }}</strong> 页
       </div>
       <div class="active-filters">
         <span v-if="selectedRating">评分：{{ selectedRating }}分以上</span>
@@ -300,7 +300,10 @@ export default {
     const currentPage = ref(1);
     const pageSize = ref(6);
     const total = ref(0);
-    const totalPages = computed(() => Math.ceil(total.value / pageSize.value) || 1);
+    const totalPages = computed(() => {
+      const pages = Math.ceil(total.value / pageSize.value);
+      return pages > 0 ? pages : 1;
+    });
     
     // 组件卸载标志
     const isUnmounted = ref(false);
@@ -428,18 +431,23 @@ export default {
     const updatePagedShops = () => {
       if (allShopsCache.value.length === 0) return;
       
+      console.log('更新分页数据 - 当前页:', currentPage.value, '每页显示:', pageSize.value, '总条数:', total.value);
+      
       const startIndex = (currentPage.value - 1) * pageSize.value;
       const endIndex = startIndex + pageSize.value;
       
       // 确保startIndex在有效范围内
       if (startIndex >= allShopsCache.value.length) {
         // 如果超出范围，调整到最后一页
-        currentPage.value = Math.ceil(allShopsCache.value.length / pageSize.value);
+        const maxPage = Math.max(1, Math.ceil(allShopsCache.value.length / pageSize.value));
+        console.log('页码超出范围，调整为最后一页:', maxPage);
+        currentPage.value = maxPage;
         // 重新计算索引
         const newStartIndex = (currentPage.value - 1) * pageSize.value;
         shops.value = allShopsCache.value.slice(newStartIndex, newStartIndex + pageSize.value);
       } else {
         shops.value = allShopsCache.value.slice(startIndex, endIndex);
+        console.log('当前页显示商家数:', shops.value.length, '(', startIndex, '-', Math.min(endIndex, allShopsCache.value.length)-1, ')');
       }
     };
     
@@ -562,6 +570,10 @@ export default {
             const filteredData = filterCachedShops();
             allShopsCache.value = filteredData;
             total.value = filteredData.length;
+          } else {
+            // 没有筛选条件，保存原始结果总数
+            total.value = allShopsCache.value.length;
+            console.log('搜索结果总数:', total.value);
           }
           
           // 更新显示的分页数据
@@ -599,18 +611,14 @@ export default {
     const handlePageChange = (page) => {
       if (isUnmounted.value) return;
       
-      console.log('页码变化，新页码:', page);
+      console.log('页码变化，新页码:', page, '总页数:', Math.ceil(total.value / pageSize.value));
       currentPage.value = page;
       
-      if (searchQuery.value.trim()) {
-        // 有搜索关键词时，重新搜索
-        searchShops();
-      } else if (allShopsCache.value.length > 0) {
-        // 没有搜索关键词且有缓存数据时，直接使用缓存数据分页
-        updatePagedShops();
-        // 滚动到页面顶部
-        window.scrollTo(0, 0);
-      }
+      // 更新页面显示的商家数据
+      updatePagedShops();
+      
+      // 滚动到页面顶部
+      window.scrollTo(0, 0);
     };
     
     // 使用历史记录项
@@ -825,7 +833,9 @@ export default {
           allShopsCache.value = filteredData;
         }
         
+        // 设置总数为筛选后的实际总数，而不是当前页显示的数量
         total.value = allShopsCache.value.length;
+        console.log('筛选后总数:', total.value, '总页数:', Math.ceil(total.value / pageSize.value));
         
         // 更新当前页显示的数据
         updatePagedShops();
@@ -989,15 +999,16 @@ export default {
     const handlePageSizeChange = () => {
       if (isUnmounted.value) return;
       
-      currentPage.value = 1;
+      // 记录当前显示的第一条记录的索引
+      const currentStartIndex = (currentPage.value - 1) * pageSize.value;
+      console.log('每页条数变化 -', pageSize.value, '当前起始索引:', currentStartIndex);
       
-      if (searchQuery.value.trim()) {
-        // 有搜索关键词时，重新搜索
-        searchShops();
-      } else if (allShopsCache.value.length > 0) {
-        // 没有搜索关键词且有缓存数据时，直接使用缓存数据分页
-        updatePagedShops();
-      }
+      // 根据新的每页条数计算新的页码
+      currentPage.value = Math.floor(currentStartIndex / pageSize.value) + 1;
+      console.log('调整为新页码:', currentPage.value);
+      
+      // 更新分页数据
+      updatePagedShops();
     };
     
     // 在 setup 函数中添加以下内容
