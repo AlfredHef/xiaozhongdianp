@@ -2,10 +2,15 @@ spring:
   application:
     name: customerApplication
   datasource:
-    url: jdbc:mysql://139.129.37.84:3306/xiaozhong_dianping
+    url: jdbc:mysql://139.129.37.84:3306/xiaozhong_dianping?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8&allowPublicKeyRetrieval=true
     username: budouer
     password: 'BuDou&123'
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      maximum-pool-size: 10
   data:
     redis:
       database: 0
@@ -77,4 +82,13 @@ logging:
     com.fudan.xiaozhong_dianping.shop.controller.ShopController: DEBUG
     com.fudan.xiaozhong_dianping.shop.service.impl.ShopServiceImpl: DEBUG
     com.fudan.xiaozhong_dianping.shop.mapper: DEBUG  # 设置Mapper层的日志级别，可以查看SQL执行
+
+jpa:
+  database-platform: org.hibernate.dialect.MySQL8Dialect
+  hibernate:
+    ddl-auto: update
+  show-sql: true
+  properties:
+    hibernate:
+      format_sql: true
 

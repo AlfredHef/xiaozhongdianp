@@ -263,6 +263,15 @@ import { useStore } from 'vuex';
 export default {
   name: 'ShopSearch',
   
+  components: {
+    Search,
+    Delete,
+    Clock,
+    Loading,
+    ArrowDown,
+    ArrowUp
+  },
+  
   setup() {
     const router = useRouter();
     const store = useStore();
@@ -365,14 +374,14 @@ export default {
       
       loading.value = true;
       try {
-        // 如果已有全部商家数据缓存，直接使用缓存数据
-        if (originalShopsCache.value.length > 0) {
-          allShopsCache.value = [...originalShopsCache.value];
-          total.value = allShopsCache.value.length;
-          updatePagedShops();
-          loading.value = false;
-          return;
-        }
+        // // 如果已有全部商家数据缓存，直接使用缓存数据
+        // if (originalShopsCache.value.length > 0) {
+        //   allShopsCache.value = [...originalShopsCache.value];
+        //   total.value = allShopsCache.value.length;
+        //   updatePagedShops();
+        //   loading.value = false;
+        //   return;
+        // }
         
         // 获取较大数量的商家数据
         const response = await ShopService.getShops(1, 100);
@@ -490,6 +499,8 @@ export default {
       errorMessage.value = ''; // 清空之前的错误
       
       if (!searchQuery.value.trim()) {
+        // 重置筛选条件（可选：根据需求决定是否保留筛选，这里假设清空筛选）
+        resetFilters(); // 调用重置筛选函数
         loadShops();
         return;
       }
