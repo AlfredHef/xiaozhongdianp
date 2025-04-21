@@ -1,0 +1,46 @@
+-- 检查列数据类型的脚本
+
+-- 查看shop表的列定义
+SELECT 
+    COLUMN_NAME, 
+    COLUMN_TYPE,
+    IS_NULLABLE,
+    COLUMN_KEY,
+    EXTRA
+FROM 
+    INFORMATION_SCHEMA.COLUMNS
+WHERE 
+    TABLE_SCHEMA = DATABASE() 
+    AND TABLE_NAME = 'shop'
+    AND COLUMN_NAME = 'id';
+
+-- 查看group_buying_package表的列定义
+SELECT 
+    COLUMN_NAME, 
+    COLUMN_TYPE,
+    IS_NULLABLE,
+    COLUMN_KEY,
+    EXTRA 
+FROM 
+    INFORMATION_SCHEMA.COLUMNS
+WHERE 
+    TABLE_SCHEMA = DATABASE() 
+    AND TABLE_NAME = 'group_buying_package'
+    AND COLUMN_NAME = 'shop_id';
+
+-- 查看所有已经存在的外键约束
+SELECT 
+    TABLE_NAME,
+    CONSTRAINT_NAME,
+    COLUMN_NAME,
+    REFERENCED_TABLE_NAME,
+    REFERENCED_COLUMN_NAME
+FROM 
+    INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+WHERE 
+    TABLE_SCHEMA = DATABASE()
+    AND REFERENCED_TABLE_NAME IS NOT NULL;
+
+-- 也要检查外键表结构是否已经正确创建
+SHOW CREATE TABLE shop;
+SHOW CREATE TABLE group_buying_package; 

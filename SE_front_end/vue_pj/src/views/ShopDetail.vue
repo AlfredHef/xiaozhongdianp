@@ -134,6 +134,33 @@
           </div>
         </div>
       </div>
+
+      <!-- 团购套餐展示 -->
+      <div class="group-buy-packages">
+        <h2>团购套餐</h2>
+        
+        <div v-if="loading || loadingPackages" class="loading-packages">
+          <el-skeleton :rows="3" animated />
+        </div>
+        
+        <div v-else-if="!packages || packages.length === 0" class="no-packages">
+          <el-empty description="暂无团购套餐" />
+        </div>
+        
+        <div v-else class="package-list">
+          <el-card v-for="pkg in packages" :key="pkg.id" class="package-item" @click="viewPackageDetail(pkg.id)">
+            <div class="package-content">
+              <div class="package-title">{{ pkg.title }}</div>
+              <div class="package-description">{{ pkg.description }}</div>
+              <div class="package-price-sales">
+                <span class="package-price">¥{{ pkg.price }}</span>
+                <span class="package-sales">已售 {{ pkg.sales }}</span>
+              </div>
+              <el-button type="primary" size="small" @click.stop="viewPackageDetail(pkg.id)">查看详情</el-button>
+            </div>
+          </el-card>
+        </div>
+      </div>
     </div>
 
     <!-- 图片预览 -->
@@ -146,10 +173,11 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElImageViewer } from 'element-plus';
 import ShopService from '@/services/ShopService';
+import GroupBuyService from '@/services/GroupBuyService';
 
 export default {
   name: 'ShopDetail',
@@ -163,7 +191,9 @@ export default {
 
     const shop = ref(null);
     const images = ref([]);
+    const packages = ref([]);
     const loading = ref(true);
+    const loadingPackages = ref(true);
     const showViewer = ref(false);
     const previewUrl = ref('');
 
@@ -242,20 +272,51 @@ export default {
       showViewer.value = false;
     };
 
+    // 加载团购套餐
+    const loadPackages = async () => {
+      if (!shop.value || !shop.value.id) return;
+      
+      try {
+        loadingPackages.value = true;
+        const response = await GroupBuyService.getPackagesByShopId(shop.value.id);
+        packages.value = response || [];
+        console.log('团购套餐:', packages.value);
+      } catch (error) {
+        console.error('获取团购套餐失败:', error);
+      } finally {
+        loadingPackages.value = false;
+      }
+    };
+
+    // 查看团购套餐详情
+    const viewPackageDetail = (packageId) => {
+      router.push({ name: 'GroupBuyDetail', params: { id: packageId } });
+    };
+
     onMounted(() => {
       loadShopDetails();
+    });
+
+    // 当商家信息加载完成后，加载团购套餐
+    watch(shop, (newVal) => {
+      if (newVal) {
+        loadPackages();
+      }
     });
 
     return {
       shop,
       images,
+      packages,
       loading,
-      goBack,
-      getImagesByType,
+      loadingPackages,
       showViewer,
       previewUrl,
+      goBack,
+      getImagesByType,
       previewImage,
-      closeViewer
+      closeViewer,
+      viewPackageDetail
     };
   }
 };
@@ -477,6 +538,75 @@ export default {
   padding: 40px;
   background-color: #f8f9fa;
   border-radius: 8px;
+  text-align: center;
+}
+
+.group-buy-packages {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.package-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.package-item {
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.package-item:hover {
+  transform: translateY(-5px);
+}
+
+.package-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.package-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+.package-description {
+  font-size: 14px;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.package-price-sales {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px 0;
+}
+
+.package-price {
+  font-size: 20px;
+  color: #f56c6c;
+  font-weight: bold;
+}
+
+.package-sales {
+  font-size: 14px;
+  color: #999;
+}
+
+.loading-packages, .no-packages {
+  padding: 30px;
   text-align: center;
 }
 </style>

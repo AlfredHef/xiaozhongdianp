@@ -54,3 +54,4 @@ CREATE TABLE shop_image (
                             FOREIGN KEY (shop_id) REFERENCES shop(id),
                             INDEX shop_id (shop_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='商家图片存储表，支持多图展示';
+
