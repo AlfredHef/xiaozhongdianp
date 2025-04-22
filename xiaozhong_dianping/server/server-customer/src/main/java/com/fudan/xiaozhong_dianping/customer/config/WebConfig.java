@@ -17,7 +17,9 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(tokenInterceptor)
                 .addPathPatterns("/api/**") // 需要验证登录状态的接口路径
-                .excludePathPatterns("/login"); // 排除登录接口
+                .excludePathPatterns("/login") // 排除登录接口
+                .excludePathPatterns("/api/groupbuy/packages") // 排除团购套餐查询接口，使其公开可访问
+                .excludePathPatterns("/api/groupbuy/packages/**"); // 排除团购套餐详情接口，使其公开可访问
     }
 
 

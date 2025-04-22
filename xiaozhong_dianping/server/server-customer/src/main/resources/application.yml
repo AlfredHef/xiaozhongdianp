@@ -78,10 +78,15 @@ fudan:
 logging:
   level:
     root: INFO
-    com.fudan.xiaozhong_dianping.shop: DEBUG  # 提高shop相关包的日志级别为DEBUG
+    com.fudan.xiaozhong_dianping: DEBUG  # 设置整个项目的日志级别为DEBUG
+    com.fudan.xiaozhong_dianping.shop: DEBUG
     com.fudan.xiaozhong_dianping.shop.controller.ShopController: DEBUG
     com.fudan.xiaozhong_dianping.shop.service.impl.ShopServiceImpl: DEBUG
-    com.fudan.xiaozhong_dianping.shop.mapper: DEBUG  # 设置Mapper层的日志级别，可以查看SQL执行
+    com.fudan.xiaozhong_dianping.shop.mapper: DEBUG
+    com.fudan.xiaozhong_dianping.groupbuy: DEBUG
+    com.fudan.xiaozhong_dianping.groupbuy.controller.GroupBuyController: DEBUG
+    com.fudan.xiaozhong_dianping.groupbuy.service.impl.GroupBuyServiceImpl: DEBUG
+    com.fudan.xiaozhong_dianping.groupbuy.repository: DEBUG
 
 jpa:
   database-platform: org.hibernate.dialect.MySQL8Dialect
@@ -91,4 +96,12 @@ jpa:
   properties:
     hibernate:
       format_sql: true
+
+# PageHelper配置
+pagehelper:
+  helper-dialect: mysql
+  reasonable: true
+  support-methods-arguments: true
+  params: count=countSql
+  return-pageinfo: check
 

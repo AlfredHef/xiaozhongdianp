@@ -1,5 +1,6 @@
 package com.fudan.xiaozhong_dianping.groupbuy.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -10,6 +11,7 @@ import java.util.List;
  * 团购套餐数据传输对象
  */
 @Data
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class GroupBuyPackageDTO {
     
     private Integer id;
