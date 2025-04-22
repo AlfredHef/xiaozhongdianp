@@ -2,6 +2,8 @@ package com.fudan.xiaozhong_dianping.groupbuy.repository;
 
 import com.fudan.xiaozhong_dianping.groupbuy.entity.PackageDishRelation;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -17,5 +19,6 @@ public interface PackageDishRelationRepository extends JpaRepository<PackageDish
      * @param packageId 套餐ID
      * @return 套餐菜品关系列表
      */
-    List<PackageDishRelation> findByGroupBuyPackageId(Integer packageId);
+    @Query("SELECT pdr FROM PackageDishRelation pdr WHERE pdr.groupBuyPackage.id = :packageId")
+    List<PackageDishRelation> findByGroupBuyPackageId(@Param("packageId") Integer packageId);
 } 
