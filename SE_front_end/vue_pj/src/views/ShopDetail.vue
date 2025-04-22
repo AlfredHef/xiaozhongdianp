@@ -178,6 +178,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElImageViewer } from 'element-plus';
 import ShopService from '@/services/ShopService';
 import GroupBuyService from '@/services/GroupBuyService';
+import { ElMessage } from 'element-plus';
 
 export default {
   name: 'ShopDetail',
@@ -274,15 +275,32 @@ export default {
 
     // 加载团购套餐
     const loadPackages = async () => {
-      if (!shop.value || !shop.value.id) return;
+      console.log('开始加载团购套餐，shop.value:', shop.value);
+      
+      if (!shop.value || !shop.value.id) {
+        console.log('商家ID无效:', shop.value);
+        return;
+      }
+      
+      const shopId = Number(shop.value.id);
+      console.log('转换后的商家ID:', shopId);
+      
+      if (isNaN(shopId)) {
+        console.error('商家ID不是有效的数字:', shop.value.id);
+        ElMessage.error('商家ID无效');
+        return;
+      }
       
       try {
         loadingPackages.value = true;
-        const response = await GroupBuyService.getPackagesByShopId(shop.value.id);
+        console.log('正在调用团购套餐API，商家ID:', shopId);
+        const response = await GroupBuyService.getPackagesByShopId(shopId);
+        console.log('团购套餐API响应:', response);
         packages.value = response || [];
-        console.log('团购套餐:', packages.value);
+        console.log('更新后的packages:', packages.value);
       } catch (error) {
         console.error('获取团购套餐失败:', error);
+        ElMessage.error('获取团购套餐失败: ' + (error.response?.data?.message || error.message));
       } finally {
         loadingPackages.value = false;
       }
@@ -299,7 +317,9 @@ export default {
 
     // 当商家信息加载完成后，加载团购套餐
     watch(shop, (newVal) => {
+      console.log('shop值发生变化:', newVal);
       if (newVal) {
+        console.log('开始调用loadPackages');
         loadPackages();
       }
     });

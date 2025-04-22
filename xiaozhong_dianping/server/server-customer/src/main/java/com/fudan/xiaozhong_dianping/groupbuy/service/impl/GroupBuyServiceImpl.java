@@ -7,6 +7,8 @@ import com.fudan.xiaozhong_dianping.groupbuy.entity.PackageDishRelation;
 import com.fudan.xiaozhong_dianping.groupbuy.repository.GroupBuyPackageRepository;
 import com.fudan.xiaozhong_dianping.groupbuy.repository.PackageDishRelationRepository;
 import com.fudan.xiaozhong_dianping.groupbuy.service.GroupBuyService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,8 @@ import java.util.stream.Collectors;
 @Service
 public class GroupBuyServiceImpl implements GroupBuyService {
 
+    private static final Logger logger = LoggerFactory.getLogger(GroupBuyServiceImpl.class);
+
     @Autowired
     private GroupBuyPackageRepository packageRepository;
     
@@ -30,35 +34,68 @@ public class GroupBuyServiceImpl implements GroupBuyService {
 
     @Override
     public List<GroupBuyPackageDTO> getPackagesByShopId(Integer shopId) {
-        // 查询商家的套餐列表
-        List<GroupBuyPackage> packages = packageRepository.findByShopId(shopId);
-        
-        // 转换为DTO
-        return packages.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        logger.info("开始查询商家团购套餐，商家ID: {}", shopId);
+        try {
+            // 查询商家的套餐列表
+            logger.info("正在调用packageRepository.findByShopId，商家ID: {}", shopId);
+            List<GroupBuyPackage> packages = packageRepository.findByShopId(shopId);
+            logger.info("查询到团购套餐数量: {}", packages != null ? packages.size() : 0);
+            
+            if (packages == null) {
+                logger.error("查询结果为空，商家ID: {}", shopId);
+                return new ArrayList<>();
+            }
+            
+            // 转换为DTO
+            logger.info("开始转换DTO，原始数据: {}", packages);
+            List<GroupBuyPackageDTO> result = packages.stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+            logger.info("转换后的DTO数量: {}", result.size());
+            logger.info("转换后的DTO数据: {}", result);
+            return result;
+        } catch (Exception e) {
+            logger.error("查询团购套餐失败，商家ID: {}，错误信息: {}", shopId, e.getMessage(), e);
+            throw e;
+        }
     }
 
     @Override
     public GroupBuyPackageDTO getPackageDetailById(Integer packageId) {
+        logger.info("开始查询团购套餐详情，套餐ID: {}", packageId);
+        
         // 查询套餐详情
         Optional<GroupBuyPackage> packageOpt = packageRepository.findById(packageId);
         if (!packageOpt.isPresent()) {
+            logger.warn("未找到团购套餐，套餐ID: {}", packageId);
             return null;
         }
         
         GroupBuyPackage groupBuyPackage = packageOpt.get();
         GroupBuyPackageDTO dto = convertToDTO(groupBuyPackage);
+        logger.info("查询到团购套餐基本信息: {}", dto);
         
         // 查询套餐菜品关系
-        List<PackageDishRelation> relations = relationRepository.findByGroupBuyPackageId(packageId);
+        try {
+            logger.info("开始查询套餐菜品关系，套餐ID: {}", packageId);
+            List<PackageDishRelation> relations = relationRepository.findByGroupBuyPackageId(packageId);
+            logger.info("查询到套餐菜品关系数量: {}", relations != null ? relations.size() : 0);
+            
+            // 转换为DTO中的菜品列表
+            List<PackageDishItemDTO> dishItems = relations.stream()
+                    .map(this::convertToDishItemDTO)
+                    .filter(item -> item != null)
+                    .collect(Collectors.toList());
+            logger.info("转换后的菜品列表数量: {}", dishItems.size());
+            logger.info("菜品列表详情: {}", dishItems);
+            
+            dto.setDishItems(dishItems);
+        } catch (Exception e) {
+            logger.error("查询套餐菜品关系失败，套餐ID: {}，错误信息: {}", packageId, e.getMessage(), e);
+            // 设置一个空列表，防止前端获取到null
+            dto.setDishItems(new ArrayList<>());
+        }
         
-        // 转换为DTO中的菜品列表
-        List<PackageDishItemDTO> dishItems = relations.stream()
-                .map(this::convertToDishItemDTO)
-                .collect(Collectors.toList());
-        
-        dto.setDishItems(dishItems);
         return dto;
     }
     
