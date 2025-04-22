@@ -2,6 +2,7 @@ package com.fudan.xiaozhong_dianping.groupbuy.controller;
 
 import com.fudan.xiaozhong_dianping.groupbuy.dto.OrderDTO;
 import com.fudan.xiaozhong_dianping.groupbuy.dto.VoucherDTO;
+import com.fudan.xiaozhong_dianping.groupbuy.exception.BusinessException;
 import com.fudan.xiaozhong_dianping.groupbuy.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +31,9 @@ public class OrderController {
     public ResponseEntity<VoucherDTO> createOrder(
             @RequestHeader("userId") Long userId,
             @RequestBody Map<String, Object> requestBody) {
-        
+        if(userId==null){
+            throw new BusinessException("用户未登录，请先登录");
+        }
         Integer packageId = (Integer) requestBody.get("packageId");
         Long couponId = requestBody.get("couponId") != null 
                 ? Long.valueOf(requestBody.get("couponId").toString()) 
@@ -47,6 +50,10 @@ public class OrderController {
      */
     @GetMapping
     public ResponseEntity<List<OrderDTO>> getUserOrders(@RequestHeader("userId") Long userId) {
+        if (userId == null) {
+            throw new BusinessException("用户未登录，请先登录");
+
+        }
         List<OrderDTO> orders = orderService.getOrdersByUserId(userId);
         return ResponseEntity.ok(orders);
     }

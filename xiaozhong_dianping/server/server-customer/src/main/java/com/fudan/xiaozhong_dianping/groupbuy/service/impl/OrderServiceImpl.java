@@ -5,9 +5,12 @@ import com.fudan.xiaozhong_dianping.groupbuy.dto.VoucherDTO;
 import com.fudan.xiaozhong_dianping.groupbuy.entity.GroupBuyOrder;
 import com.fudan.xiaozhong_dianping.groupbuy.entity.GroupBuyPackage;
 import com.fudan.xiaozhong_dianping.groupbuy.entity.VoucherCode;
+
+import com.fudan.xiaozhong_dianping.groupbuy.exception.BusinessException;
 import com.fudan.xiaozhong_dianping.groupbuy.repository.GroupBuyOrderRepository;
 import com.fudan.xiaozhong_dianping.groupbuy.repository.GroupBuyPackageRepository;
 import com.fudan.xiaozhong_dianping.groupbuy.repository.VoucherCodeRepository;
+import com.fudan.xiaozhong_dianping.groupbuy.service.CouponService;
 import com.fudan.xiaozhong_dianping.groupbuy.service.OrderService;
 import com.fudan.xiaozhong_dianping.groupbuy.utils.QRCodeGenerator;
 import com.fudan.xiaozhong_dianping.groupbuy.utils.VoucherCodeGenerator;
@@ -30,18 +33,21 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private GroupBuyOrderRepository orderRepository;
-    
+
     @Autowired
     private GroupBuyPackageRepository packageRepository;
-    
+
     @Autowired
     private VoucherCodeRepository voucherCodeRepository;
-    
+
     @Autowired
     private QRCodeGenerator qrCodeGenerator;
-    
+
     @Autowired
     private VoucherCodeGenerator voucherCodeGenerator;
+
+    @Autowired
+    private CouponService couponService;
 
     @Override
     @Transactional
@@ -49,46 +55,58 @@ public class OrderServiceImpl implements OrderService {
         // 查询套餐
         Optional<GroupBuyPackage> packageOpt = packageRepository.findById(packageId);
         if (!packageOpt.isPresent()) {
-            throw new RuntimeException("套餐不存在");
+            throw new BusinessException("套餐不存在");
         }
-        
+
         GroupBuyPackage groupBuyPackage = packageOpt.get();
-        
+
         // 创建订单
         GroupBuyOrder order = new GroupBuyOrder();
         order.setUserId(userId);
         order.setPackageId(packageId);
         order.setShopId(groupBuyPackage.getShopId());
-        
-        // 计算订单价格（这里简化处理，没有考虑优惠券）
+
+        // 计算订单价格
         BigDecimal orderPrice = groupBuyPackage.getPrice();
-        // 如果有优惠券，这里应该计算优惠后的价格
-        
+        if (couponId != null) {
+            // 获取可用优惠券列表
+            List<com.fudan.xiaozhong_dianping.groupbuy.entity.Coupon> availableCoupons = couponService.getAvailableCoupons(userId, packageId, orderPrice);
+            // 查找指定的优惠券
+            com.fudan.xiaozhong_dianping.groupbuy.entity.Coupon selectedCoupon = availableCoupons.stream()
+                    .filter(coupon -> coupon.getId().equals(couponId))
+                    .findFirst()
+                    .orElse(null);
+            if (selectedCoupon != null) {
+                // 计算优惠后的价格
+                orderPrice = orderPrice.subtract(couponService.calculateDiscount(selectedCoupon, orderPrice));
+            }
+        }
+
         order.setOrderPrice(orderPrice);
         order.setStatus(1); // 已购买
         order.setCreatedAt(LocalDateTime.now());
-        
+
         // 保存订单
         GroupBuyOrder savedOrder = orderRepository.save(order);
-        
+
         // 更新套餐销量
         groupBuyPackage.increaseSales();
         packageRepository.save(groupBuyPackage);
-        
+
         // 生成券码
         VoucherCode voucherCode = new VoucherCode();
         voucherCode.setOrderId(savedOrder.getId());
         // 使用工具类生成券码
         String code = voucherCodeGenerator.generateVoucherCode();
         voucherCode.setCode(code);
-        
+
         // 生成二维码
         String qrCodeBase64 = qrCodeGenerator.generateQRCodeBase64(voucherCode.getCode());
         voucherCode.setQrCodeUrl(qrCodeBase64);
-        
+
         // 保存券码
         VoucherCode savedVoucherCode = voucherCodeRepository.save(voucherCode);
-        
+
         // 转为DTO返回
         return convertToVoucherDTO(savedVoucherCode, savedOrder, groupBuyPackage);
     }
@@ -96,7 +114,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public List<OrderDTO> getOrdersByUserId(Long userId) {
         List<GroupBuyOrder> orders = orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
-        
+
         return orders.stream()
                 .map(this::convertToOrderDTO)
                 .collect(Collectors.toList());
@@ -106,51 +124,51 @@ public class OrderServiceImpl implements OrderService {
     public VoucherDTO getOrderDetail(Long orderId) {
         Optional<GroupBuyOrder> orderOpt = orderRepository.findById(orderId);
         if (!orderOpt.isPresent()) {
-            throw new RuntimeException("订单不存在");
+            throw new BusinessException("订单不存在");
         }
-        
+
         GroupBuyOrder order = orderOpt.get();
-        
+
         // 获取券码
         VoucherCode voucherCode = voucherCodeRepository.findByOrderId(order.getId());
         if (voucherCode == null) {
-            throw new RuntimeException("券码不存在");
+            throw new BusinessException("券码不存在");
         }
-        
+
         // 获取套餐
         Optional<GroupBuyPackage> packageOpt = packageRepository.findById(order.getPackageId());
         if (!packageOpt.isPresent()) {
-            throw new RuntimeException("套餐不存在");
+            throw new BusinessException("套餐不存在");
         }
-        
+
         GroupBuyPackage groupBuyPackage = packageOpt.get();
-        
+
         // 转为DTO返回
         return convertToVoucherDTO(voucherCode, order, groupBuyPackage);
     }
-    
+
     /**
      * 将订单实体转为DTO
      */
     private OrderDTO convertToOrderDTO(GroupBuyOrder order) {
         OrderDTO dto = new OrderDTO();
         BeanUtils.copyProperties(order, dto);
-        
+
         // 查询套餐名称
         Optional<GroupBuyPackage> packageOpt = packageRepository.findById(order.getPackageId());
         if (packageOpt.isPresent()) {
             dto.setPackageTitle(packageOpt.get().getTitle());
         }
-        
+
         return dto;
     }
-    
+
     /**
      * 将券码和订单信息转为VoucherDTO
      */
     private VoucherDTO convertToVoucherDTO(VoucherCode voucherCode, GroupBuyOrder order, GroupBuyPackage groupBuyPackage) {
         VoucherDTO dto = new VoucherDTO();
-        
+
         BeanUtils.copyProperties(voucherCode, dto);
         dto.setOrderId(order.getId());
         dto.setOrderPrice(order.getOrderPrice());
@@ -158,7 +176,7 @@ public class OrderServiceImpl implements OrderService {
         dto.setPackageId(groupBuyPackage.getId());
         dto.setPackageTitle(groupBuyPackage.getTitle());
         dto.setShopId(groupBuyPackage.getShopId());
-        
+
         return dto;
     }
-} 
+}
