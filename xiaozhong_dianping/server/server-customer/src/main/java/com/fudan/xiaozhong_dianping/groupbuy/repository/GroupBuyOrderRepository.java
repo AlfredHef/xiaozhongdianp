@@ -1,6 +1,7 @@
 package com.fudan.xiaozhong_dianping.groupbuy.repository;
 
 import com.fudan.xiaozhong_dianping.groupbuy.entity.GroupBuyOrder;
+import org.apache.ibatis.annotations.Select;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -25,6 +26,7 @@ public interface GroupBuyOrderRepository extends JpaRepository<GroupBuyOrder, Lo
      * @param userId 用户ID
      * @return 订单列表
      */
+        @Select("select * from group_buy_order where package_id=#{packageId} and user_id=#{userId}")
     List<GroupBuyOrder> findByPackageIdAndUserId(Integer packageId, Long userId);
     
     /**
@@ -33,5 +35,6 @@ public interface GroupBuyOrderRepository extends JpaRepository<GroupBuyOrder, Lo
      * @param userId 用户ID
      * @return 订单列表
      */
+    @Select("select * from group_buy_order where shop_id=#{shopId} and user_id=#{userId}")
     List<GroupBuyOrder> findByShopIdAndUserId(Integer shopId, Long userId);
 } 

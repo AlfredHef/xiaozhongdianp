@@ -40,14 +40,24 @@ public class CouponServiceImpl implements CouponService {
     @Autowired
     private GroupBuyOrderRepository orderRepository;
 
+    /**
+     * 用户领取优惠券
+     *
+     * @param userId 用户ID
+     * @param couponId 优惠券ID
+     * @return 领取的用户优惠券信息
+     * @throws BusinessException 当用户已领取过新人券、优惠券不存在、优惠券已发完或达到领取上限时抛出
+     */
     @Override
     public UserCoupon receiveCoupon(Long userId, Long couponId) {
+        // 新人券领取检查
         if (isNewUser(userId)) {
             if (hasReceivedNewUserCoupon(userId)) {
                 throw new BusinessException("您已领取过新人券，不能再领取");
             }
         }
 
+        // 检查优惠券是否存在
         Optional<Coupon> couponOpt = couponRepository.findById(couponId);
         if (!couponOpt.isPresent()) {
             throw new BusinessException("优惠券不存在");
@@ -83,6 +93,12 @@ public class CouponServiceImpl implements CouponService {
         return userCoupon;
     }
 
+    /**
+     * 获取用户钱包中的优惠券
+     *
+     * @param userId 用户ID
+     * @return 用户优惠券列表
+     */
     @Override
     public List<CouponDTO> getCouponsInUserWallet(Long userId) {
         List<UserCoupon> userCoupons = userCouponRepository.findByUserId(userId);
@@ -101,17 +117,27 @@ public class CouponServiceImpl implements CouponService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 获取用户可用的优惠券列表
+     *
+     * @param userId 用户ID
+     * @param packageId 套餐ID
+     * @param orderPrice 订单价格
+     * @return 可用优惠券列表
+     */
     @Override
     public List<Coupon> getAvailableCoupons(Long userId, Integer packageId, BigDecimal orderPrice) {
         List<UserCoupon> userCoupons = userCouponRepository.findByUserId(userId);
         List<Coupon> availableCoupons = new ArrayList<>();
 
+        // 检查套餐是否存在
         Optional<GroupBuyPackage> packageOpt = packageRepository.findById(packageId);
         if (!packageOpt.isPresent()) {
             return availableCoupons;
         }
         GroupBuyPackage groupBuyPackage = packageOpt.get();
 
+        // 遍历用户优惠券，检查是否可用
         for (UserCoupon userCoupon : userCoupons) {
             if (userCoupon.getStatus() == 0) {
                 Coupon coupon = couponRepository.findById(userCoupon.getCouponId()).orElse(null);
@@ -144,6 +170,14 @@ public class CouponServiceImpl implements CouponService {
         return availableCoupons;
     }
 
+    /**
+     * 获取用户可用的最大折扣优惠券
+     *
+     * @param userId 用户ID
+     * @param packageId 套餐ID
+     * @param orderPrice 订单价格
+     * @return 最大折扣优惠券
+     */
     @Override
     public Coupon getMaxDiscountCoupon(Long userId, Integer packageId, BigDecimal orderPrice) {
         List<Coupon> availableCoupons = getAvailableCoupons(userId, packageId, orderPrice);
@@ -152,6 +186,13 @@ public class CouponServiceImpl implements CouponService {
                 .orElse(null);
     }
 
+    /**
+     * 计算优惠券折扣金额
+     *
+     * @param coupon 优惠券
+     * @param orderPrice 订单价格
+     * @return 折扣金额
+     */
     @Override
     public BigDecimal calculateDiscount(Coupon coupon, BigDecimal orderPrice) {
         if ("减固定金额".equals(coupon.getType())) {
@@ -168,13 +209,24 @@ public class CouponServiceImpl implements CouponService {
         return BigDecimal.ZERO;
     }
 
+    /**
+     * 检查用户是否为新人
+     *
+     * @param userId 用户ID
+     * @return 如果用户为新人返回true，否则返回false
+     */
     @Override
     public boolean isNewUser(Long userId) {
         List<com.fudan.xiaozhong_dianping.groupbuy.entity.GroupBuyOrder> orders = orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
-        // 使用 isEmpty() 替代 size() == 0
         return orders.isEmpty();
     }
 
+    /**
+     * 检查用户是否已领取新人券
+     *
+     * @param userId 用户ID
+     * @return 如果用户已领取新人券返回true，否则返回false
+     */
     @Override
     public boolean hasReceivedNewUserCoupon(Long userId) {
         List<UserCoupon> userCoupons = userCouponRepository.findByUserId(userId);
@@ -187,6 +239,11 @@ public class CouponServiceImpl implements CouponService {
         return false;
     }
 
+    /**
+     * 获取新人优惠券列表
+     *
+     * @return 新人优惠券列表
+     */
     @Override
     public List<Coupon> getNewUserCoupons() {
         // 硬编码新人券配置
@@ -202,7 +259,6 @@ public class CouponServiceImpl implements CouponService {
         kfcCoupon.setValidDays(7);
         kfcCoupon.setTotalQuantity(10000);
         kfcCoupon.setMaxPerUser(1);
-        // 正确调用 Lombok 生成的 setter 方法（布尔类型属性命名规范）
         kfcCoupon.setNewUserCoupon(true);
         newUserCoupons.add(kfcCoupon);
 

@@ -1,6 +1,7 @@
 package com.fudan.xiaozhong_dianping.groupbuy.repository;
 
 import com.fudan.xiaozhong_dianping.groupbuy.entity.VoucherCode;
+import org.apache.ibatis.annotations.Select;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -15,6 +16,7 @@ public interface VoucherCodeRepository extends JpaRepository<VoucherCode, Long> 
      * @param orderId 订单ID
      * @return 券码
      */
+    @Select("select * from voucher_code where order_id=#{orderId}")
     VoucherCode findByOrderId(Long orderId);
     
     /**
@@ -22,5 +24,6 @@ public interface VoucherCodeRepository extends JpaRepository<VoucherCode, Long> 
      * @param code 券码
      * @return 券码实体
      */
+    @Select("select * from voucher_code where code=#{code}")
     VoucherCode findByCode(String code);
 } 
