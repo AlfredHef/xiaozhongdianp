@@ -32,11 +32,17 @@
         <h2>套餐内容</h2>
         <el-table :data="packageDetail.dishItems" stripe style="width: 100%">
           <el-table-column prop="dishName" label="菜品名称" width="180" />
-          <el-table-column prop="price" label="单价" width="100">
-            <template #default="scope">¥{{ scope.row.price }}</template>
+          <el-table-column label="单价" width="100">
+            <template #default="scope">
+              <span>¥{{ scope.row.dishPrice }}</span>
+            </template>
           </el-table-column>
           <el-table-column prop="quantity" label="数量" width="100" />
-          <el-table-column prop="description" label="描述" />
+          <el-table-column label="描述">
+            <template #default="scope">
+              <span>{{ scope.row.dishDescription }}</span>
+            </template>
+          </el-table-column>
         </el-table>
       </div>
 
@@ -73,6 +79,18 @@ export default {
         const response = await GroupBuyService.getPackageDetail(packageId);
         packageDetail.value = response;
         console.log('套餐详情:', packageDetail.value);
+        
+        // 添加更详细的日志记录
+        if (packageDetail.value && packageDetail.value.dishItems) {
+          console.log('套餐中的菜品数量:', packageDetail.value.dishItems.length);
+          packageDetail.value.dishItems.forEach((item, index) => {
+            console.log(`菜品 ${index+1}:`, item);
+            console.log(`菜品 ${index+1} 单价:`, item.dishPrice, typeof item.dishPrice);
+            console.log(`菜品 ${index+1} 描述:`, item.dishDescription, typeof item.dishDescription);
+          });
+        } else {
+          console.log('没有菜品数据或数据格式不正确:', packageDetail.value);
+        }
       } catch (error) {
         console.error('获取套餐详情失败:', error);
       } finally {
