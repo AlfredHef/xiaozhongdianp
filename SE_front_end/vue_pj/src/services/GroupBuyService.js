@@ -20,6 +20,19 @@ axios.interceptors.response.use(response => {
     status: response.status,
     data: response.data
   });
+  
+  // 如果响应包含dishItems，记录详细信息
+  if (response.data && response.data.dishItems && Array.isArray(response.data.dishItems)) {
+    console.log('响应中的菜品信息:');
+    response.data.dishItems.forEach((item, index) => {
+      console.log(`菜品 ${index+1}:`, {
+        ...item,
+        dishPrice_type: typeof item.dishPrice,
+        dishDescription_type: typeof item.dishDescription
+      });
+    });
+  }
+  
   return response;
 }, error => {
   console.error('请求错误:', {
@@ -66,6 +79,16 @@ class GroupBuyService {
       
       const response = await axios.get(url);
       console.log('团购套餐详情响应:', response.data);
+      
+      // 处理数据，确保dishItems中的dishPrice是数字，dishDescription是字符串
+      if (response.data && response.data.dishItems && Array.isArray(response.data.dishItems)) {
+        response.data.dishItems = response.data.dishItems.map(item => ({
+          ...item,
+          dishPrice: typeof item.dishPrice === 'number' ? item.dishPrice : parseFloat(item.dishPrice) || 0,
+          dishDescription: item.dishDescription || ''
+        }));
+      }
+      
       return response.data;
     } catch (error) {
       console.error('获取团购套餐详情失败:', error);
