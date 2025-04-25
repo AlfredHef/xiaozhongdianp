@@ -292,4 +292,42 @@ public class CouponServiceImpl implements CouponService {
 
         return newUserCoupons;
     }
+
+    /**
+     * 获取用户所有可用的优惠券
+     *
+     * @param userId 用户ID
+     * @return 用户可用的优惠券DTO列表
+     */
+    @Override
+    public List<CouponDTO> getUserAvailableCoupons(Long userId) {
+        List<UserCoupon> userCoupons = userCouponRepository.findByUserId(userId);
+        return userCoupons.stream()
+                .filter(userCoupon -> userCoupon.getStatus() == 0) // 只返回未使用的优惠券
+                .map(userCoupon -> {
+                    Coupon coupon = couponRepository.findById(userCoupon.getCouponId()).orElse(null);
+                    if (coupon == null) {
+                        return null;
+                    }
+                    
+                    // 检查有效期
+                    if (coupon.getExpirationDate() != null && LocalDateTime.now().isAfter(coupon.getExpirationDate())) {
+                        return null;
+                    }
+                    if (coupon.getValidDays() != null) {
+                        LocalDateTime expiration = userCoupon.getReceivedAt().plusDays(coupon.getValidDays());
+                        if (LocalDateTime.now().isAfter(expiration)) {
+                            return null;
+                        }
+                    }
+                    
+                    CouponDTO dto = new CouponDTO();
+                    BeanUtils.copyProperties(coupon, dto);
+                    dto.setStatus(userCoupon.getStatus());
+                    dto.setDiscountAmount(coupon.getAmount()); // 设置折扣金额
+                    return dto;
+                })
+                .filter(dto -> dto != null)
+                .collect(Collectors.toList());
+    }
 }

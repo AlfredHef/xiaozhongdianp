@@ -26,4 +26,7 @@ public class CouponDTO {
     private Integer maxPerUser;
     private Integer status; // 0-未使用，1-已使用，2-已过期
     private boolean isNewUserCoupon; // 是否为新人券
+    
+    // 前端显示的折扣金额
+    private BigDecimal discountAmount;
 }

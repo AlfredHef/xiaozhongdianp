@@ -47,6 +47,21 @@ public class CouponController {
     }
 
     /**
+     * 获取用户可用的优惠券列表
+     * @param userId 用户ID
+     * @return 优惠券DTO列表
+     */
+    @GetMapping("/user")
+    public ResponseEntity<List<CouponDTO>> getUserAvailableCoupons(
+            @RequestHeader("userId") Long userId) {
+        if (userId == null) {
+            throw new BusinessException("用户未登录，请先登录");
+        }
+        List<CouponDTO> coupons = couponService.getUserAvailableCoupons(userId);
+        return ResponseEntity.ok(coupons);
+    }
+
+    /**
      * 新用户领取新人券
      * @param userId 用户ID
      * @param couponId 优惠券ID

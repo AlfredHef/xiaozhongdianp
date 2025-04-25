@@ -154,9 +154,13 @@ class GroupBuyService {
   // Get user available coupons
   async getUserCoupons() {
     try {
-      const token = AuthService.getToken();
+      const user = AuthService.getUser();
+      if (!user || !user.id) {
+        throw new Error('未登录或用户信息不完整');
+      }
+      
       const response = await axios.get(`${API_URL}/coupons/user`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'userId': user.id }
       });
       return response.data;
     } catch (error) {

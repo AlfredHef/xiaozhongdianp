@@ -14,6 +14,8 @@ import com.fudan.xiaozhong_dianping.groupbuy.service.CouponService;
 import com.fudan.xiaozhong_dianping.groupbuy.service.OrderService;
 import com.fudan.xiaozhong_dianping.groupbuy.utils.QRCodeGenerator;
 import com.fudan.xiaozhong_dianping.groupbuy.utils.VoucherCodeGenerator;
+import com.fudan.xiaozhong_dianping.shop.entity.Shop;
+import com.fudan.xiaozhong_dianping.shop.mapper.ShopMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -48,6 +50,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private CouponService couponService;
+    
+    @Autowired
+    private ShopMapper shopMapper;
 
     /**
      * 创建订单并生成券码。
@@ -181,6 +186,14 @@ public class OrderServiceImpl implements OrderService {
         if (packageOpt.isPresent()) {
             dto.setPackageTitle(packageOpt.get().getTitle());
         }
+        
+        // 查询商家名称
+        if (order.getShopId() != null) {
+            Shop shop = shopMapper.findShopById(order.getShopId().longValue());
+            if (shop != null) {
+                dto.setShopName(shop.getName());
+            }
+        }
 
         return dto;
     }
@@ -203,6 +216,14 @@ public class OrderServiceImpl implements OrderService {
         dto.setPackageId(groupBuyPackage.getId());
         dto.setPackageTitle(groupBuyPackage.getTitle());
         dto.setShopId(groupBuyPackage.getShopId());
+        
+        // 查询商家名称
+        if (groupBuyPackage.getShopId() != null) {
+            Shop shop = shopMapper.findShopById(groupBuyPackage.getShopId().longValue());
+            if (shop != null) {
+                dto.setShopName(shop.getName());
+            }
+        }
 
         return dto;
     }
