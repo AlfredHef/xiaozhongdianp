@@ -15,6 +15,18 @@ public class TokenInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        // 对预检请求放行
+        if ("OPTIONS".equals(request.getMethod())) {
+            return true;
+        }
+        
+        // 检查userId头，如果存在则放行
+        String userId = request.getHeader("userId");
+        if (userId != null && !userId.isEmpty()) {
+            return true;
+        }
+        
+        // 验证Authorization头
         String token = request.getHeader("Authorization");
         if (token != null && token.startsWith("Bearer ")) {
             token = token.substring(7);
@@ -23,6 +35,7 @@ public class TokenInterceptor implements HandlerInterceptor {
                 return true;
             }
         }
+        
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         return false;
     }
