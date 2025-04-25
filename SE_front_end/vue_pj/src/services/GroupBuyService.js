@@ -99,10 +99,14 @@ class GroupBuyService {
   // Create an order
   async createOrder(packageId, couponId = null) {
     try {
-      const token = AuthService.getToken();
+      const user = AuthService.getUser();
+      if (!user || !user.id) {
+        throw new Error('未登录或用户信息不完整');
+      }
+      
       const response = await axios.post(`${API_URL}/orders`, 
         { packageId, couponId }, 
-        { headers: { 'Authorization': `Bearer ${token}` }}
+        { headers: { 'userId': user.id } }
       );
       return response.data;
     } catch (error) {
@@ -114,9 +118,13 @@ class GroupBuyService {
   // Get user's orders
   async getUserOrders() {
     try {
-      const token = AuthService.getToken();
-      const response = await axios.get(`${API_URL}/orders/user`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const user = AuthService.getUser();
+      if (!user || !user.id) {
+        throw new Error('未登录或用户信息不完整');
+      }
+      
+      const response = await axios.get(`${API_URL}/orders`, {
+        headers: { 'userId': user.id }
       });
       return response.data;
     } catch (error) {
@@ -128,9 +136,13 @@ class GroupBuyService {
   // Get order details with voucher
   async getOrderDetail(orderId) {
     try {
-      const token = AuthService.getToken();
+      const user = AuthService.getUser();
+      if (!user || !user.id) {
+        throw new Error('未登录或用户信息不完整');
+      }
+      
       const response = await axios.get(`${API_URL}/orders/${orderId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'userId': user.id }
       });
       return response.data;
     } catch (error) {

@@ -150,24 +150,34 @@ export default {
 
       try {
         submitting.value = true;
+        console.log('正在提交订单，套餐ID:', packageDetail.value.id, '优惠券ID:', selectedCouponId.value);
         const response = await GroupBuyService.createOrder(
           packageDetail.value.id, 
           selectedCouponId.value
         );
         
+        console.log('下单成功，响应数据:', response);
+        
         // 下单成功，跳转到券码详情页
-        if (response && response.orderId) {
+        if (response) {
           ElMessage.success('下单成功');
-          router.push({ 
-            name: 'VoucherDetail', 
-            params: { id: response.orderId } 
-          });
+          // 使用订单ID进行跳转
+          const orderId = response.orderId;
+          if (orderId) {
+            router.push({ 
+              name: 'VoucherDetail', 
+              params: { id: orderId } 
+            });
+          } else {
+            console.error('响应中缺少orderId:', response);
+            ElMessage.error('下单成功，但无法获取订单ID');
+          }
         } else {
           ElMessage.error('下单失败，请重试');
         }
       } catch (error) {
         console.error('下单失败:', error);
-        ElMessage.error('下单失败，请重试');
+        ElMessage.error('下单失败: ' + (error.response?.data?.message || error.message || '请重试'));
       } finally {
         submitting.value = false;
       }
