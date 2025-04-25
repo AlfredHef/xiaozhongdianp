@@ -28,6 +28,13 @@ public interface CouponService {
     List<CouponDTO> getCouponsInUserWallet(Long userId);
 
     /**
+     * 获取用户所有可用的优惠券
+     * @param userId 用户ID
+     * @return 优惠券DTO列表
+     */
+    List<CouponDTO> getUserAvailableCoupons(Long userId);
+
+    /**
      * 获取可用的优惠券
      * @param userId 用户ID
      * @param packageId 套餐ID
