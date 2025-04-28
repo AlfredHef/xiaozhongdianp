@@ -77,4 +77,16 @@ public class CouponController {
         UserCoupon userCoupon = couponService.receiveCoupon(userId, couponId);
         return ResponseEntity.ok(userCoupon);
     }
+
+    /**
+     * 获取用户所有优惠券（包括已使用和未使用的）
+     * @param userId 用户ID
+     * @return 优惠券DTO列表
+     */
+    @GetMapping("/my-coupons")
+    public ResponseEntity<List<CouponDTO>> getMyCoupons(
+            @RequestHeader("userId") Long userId) {
+        List<CouponDTO> coupons = couponService.getCouponsInUserWallet(userId);
+        return ResponseEntity.ok(coupons);
+    }
 }

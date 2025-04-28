@@ -11,6 +11,7 @@
           <el-dropdown-menu>
             <el-dropdown-item @click="viewProfile">个人资料</el-dropdown-item>
             <el-dropdown-item @click="viewOrders">我的订单</el-dropdown-item>
+            <el-dropdown-item @click="viewCoupons">我的券包</el-dropdown-item>
             <el-dropdown-item divided @click="logout">退出登录</el-dropdown-item>
           </el-dropdown-menu>
         </template>
@@ -145,6 +146,11 @@ export default {
       router.push('/orders');
     };
     
+    // 查看券包
+    const viewCoupons = () => {
+      router.push('/my-coupons');
+    };
+    
     return {
       isLoggedIn,
       username,
@@ -152,6 +158,7 @@ export default {
       logout,
       viewProfile,
       viewOrders,
+      viewCoupons,
       shouldShow,
       loadUserInfo
     };

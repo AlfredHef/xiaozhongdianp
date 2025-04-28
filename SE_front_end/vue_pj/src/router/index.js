@@ -10,6 +10,7 @@ import OrderConfirm from '../views/OrderConfirm.vue';
 import VoucherDetail from '../views/VoucherDetail.vue';
 import MyOrders from '../views/MyOrders.vue';
 import AuthService from '../services/AuthService';
+import MyCoupons from '@/views/coupon/MyCoupons.vue';
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -21,7 +22,15 @@ const routes = [
   { path: '/groupbuy/:id', name: 'GroupBuyDetail', component: GroupBuyDetail, meta: { requiresAuth: true } },
   { path: '/order/confirm/:id', name: 'OrderConfirm', component: OrderConfirm, meta: { requiresAuth: true } },
   { path: '/voucher/:id', name: 'VoucherDetail', component: VoucherDetail, meta: { requiresAuth: true } },
-  { path: '/orders', name: 'MyOrders', component: MyOrders, meta: { requiresAuth: true } }
+  { path: '/orders', name: 'MyOrders', component: MyOrders, meta: { requiresAuth: true } },
+  {
+    path: '/my-coupons',
+    name: 'MyCoupons',
+    component: MyCoupons,
+    meta: {
+      requiresAuth: true
+    }
+  }
 ];
 
 const router = createRouter({
