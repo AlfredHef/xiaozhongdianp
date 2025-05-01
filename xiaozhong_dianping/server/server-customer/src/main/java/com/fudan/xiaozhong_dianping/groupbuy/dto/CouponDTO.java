@@ -26,7 +26,20 @@ public class CouponDTO {
     private Integer maxPerUser;
     private Integer status; // 0-未使用，1-已使用，2-已过期
     private boolean isNewUserCoupon; // 是否为新人券
+    private boolean newUserCoupon; // 前端使用的字段名
     
     // 前端显示的折扣金额
     private BigDecimal discountAmount;
+    
+    // 设置isNewUserCoupon时同时设置newUserCoupon
+    public void setIsNewUserCoupon(boolean isNewUserCoupon) {
+        this.isNewUserCoupon = isNewUserCoupon;
+        this.newUserCoupon = isNewUserCoupon;
+    }
+    
+    // 设置newUserCoupon时同时设置isNewUserCoupon
+    public void setNewUserCoupon(boolean newUserCoupon) {
+        this.newUserCoupon = newUserCoupon;
+        this.isNewUserCoupon = newUserCoupon;
+    }
 }
