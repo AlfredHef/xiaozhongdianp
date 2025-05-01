@@ -13,8 +13,11 @@
             v-for="(coupon, index) in coupons" 
             :key="index" 
             class="coupon-card"
-            :class="{ 'selected': selectedCouponId === coupon.id }"
-            @click="selectCoupon(coupon)"
+            :class="{ 
+              'selected': selectedCouponId === coupon.id,
+              'disabled': coupon.totalQuantity <= 0 || coupon.disabled
+            }"
+            @click="!coupon.disabled && coupon.totalQuantity > 0 ? selectCoupon(coupon) : null"
           >
             <div class="coupon-header">
               <h3>{{ coupon.title }}</h3>
@@ -56,8 +59,12 @@
               </p>
               <p>
                 <span class="label">剩余数量：</span>
-                <span>{{ coupon.totalQuantity }}张</span>
+                <span v-if="coupon.totalQuantity > 0">{{ coupon.totalQuantity }}张</span>
+                <span v-else class="sold-out">已抢光</span>
               </p>
+            </div>
+            <div v-if="coupon.totalQuantity <= 0 || coupon.disabled" class="sold-out-overlay">
+              <span>已抢光</span>
             </div>
           </div>
         </div>
@@ -65,7 +72,7 @@
         <div class="action-buttons">
           <button 
             class="receive-btn" 
-            :disabled="!selectedCouponId || loading" 
+            :disabled="!selectedCouponId || loading || (selectedCoupon && (selectedCoupon.totalQuantity <= 0 || selectedCoupon.disabled))" 
             @click="receiveCoupon"
           >
             {{ loading ? '领取中...' : '立即领取' }}
@@ -161,30 +168,35 @@ export default {
         
         this.close();
       } catch (error) {
-        // 处理常见的错误情况
-        let errorMsg = '领取优惠券失败';
+        // 直接使用增强错误对象中的消息
+        let errorMsg = error.message || '领取优惠券失败';
         
-        if (error.response) {
-          const status = error.response.status;
-          const data = error.response.data;
-          
-          if (status === 400 && data && data.message) {
-            errorMsg = data.message;
-          } else if (status === 500) {
-            errorMsg = '服务器内部错误，请稍后再试';
-          }
-        } else if (error.message) {
-          errorMsg = error.message;
+        // 检查优惠券数量是否已经为0
+        if (this.selectedCoupon && this.selectedCoupon.totalQuantity <= 0) {
+          errorMsg = '优惠券已被抢光';
         }
         
+        // 记录错误信息，优先显示友好错误消息
         this.error = errorMsg;
         console.error('领取优惠券失败:', error);
         
         // 使用Element Plus的ElMessage组件显示错误消息
         ElMessage({
           message: errorMsg,
-          type: 'error'
+          type: 'warning' // 使用警告图标而不是错误图标，更友好
         });
+        
+        // 如果错误是因为优惠券已发放完，则从列表中移除或标记为不可用
+        if (errorMsg.includes('已发放完') || errorMsg.includes('已被抢光')) {
+          // 更新当前选中的优惠券状态
+          if (this.selectedCoupon) {
+            this.selectedCoupon.totalQuantity = 0;
+            this.selectedCoupon.disabled = true;
+          }
+          
+          // 刷新优惠券列表
+          this.fetchCoupons();
+        }
       } finally {
         this.loading = false;
       }
@@ -375,5 +387,38 @@ export default {
 
 .skip-btn:hover {
   background-color: #f5f5f5;
+}
+
+.coupon-card.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  border-color: #ddd;
+}
+
+.sold-out {
+  color: #ff0000;
+  font-weight: bold;
+}
+
+.sold-out-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  transform: rotate(-15deg);
+}
+
+.sold-out-overlay span {
+  background-color: #ff5722;
+  padding: 5px 20px;
+  border-radius: 5px;
 }
 </style> 
