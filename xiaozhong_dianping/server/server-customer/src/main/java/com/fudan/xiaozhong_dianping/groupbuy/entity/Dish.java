@@ -1,6 +1,9 @@
 package com.fudan.xiaozhong_dianping.groupbuy.entity;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -9,7 +12,10 @@ import java.util.List;
 /**
  * 菜品实体类
  */
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@ToString(exclude = "packageDishRelations") // 排除关联列表以避免循环引用
 @Entity
 @Table(name = "dish")
 public class Dish {

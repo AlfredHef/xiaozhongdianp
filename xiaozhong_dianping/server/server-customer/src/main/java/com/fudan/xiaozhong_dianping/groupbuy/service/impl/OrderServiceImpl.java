@@ -53,6 +53,9 @@ public class OrderServiceImpl implements OrderService {
     
     @Autowired
     private ShopMapper shopMapper;
+    
+    @Autowired
+    private com.fudan.xiaozhong_dianping.groupbuy.repository.UserCouponRepository userCouponRepository;
 
     /**
      * 创建订单并生成券码。
@@ -92,6 +95,15 @@ public class OrderServiceImpl implements OrderService {
                     .orElse(null);
             if (selectedCoupon != null) {
                 orderPrice = orderPrice.subtract(couponService.calculateDiscount(selectedCoupon, orderPrice));
+                
+                // 更新优惠券状态为已使用
+                com.fudan.xiaozhong_dianping.groupbuy.entity.UserCoupon userCoupon = 
+                    userCouponRepository.findByUserIdAndCouponId(userId, couponId);
+                if (userCoupon != null) {
+                    userCoupon.setStatus(1); // 已使用
+                    userCoupon.setUsedAt(LocalDateTime.now());
+                    userCouponRepository.save(userCoupon);
+                }
             }
         }
 

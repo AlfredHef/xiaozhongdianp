@@ -4,6 +4,9 @@
       <el-button link @click="$router.push('/shop/list')">商家列表</el-button>
     </div>
     <div v-if="isLoggedIn" class="user-info">
+      <div v-if="isEligibleForNewUserCoupon" class="new-user-coupon-btn">
+        <el-button type="danger" size="small" @click="showNewUserCoupon">领取新人券</el-button>
+      </div>
       <span>你好,{{ username }}</span>
       <el-dropdown trigger="click">
         <el-avatar :size="32" :src="defaultAvatar"></el-avatar>
@@ -11,6 +14,7 @@
           <el-dropdown-menu>
             <el-dropdown-item @click="viewProfile">个人资料</el-dropdown-item>
             <el-dropdown-item @click="viewOrders">我的订单</el-dropdown-item>
+            <el-dropdown-item @click="viewCoupons">我的卡包</el-dropdown-item>
             <el-dropdown-item divided @click="logout">退出登录</el-dropdown-item>
           </el-dropdown-menu>
         </template>
@@ -29,6 +33,7 @@ import { useRouter } from 'vue-router';
 import AuthService from '@/services/AuthService';
 import { USER_EVENTS, addEventListener } from '@/utils/sessionState';
 import { useStore } from 'vuex';
+import CouponService from '@/services/CouponService';
 
 export default {
   name: 'UserStatus',
@@ -44,6 +49,7 @@ export default {
     const store = useStore();
     const user = ref(null);
     const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png';
+    const isEligibleForNewUserCoupon = ref(false);
     
     // 计算属性：是否已登录 - 优先使用Vuex状态
     const isLoggedIn = computed(() => {
@@ -67,24 +73,28 @@ export default {
     
     // 初始化时获取用户信息
     onMounted(() => {
+      console.log('UserStatus组件挂载完成，准备初始化用户信息');
       loadUserInfo();
       
       // 监听用户登录事件
       const loginUnsubscribe = addEventListener(USER_EVENTS.LOGIN, (userData) => {
         console.log('收到用户登录事件:', userData);
         user.value = userData;
+        checkNewUserCouponEligibility();
       });
       
       // 监听用户登出事件
       const logoutUnsubscribe = addEventListener(USER_EVENTS.LOGOUT, () => {
         console.log('收到用户登出事件');
         user.value = null;
+        isEligibleForNewUserCoupon.value = false;
       });
       
       // 监听用户更新事件
       const updateUnsubscribe = addEventListener(USER_EVENTS.UPDATE, (userData) => {
         console.log('收到用户信息更新事件:', userData);
         user.value = userData;
+        checkNewUserCouponEligibility();
       });
       
       // 组件卸载时清除监听器
@@ -98,6 +108,10 @@ export default {
       if (store && store.dispatch) {
         store.dispatch('auth/initAuth');
       }
+      
+      // 检查新人券资格
+      console.log('开始检查新人券资格');
+      checkNewUserCouponEligibility();
     });
     
     // 加载用户信息
@@ -107,6 +121,8 @@ export default {
       if (vuexUser) {
         user.value = vuexUser;
         console.log('从Vuex获取用户信息:', user.value);
+        // 登录状态下立即检查新人券资格
+        checkNewUserCouponEligibility();
         return;
       }
       
@@ -118,6 +134,8 @@ export default {
         if (store && store.dispatch) {
           store.dispatch('auth/saveUser', user.value);
         }
+        // 登录状态下立即检查新人券资格
+        checkNewUserCouponEligibility();
       } else {
         console.log('未获取到用户信息');
       }
@@ -145,13 +163,49 @@ export default {
       router.push('/orders');
     };
     
+    // 查看优惠券
+    const viewCoupons = () => {
+      router.push('/coupons');
+    };
+    
+    // 显示新人券弹窗
+    const showNewUserCoupon = () => {
+      // 触发App.vue中的新人券弹窗显示
+      if (window.$updateUserStatus) {
+        window.$updateUserStatus();
+      }
+    };
+    
+    // 检查用户是否有资格领取新人券
+    const checkNewUserCouponEligibility = async () => {
+      if (!isLoggedIn.value) return;
+      
+      try {
+        // 调用API检查用户是否为新用户
+        const isNewUser = await CouponService.isNewUser();
+        
+        // 调用API检查用户是否已领取过新人券
+        const hasReceivedCoupon = await CouponService.hasReceivedNewUserCoupon();
+        
+        // 只有是新用户且没有领取过新人券的用户才能领取
+        isEligibleForNewUserCoupon.value = isNewUser && !hasReceivedCoupon;
+        console.log('新人券资格检查结果:', {isNewUser, hasReceivedCoupon, isEligible: isEligibleForNewUserCoupon.value});
+      } catch (error) {
+        console.error('检查新人券资格失败:', error);
+        isEligibleForNewUserCoupon.value = false;
+      }
+    };
+    
     return {
       isLoggedIn,
       username,
       defaultAvatar,
+      isEligibleForNewUserCoupon,
       logout,
       viewProfile,
       viewOrders,
+      viewCoupons,
+      showNewUserCoupon,
       shouldShow,
       loadUserInfo
     };
@@ -186,5 +240,21 @@ export default {
 .login-links {
   display: flex;
   gap: 10px;
+}
+
+.new-user-coupon-btn {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 </style> 
