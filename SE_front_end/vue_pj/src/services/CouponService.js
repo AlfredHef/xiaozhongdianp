@@ -93,11 +93,41 @@ class CouponService {
     } catch (error) {
       console.error('===========领取优惠券失败===========');
       console.error(`错误信息: ${error.message}`);
+      
+      // 优化错误处理：从错误响应中提取有效信息
+      let errorMessage = '领取优惠券失败';
+      
       if (error.response) {
         console.error(`状态码: ${error.response.status}`);
         console.error(`响应数据: ${JSON.stringify(error.response.data, null, 2)}`);
+        
+        // 处理业务错误 (400状态码)
+        if (error.response.status === 400 && error.response.data) {
+          if (error.response.data.message) {
+            // 提取业务异常信息作为错误消息
+            errorMessage = error.response.data.message;
+          }
+        } 
+        // 如果是服务器错误 (500状态码)，检查是否包含优惠券已发放完的信息
+        else if (error.response.status === 500) {
+          // 如果错误消息中包含"优惠券已发放完"，则显示该信息
+          if (error.response.data && 
+              error.response.data.message && 
+              error.response.data.message.includes('优惠券已发放完')) {
+            errorMessage = '优惠券已发放完';
+          } else {
+            errorMessage = '服务器错误，请稍后再试';
+          }
+        }
       }
-      throw error;
+      
+      // 创建一个增强的错误对象
+      const enhancedError = new Error(errorMessage);
+      enhancedError.originalError = error;
+      enhancedError.status = error.response ? error.response.status : null;
+      enhancedError.data = error.response ? error.response.data : null;
+      
+      throw enhancedError;
     }
   }
 
