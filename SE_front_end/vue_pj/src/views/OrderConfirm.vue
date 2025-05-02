@@ -34,6 +34,10 @@
           <p>暂无可用优惠券</p>
         </div>
         <div v-else class="coupon-selection">
+          <div class="coupon-selection-header">
+            <span class="coupon-count">共{{ coupons.length }}张可用于当前套餐的优惠券</span>
+            <span class="coupon-package-info">套餐: {{ packageDetail.title }}</span>
+          </div>
           <el-radio-group v-model="selectedCouponId">
             <div 
               class="coupon-item no-coupon-option" 
@@ -164,7 +168,16 @@ export default {
     const loadCoupons = async () => {
       try {
         loadingCoupons.value = true;
-        const response = await GroupBuyService.getUserCoupons();
+        // 确保已经加载了套餐详情才调用获取优惠券接口
+        if (!packageDetail.value || !packageDetail.value.id) {
+          console.log('套餐信息未加载完成，无法筛选优惠券');
+          coupons.value = [];
+          loadingCoupons.value = false;
+          return;
+        }
+        
+        // 传递packageId参数，用于筛选适用的优惠券
+        const response = await GroupBuyService.getUserCoupons(packageDetail.value.id);
         
         console.log('前端接收到的优惠券数据:', response);
         
@@ -415,8 +428,8 @@ export default {
       }
     };
 
-    onMounted(() => {
-      loadPackageDetail();
+    onMounted(async () => {
+      await loadPackageDetail();
       loadCoupons();
     });
 
@@ -694,5 +707,22 @@ export default {
   font-weight: bold;
   border-radius: 4px;
   padding: 4px 8px;
+}
+
+.coupon-selection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.coupon-count {
+  font-size: 14px;
+  color: #666;
+}
+
+.coupon-package-info {
+  font-size: 14px;
+  color: #999;
 }
 </style> 
