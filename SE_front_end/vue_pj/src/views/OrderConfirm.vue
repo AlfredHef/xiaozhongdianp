@@ -35,21 +35,62 @@
         </div>
         <div v-else class="coupon-selection">
           <el-radio-group v-model="selectedCouponId">
-            <el-radio :label="null">不使用优惠券</el-radio>
-            <el-radio 
+            <div 
+              class="coupon-item no-coupon-option" 
+              :class="{ 'coupon-selected': selectedCouponId === null }"
+              @click="selectedCouponId = null"
+            >
+              <el-radio :label="null" class="coupon-radio">
+                <div class="coupon-info no-coupon-info">
+                  <div class="no-coupon-text">不使用优惠券</div>
+                </div>
+              </el-radio>
+            </div>
+            
+            <div 
               v-for="coupon in coupons" 
               :key="coupon.id" 
-              :label="coupon.id" 
-              class="coupon-radio-item"
+              class="coupon-item"
+              :class="{ 'coupon-selected': selectedCouponId === coupon.id }"
+              @click="selectedCouponId = coupon.id"
             >
-              <div class="coupon-info">
-                <div class="coupon-amount">¥{{ coupon.discountAmount }}</div>
-                <div class="coupon-details">
-                  <div class="coupon-name">{{ coupon.name }}</div>
-                  <div class="coupon-validity">有效期至: {{ formatDate(coupon.expireDate) }}</div>
+              <el-radio :label="coupon.id" class="coupon-radio">
+                <div class="coupon-info">
+                  <!-- 根据优惠券类型显示不同的内容 -->
+                  <div class="coupon-amount" :class="{ 'discount-type': coupon.type === '折扣券' }">
+                    <template v-if="coupon.type === '折扣券'">
+                      {{ formatDiscount(coupon.amount) }}
+                    </template>
+                    <template v-else>
+                      ¥{{ coupon.discountAmount }}
+                    </template>
+                  </div>
+                  <div class="coupon-details">
+                    <div class="coupon-name">{{ coupon.title || '优惠券' }}</div>
+                    <div class="coupon-description" v-if="coupon.description">{{ coupon.description }}</div>
+                    
+                    <!-- 显示优惠券有效期信息 -->
+                    <div class="coupon-validity-container">
+                      <!-- 如果有计算出的过期日期 -->
+                      <div class="coupon-validity" v-if="coupon.expirationDate">
+                        有效期: {{ formatDate(coupon.expirationDate) }}
+                      </div>
+                      <!-- 没有过期日期但有有效期文本 -->
+                      <div class="coupon-validity" v-else-if="coupon.validityText">
+                        {{ coupon.validityText }}
+                      </div>
+                      <!-- 没有任何有效期信息 -->
+                      <div class="coupon-validity" v-else>长期有效</div>
+                      
+                      <!-- 显示validDays信息作为标签 -->
+                      <div v-if="coupon.validDays" class="validity-tag">
+                        {{ coupon.validDays }}天
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </el-radio>
+              </el-radio>
+            </div>
           </el-radio-group>
         </div>
       </div>
@@ -61,7 +102,11 @@
         </div>
         <div class="summary-row" v-if="selectedCoupon">
           <span>优惠券：</span>
-          <span>-¥{{ selectedCoupon.discountAmount }}</span>
+          <span v-if="selectedCoupon.type === '折扣券'">
+            {{ formatDiscount(selectedCoupon.amount) }}
+            (优惠¥{{ calculateDiscountAmount(packageDetail.price, selectedCoupon).toFixed(2) }})
+          </span>
+          <span v-else>-¥{{ selectedCoupon.discountAmount }}</span>
         </div>
         <div class="summary-row total">
           <span>实付金额：</span>
@@ -120,7 +165,71 @@ export default {
       try {
         loadingCoupons.value = true;
         const response = await GroupBuyService.getUserCoupons();
-        coupons.value = response || [];
+        
+        console.log('前端接收到的优惠券数据:', response);
+        
+        // 确保优惠券数据格式正确
+        if (response && Array.isArray(response)) {
+          coupons.value = response.map(coupon => {
+            // 计算真实有效期 - 处理validDays的情况
+            let finalExpirationDate = coupon.expirationDate;
+            let validityText = '';
+            
+            // 如果没有过期时间但有validDays
+            if (!finalExpirationDate && coupon.validDays) {
+              // 从当前时间计算有效期
+              const now = new Date();
+              const expirationDate = new Date(now);
+              expirationDate.setDate(now.getDate() + coupon.validDays);
+              finalExpirationDate = expirationDate.toISOString();
+              validityText = `${coupon.validDays}天有效期`;
+              
+              console.log(`优惠券${coupon.id}基于当前时间和validDays=${coupon.validDays}计算的有效期: ${finalExpirationDate}`);
+            } 
+            // 如果有receivedAt和validDays
+            else if (coupon.receivedAt && coupon.validDays) {
+              try {
+                const receivedDate = new Date(coupon.receivedAt);
+                if (!isNaN(receivedDate.getTime())) {
+                  const calculatedDate = new Date(receivedDate);
+                  calculatedDate.setDate(receivedDate.getDate() + coupon.validDays);
+                  finalExpirationDate = calculatedDate.toISOString();
+                  validityText = `领取后${coupon.validDays}天有效期`;
+                  
+                  console.log(`优惠券${coupon.id}基于领取时间和validDays=${coupon.validDays}计算的有效期: ${finalExpirationDate}`);
+                }
+              } catch (err) {
+                console.error('计算动态有效期出错:', err);
+              }
+            }
+            // 有过期时间，没有validDays
+            else if (finalExpirationDate) {
+              validityText = '固定到期日';
+            }
+            // 既没有过期时间也没有validDays
+            else {
+              validityText = '长期有效';
+            }
+            
+            return {
+              ...coupon,
+              // 确保折扣金额有效
+              discountAmount: coupon.discountAmount || coupon.amount || 0,
+              // 确保标题存在
+              title: coupon.title || '优惠券',
+              // 确保描述字段
+              description: coupon.description || '',
+              // 使用计算后的最终有效期
+              expirationDate: finalExpirationDate,
+              // 有效期文本说明
+              validityText: coupon.validityText || validityText
+            };
+          });
+          
+          console.log('处理后的优惠券数据:', coupons.value);
+        } else {
+          coupons.value = [];
+        }
         
         // 默认选择减免金额最高的优惠券
         if (coupons.value.length > 0) {
@@ -131,6 +240,7 @@ export default {
         }
       } catch (error) {
         console.error('获取优惠券失败:', error);
+        coupons.value = [];
       } finally {
         loadingCoupons.value = false;
       }
@@ -185,9 +295,58 @@ export default {
 
     // 格式化日期
     const formatDate = (dateString) => {
-      if (!dateString) return '';
-      const date = new Date(dateString);
-      return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+      if (!dateString) return '长期有效';
+      
+      try {
+        console.log('正在格式化日期:', dateString, typeof dateString);
+        const date = new Date(dateString);
+        
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+          console.error('无效的日期格式:', dateString);
+          return '长期有效';
+        }
+        
+        const now = new Date();
+        const diffTime = date.getTime() - now.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        // 如果超过30天，显示具体日期
+        if (diffDays > 30) {
+          return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+        // 如果不到30天，显示剩余天数
+        else if (diffDays > 0) {
+          return `剩余${diffDays}天`;
+        }
+        // 已过期
+        else {
+          return '已过期';
+        }
+      } catch (error) {
+        console.error('日期格式化错误:', error);
+        return '长期有效';
+      }
+    };
+
+    // 格式化折扣率的显示
+    const formatDiscount = (discount) => {
+      if (!discount) return '不打折';
+      
+      // 折扣券的amount存储为减去的部分，例如0.1表示打9折（1-0.1）
+      const discountRate = 1 - parseFloat(discount);
+      
+      // 计算折扣百分比，例如0.9对应9折
+      let percentage = Math.round(discountRate * 10);
+      
+      // 确保是个位数，如果是10则显示为"不打折"
+      if (percentage === 10) {
+        return '不打折';
+      } else if (percentage === 0) {
+        return '免单券';
+      }
+      
+      return `${percentage}折`;
     };
 
     // 计算属性：已选优惠券
@@ -201,11 +360,60 @@ export default {
       if (!packageDetail.value) return 0;
       
       let price = packageDetail.value.price;
+      
       if (selectedCoupon.value) {
-        price = Math.max(0, price - selectedCoupon.value.discountAmount);
+        // 根据优惠券类型计算折扣
+        const couponType = selectedCoupon.value.type;
+        
+        // 折扣券需要计算折扣，而不是直接减去金额
+        if (couponType === '折扣券') {
+          // 折扣券的amount是折扣率，例如九折券的amount是0.1，表示打九折
+          // 计算公式: 原价 * (1 - 折扣率)
+          const discountRate = selectedCoupon.value.amount || selectedCoupon.value.discountAmount || 0;
+          const discountedPrice = price * (1 - discountRate);
+          
+          // 如果有最大抵扣限制
+          if (selectedCoupon.value.maxDeduction) {
+            const maxDeduction = parseFloat(selectedCoupon.value.maxDeduction);
+            const actualDiscount = price - discountedPrice;
+            
+            if (actualDiscount > maxDeduction) {
+              // 折扣受限，使用最大抵扣金额
+              price = price - maxDeduction;
+            } else {
+              // 使用正常折扣
+              price = discountedPrice;
+            }
+          } else {
+            // 无最大抵扣限制，直接使用折扣后价格
+            price = discountedPrice;
+          }
+          
+          console.log(`折扣券计算: 原价=${packageDetail.value.price}, 折扣率=${discountRate}, 折后价=${price}`);
+        } 
+        // 减固定金额券直接减去优惠金额
+        else {
+          price = Math.max(0, price - selectedCoupon.value.discountAmount);
+          console.log(`减额券计算: 原价=${packageDetail.value.price}, 减额=${selectedCoupon.value.discountAmount}, 折后价=${price}`);
+        }
       }
+      
       return price.toFixed(2);
     });
+
+    // 计算折扣金额
+    const calculateDiscountAmount = (originalPrice, coupon) => {
+      if (!originalPrice || !coupon) return 0;
+      
+      if (coupon.type === '折扣券') {
+        // 折扣金额 = 原价 * 折扣率
+        const discountRate = parseFloat(coupon.amount) || 0;
+        return originalPrice * discountRate;
+      } else {
+        // 减额券直接返回折扣金额
+        return parseFloat(coupon.discountAmount) || 0;
+      }
+    };
 
     onMounted(() => {
       loadPackageDetail();
@@ -222,8 +430,10 @@ export default {
       goBack,
       submitOrder,
       formatDate,
+      formatDiscount,
       selectedCoupon,
-      finalPrice
+      finalPrice,
+      calculateDiscountAmount
     };
   }
 }
@@ -299,39 +509,143 @@ export default {
   margin-top: 20px;
 }
 
-.coupon-radio-item {
-  display: block;
+/* Common styles for both no-coupon and coupon items */
+.coupon-item {
   margin-bottom: 15px;
-  padding: 10px;
-  border: 1px solid #eee;
+  padding: 15px;
+  border: 1px solid #e4e7ed;
   border-radius: 6px;
+  background-color: #fff;
+  transition: all 0.3s;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 76px; /* Fixed height for all coupon items */
+  box-sizing: border-box;
 }
 
-.coupon-info {
+.coupon-item:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.coupon-selected {
+  border-color: #f56c6c;
+  background-color: #fff7f7;
+}
+
+.coupon-selected::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  left: -1px;
+  width: 4px;
+  background-color: #f56c6c;
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+
+/* No coupon option specific styles */
+.no-coupon-option {
+  background-color: #f5f7fa;
+}
+
+.no-coupon-info {
+  justify-content: flex-start;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding-left: 72px; /* Align with coupon content */
+}
+
+.no-coupon-text {
+  font-size: 15px;
+  font-weight: bold;
+  color: #606266;
+}
+
+/* Coupon radio styles */
+.coupon-radio {
+  width: 100%;
+  height: 100%;
+  margin: 0;
   display: flex;
   align-items: center;
 }
 
+.coupon-radio :deep(.el-radio__label) {
+  padding-left: 8px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.coupon-radio :deep(.el-radio__input) {
+  align-self: center;
+  flex-shrink: 0;
+}
+
+/* Coupon info styles */
+.coupon-info {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
 .coupon-amount {
-  font-size: 18px;
+  font-size: 20px;
   color: #f56c6c;
   font-weight: bold;
   margin-right: 20px;
+  min-width: 80px;
+  text-align: center;
 }
 
 .coupon-details {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  justify-content: center;
+  min-height: 46px; /* Ensure minimum height for consistency */
 }
 
 .coupon-name {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: bold;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
+.coupon-description {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 4px;
+  line-height: 1.2;
 }
 
 .coupon-validity {
   font-size: 12px;
   color: #999;
+  line-height: 1.2;
+}
+
+.coupon-validity-container {
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.validity-tag {
+  background-color: #ff9800;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 8px;
+  font-weight: bold;
 }
 
 .loading-coupons, .no-coupons {
@@ -372,5 +686,13 @@ export default {
   width: 200px;
   padding: 12px 0;
   font-size: 16px;
+}
+
+.discount-type {
+  background-color: #ff9800;
+  color: white;
+  font-weight: bold;
+  border-radius: 4px;
+  padding: 4px 8px;
 }
 </style> 
