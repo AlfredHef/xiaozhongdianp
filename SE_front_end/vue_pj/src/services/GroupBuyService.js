@@ -1,5 +1,6 @@
 import axios from 'axios';
 import AuthService from './AuthService';
+import ShopService from './ShopService';
 
 const API_URL = 'http://localhost:8088/api';
 
@@ -152,11 +153,40 @@ class GroupBuyService {
   }
 
   // Get user available coupons
-  async getUserCoupons() {
+  async getUserCoupons(packageId = null) {
     try {
       const user = AuthService.getUser();
       if (!user || !user.id) {
         throw new Error('未登录或用户信息不完整');
+      }
+      
+      // 如果提供了packageId，先获取套餐信息以便进行优惠券筛选
+      let packageDetail = null;
+      let shopName = null;
+      if (packageId) {
+        try {
+          packageDetail = await this.getPackageDetail(packageId);
+          console.log('获取到套餐信息:', packageDetail);
+          
+          // 如果有shopId，获取店铺信息以获取店铺名称
+          if (packageDetail && packageDetail.shopId) {
+            try {
+              const shopResponse = await ShopService.getShopDetails(packageDetail.shopId);
+              if (shopResponse && shopResponse.shop) {
+                shopName = shopResponse.shop.name;
+                console.log('获取到店铺名称:', shopName);
+              } else {
+                console.warn('获取店铺响应中未包含店铺信息:', shopResponse);
+              }
+            } catch (shopErr) {
+              console.error('获取店铺信息失败:', shopErr);
+            }
+          } else {
+            console.warn('套餐详情中缺少shopId:', packageDetail);
+          }
+        } catch (err) {
+          console.error('获取套餐信息失败:', err);
+        }
       }
       
       const response = await axios.get(`${API_URL}/coupons/user`, {
@@ -170,6 +200,7 @@ class GroupBuyService {
         response.data.forEach((coupon, index) => {
           console.log(`优惠券${index + 1} ID:${coupon.id}, 标题:${coupon.title}`);
           console.log(`  类型: ${coupon.type}, 金额/折扣率: ${coupon.amount}`);
+          console.log(`  适用品类: ${coupon.applicableCategory}, 适用店铺: ${coupon.applicableShop}`);
           console.log(`  expirationDate: ${coupon.expirationDate} (${typeof coupon.expirationDate})`);
           console.log(`  validDays: ${coupon.validDays} (${typeof coupon.validDays})`);
           console.log(`  receivedAt: ${coupon.receivedAt}`);
@@ -179,7 +210,7 @@ class GroupBuyService {
       
       // 确保优惠券数据格式正确
       if (response.data && Array.isArray(response.data)) {
-        return response.data.map(coupon => {
+        let coupons = response.data.map(coupon => {
           // 处理过期时间
           let expirationDate = coupon.expirationDate;
           let calculatedExpirationDate = null;
@@ -276,6 +307,36 @@ class GroupBuyService {
               (typeof coupon.amount === 'number' ? coupon.amount : parseFloat(coupon.amount || coupon.discountAmount) || 0);
           }
           
+          // 检查优惠券是否适用于当前套餐
+          let isApplicable = true;
+          
+          // 如果提供了具体的套餐信息，检查优惠券的适用范围
+          if (packageDetail) {
+            console.log(`  检查优惠券ID:${coupon.id}是否适用于套餐ID:${packageDetail.id}`);
+            console.log(`  优惠券信息: 品类=${coupon.applicableCategory || '无限制'}, 店铺=${coupon.applicableShop || '无限制'}`);
+            console.log(`  套餐信息: 品类=${packageDetail.title || '未知'}, 店铺ID=${packageDetail.shopId || '未知'}, 店铺名=${shopName || '未知'}`);
+            
+            // 检查适用的品类
+            if (coupon.applicableCategory && packageDetail.title) {
+              if (coupon.applicableCategory !== packageDetail.title) {
+                console.log(`  优惠券不适用：优惠券适用品类${coupon.applicableCategory}，套餐品类${packageDetail.title}`);
+                isApplicable = false;
+              }
+            }
+            
+            // 检查适用的店铺
+            if (coupon.applicableShop && shopName) {
+              if (coupon.applicableShop !== shopName) {
+                console.log(`  优惠券不适用：优惠券适用店铺"${coupon.applicableShop}"，套餐店铺名称"${shopName}"`);
+                isApplicable = false;
+              } else {
+                console.log(`  优惠券适用店铺匹配成功: "${coupon.applicableShop}" = "${shopName}"`);
+              }
+            } else if (coupon.applicableShop) {
+              console.warn(`  无法检查店铺适用性: 优惠券店铺="${coupon.applicableShop}", 但套餐店铺名称未获取到`);
+            }
+          }
+          
           const result = {
             ...coupon,
             // 设置折扣金额
@@ -292,7 +353,9 @@ class GroupBuyService {
             // 计算后的优惠券有效期文本，用于前端显示
             validityText: coupon.validDays ? `${coupon.validDays}天有效期` : (expirationDate ? '固定过期日期' : '长期有效'),
             // 添加一个字段表示优惠券的生效状态
-            isActive: true
+            isActive: true,
+            // 优惠券是否适用于当前套餐
+            isApplicable: isApplicable
           };
           
           console.log(`  处理后的结果:`, {
@@ -302,11 +365,21 @@ class GroupBuyService {
             amount: result.amount,
             discountAmount: result.discountAmount,
             expirationDate: result.expirationDate,
-            validityText: result.validityText
+            validityText: result.validityText,
+            isApplicable: result.isApplicable
           });
           
           return result;
         });
+        
+        // 如果有套餐ID，只返回适用于该套餐的优惠券
+        if (packageId) {
+          const applicableCoupons = coupons.filter(coupon => coupon.isApplicable);
+          console.log(`共${coupons.length}张优惠券，适用于套餐ID:${packageId}的有${applicableCoupons.length}张`);
+          return applicableCoupons;
+        }
+        
+        return coupons;
       }
       
       return response.data;
