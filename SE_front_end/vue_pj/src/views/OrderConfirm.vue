@@ -371,46 +371,23 @@ export default {
     // 计算属性：最终价格
     const finalPrice = computed(() => {
       if (!packageDetail.value) return 0;
-      
       let price = packageDetail.value.price;
-      
+
       if (selectedCoupon.value) {
-        // 根据优惠券类型计算折扣
         const couponType = selectedCoupon.value.type;
-        
-        // 折扣券需要计算折扣，而不是直接减去金额
+        const amount = parseFloat(selectedCoupon.value.amount) || 0;
+
         if (couponType === '折扣券') {
-          // 折扣券的amount是折扣率，例如九折券的amount是0.1，表示打九折
-          // 计算公式: 原价 * (1 - 折扣率)
-          const discountRate = selectedCoupon.value.amount || selectedCoupon.value.discountAmount || 0;
-          const discountedPrice = price * (1 - discountRate);
-          
-          // 如果有最大抵扣限制
-          if (selectedCoupon.value.maxDeduction) {
-            const maxDeduction = parseFloat(selectedCoupon.value.maxDeduction);
-            const actualDiscount = price - discountedPrice;
-            
-            if (actualDiscount > maxDeduction) {
-              // 折扣受限，使用最大抵扣金额
-              price = price - maxDeduction;
-            } else {
-              // 使用正常折扣
-              price = discountedPrice;
-            }
-          } else {
-            // 无最大抵扣限制，直接使用折扣后价格
-            price = discountedPrice;
-          }
-          
-          console.log(`折扣券计算: 原价=${packageDetail.value.price}, 折扣率=${discountRate}, 折后价=${price}`);
-        } 
-        // 减固定金额券直接减去优惠金额
-        else {
-          price = Math.max(0, price - selectedCoupon.value.discountAmount);
-          console.log(`减额券计算: 原价=${packageDetail.value.price}, 减额=${selectedCoupon.value.discountAmount}, 折后价=${price}`);
+          // 折扣券：原价 * (1 - amount)
+          price = price * (1 - amount);
+        } else if (couponType === '减到固定金额') {
+          // 减到固定金额：直接等于amount
+          price = amount;
+        } else if (couponType === '减固定金额') {
+          // 减固定金额：原价 - amount
+          price = price - amount;
         }
       }
-      
       return price.toFixed(2);
     });
 

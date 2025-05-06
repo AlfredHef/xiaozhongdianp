@@ -2,14 +2,20 @@ package com.fudan.xiaozhong_dianping.groupbuy.service.impl;
 
 import com.fudan.xiaozhong_dianping.groupbuy.dto.CouponDTO;
 import com.fudan.xiaozhong_dianping.groupbuy.entity.Coupon;
+import com.fudan.xiaozhong_dianping.groupbuy.entity.CouponCategory;
 import com.fudan.xiaozhong_dianping.groupbuy.entity.GroupBuyPackage;
+import com.fudan.xiaozhong_dianping.groupbuy.entity.Shop;
 import com.fudan.xiaozhong_dianping.groupbuy.entity.UserCoupon;
 import com.fudan.xiaozhong_dianping.groupbuy.exception.BusinessException;
+import com.fudan.xiaozhong_dianping.groupbuy.repository.CouponCategoryRepository;
 import com.fudan.xiaozhong_dianping.groupbuy.repository.CouponRepository;
 import com.fudan.xiaozhong_dianping.groupbuy.repository.GroupBuyOrderRepository;
 import com.fudan.xiaozhong_dianping.groupbuy.repository.GroupBuyPackageRepository;
+import com.fudan.xiaozhong_dianping.groupbuy.repository.ShopRepository;
 import com.fudan.xiaozhong_dianping.groupbuy.repository.UserCouponRepository;
 import com.fudan.xiaozhong_dianping.groupbuy.service.CouponService;
+import com.fudan.xiaozhong_dianping.shop.entity.Category;
+import com.fudan.xiaozhong_dianping.shop.repository.CategoryRepository;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -40,6 +46,15 @@ public class CouponServiceImpl implements CouponService {
 
     @Autowired
     private GroupBuyOrderRepository orderRepository;
+
+    @Autowired
+    private CouponCategoryRepository couponCategoryRepository;
+
+    @Autowired
+    private ShopRepository shopRepository;
+
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     /**
      * 用户领取优惠券
@@ -169,47 +184,43 @@ public class CouponServiceImpl implements CouponService {
      */
     @Override
     public List<Coupon> getAvailableCoupons(Long userId, Integer packageId, BigDecimal orderPrice) {
-        List<UserCoupon> userCoupons = userCouponRepository.findByUserId(userId);
-        List<Coupon> availableCoupons = new ArrayList<>();
-
-        // 检查套餐是否存在
-        Optional<GroupBuyPackage> packageOpt = packageRepository.findById(packageId);
-        if (!packageOpt.isPresent()) {
-            return availableCoupons;
+        // 获取用户所有未使用的优惠券
+        List<UserCoupon> userCoupons = userCouponRepository.findByUserIdAndStatus(userId, 0);
+        if (userCoupons.isEmpty()) {
+            return new ArrayList<>();
         }
-        GroupBuyPackage groupBuyPackage = packageOpt.get();
 
-        // 遍历用户优惠券，检查是否可用
-        for (UserCoupon userCoupon : userCoupons) {
-            if (userCoupon.getStatus() == 0) {
-                Coupon coupon = couponRepository.findById(userCoupon.getCouponId()).orElse(null);
-                if (coupon != null) {
+        // 获取套餐所属的商家
+        GroupBuyPackage groupBuyPackage = packageRepository.findById(packageId)
+                .orElseThrow(() -> new BusinessException("套餐不存在"));
+        Shop shop = shopRepository.findById(groupBuyPackage.getShopId())
+                .orElseThrow(() -> new BusinessException("商家不存在"));
+
+        // 过滤出可用的优惠券
+        return userCoupons.stream()
+                .map(UserCoupon::getCoupon)
+                .filter(coupon -> {
+                    // 检查优惠券是否过期
+                    if (coupon.getExpirationDate() != null && 
+                        coupon.getExpirationDate().isBefore(LocalDateTime.now())) {
+                        return false;
+                    }
+
                     // 检查使用门槛
-                    if (coupon.getUseThreshold() != null && orderPrice.compareTo(coupon.getUseThreshold()) < 0) {
-                        continue;
+                    if (coupon.getUseThreshold() != null && 
+                        orderPrice.compareTo(coupon.getUseThreshold()) < 0) {
+                        return false;
                     }
-                    // 检查适用条件
-                    if (coupon.getApplicableCategory() != null && !coupon.getApplicableCategory().equals(groupBuyPackage.getTitle())) {
-                        continue;
+
+                    // 检查适用店铺
+                    if (coupon.getApplicableShop() != null && 
+                        !coupon.getApplicableShop().equals(shop.getId().toString())) {
+                        return false;
                     }
-                    if (coupon.getApplicableShop() != null && !coupon.getApplicableShop().equals(groupBuyPackage.getShopId())) {
-                        continue;
-                    }
-                    // 检查有效期
-                    if (coupon.getExpirationDate() != null && LocalDateTime.now().isAfter(coupon.getExpirationDate())) {
-                        continue;
-                    }
-                    if (coupon.getValidDays() != null) {
-                        LocalDateTime expiration = userCoupon.getReceivedAt().plusDays(coupon.getValidDays());
-                        if (LocalDateTime.now().isAfter(expiration)) {
-                            continue;
-                        }
-                    }
-                    availableCoupons.add(coupon);
-                }
-            }
-        }
-        return availableCoupons;
+
+                    return true;
+                })
+                .collect(Collectors.toList());
     }
 
     /**
@@ -350,6 +361,7 @@ public class CouponServiceImpl implements CouponService {
                     BeanUtils.copyProperties(coupon, dto);
                     dto.setStatus(userCoupon.getStatus());
                     dto.setDiscountAmount(coupon.getAmount()); // 设置折扣金额
+                    dto.setReceivedAt(userCoupon.getReceivedAt()); // 添加领取时间
                     return dto;
                 })
                 .filter(dto -> dto != null)
