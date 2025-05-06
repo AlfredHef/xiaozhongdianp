@@ -31,6 +31,16 @@ public class CouponDTO {
     // 前端显示的折扣金额
     private BigDecimal discountAmount;
     
+    private LocalDateTime receivedAt;
+
+    public LocalDateTime getReceivedAt() {
+        return receivedAt;
+    }
+
+    public void setReceivedAt(LocalDateTime receivedAt) {
+        this.receivedAt = receivedAt;
+    }
+    
     // 设置isNewUserCoupon时同时设置newUserCoupon
     public void setIsNewUserCoupon(boolean isNewUserCoupon) {
         this.isNewUserCoupon = isNewUserCoupon;

@@ -163,6 +163,7 @@ class GroupBuyService {
       // 如果提供了packageId，先获取套餐信息以便进行优惠券筛选
       let packageDetail = null;
       let shopName = null;
+      let shopCategory = null;
       if (packageId) {
         try {
           packageDetail = await this.getPackageDetail(packageId);
@@ -174,7 +175,12 @@ class GroupBuyService {
               const shopResponse = await ShopService.getShopDetails(packageDetail.shopId);
               if (shopResponse && shopResponse.shop) {
                 shopName = shopResponse.shop.name;
-                console.log('获取到店铺名称:', shopName);
+                shopCategory = shopResponse.shop.categoryName;
+                console.log('获取到店铺信息:', { 
+                  name: shopName, 
+                  category: shopCategory,
+                  shopId: packageDetail.shopId 
+                });
               } else {
                 console.warn('获取店铺响应中未包含店铺信息:', shopResponse);
               }
@@ -314,26 +320,29 @@ class GroupBuyService {
           if (packageDetail) {
             console.log(`  检查优惠券ID:${coupon.id}是否适用于套餐ID:${packageDetail.id}`);
             console.log(`  优惠券信息: 品类=${coupon.applicableCategory || '无限制'}, 店铺=${coupon.applicableShop || '无限制'}`);
-            console.log(`  套餐信息: 品类=${packageDetail.title || '未知'}, 店铺ID=${packageDetail.shopId || '未知'}, 店铺名=${shopName || '未知'}`);
+            console.log(`  店铺信息: 品类=${shopCategory || '未知'}, 店铺名=${shopName || '未知'}`);
             
             // 检查适用的品类
-            if (coupon.applicableCategory && packageDetail.title) {
-              if (coupon.applicableCategory !== packageDetail.title) {
-                console.log(`  优惠券不适用：优惠券适用品类${coupon.applicableCategory}，套餐品类${packageDetail.title}`);
+            if (coupon.applicableCategory && shopCategory) {
+              if (coupon.applicableCategory !== shopCategory) {
+                console.log(`  优惠券不适用：优惠券适用品类"${coupon.applicableCategory}"，店铺品类"${shopCategory}"`);
                 isApplicable = false;
+              } else {
+                console.log(`  优惠券适用品类匹配成功: "${coupon.applicableCategory}" = "${shopCategory}"`);
               }
+            } else if (!coupon.applicableCategory) {
+              // 如果优惠券没有指定适用品类，则可用于任何品类
+              console.log(`  优惠券未指定适用品类，可用于任何品类`);
             }
             
             // 检查适用的店铺
             if (coupon.applicableShop && shopName) {
               if (coupon.applicableShop !== shopName) {
-                console.log(`  优惠券不适用：优惠券适用店铺"${coupon.applicableShop}"，套餐店铺名称"${shopName}"`);
+                console.log(`  优惠券不适用：优惠券适用店铺"${coupon.applicableShop}"，店铺名称"${shopName}"`);
                 isApplicable = false;
               } else {
                 console.log(`  优惠券适用店铺匹配成功: "${coupon.applicableShop}" = "${shopName}"`);
               }
-            } else if (coupon.applicableShop) {
-              console.warn(`  无法检查店铺适用性: 优惠券店铺="${coupon.applicableShop}", 但套餐店铺名称未获取到`);
             }
           }
           

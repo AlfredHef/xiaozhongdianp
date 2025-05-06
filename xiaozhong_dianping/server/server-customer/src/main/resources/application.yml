@@ -40,6 +40,15 @@ spring:
         strategy:
           content:
             enabled: true
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
 # MyBatis配置
 mybatis:
   mapper-locations: classpath:mapper/*.xml
@@ -63,17 +72,6 @@ fudan:
     user-ttl: 360000000000
     user-token-name: authentication
 
-#server:
-#  port:
-#    8080
-#spring:
-#  datasource:
-#    druid:
-#      driver-class-name: com.mysql.cj.jdbc.Driver
-#      url: jdbc:mysql://139.129.37.84:3306/xiaozhong_dianping
-#      username: budouer
-#      password: 'BuDou&123'
-
 # 配置日志级别
 logging:
   level:
@@ -87,15 +85,6 @@ logging:
     com.fudan.xiaozhong_dianping.groupbuy.controller.GroupBuyController: DEBUG
     com.fudan.xiaozhong_dianping.groupbuy.service.impl.GroupBuyServiceImpl: DEBUG
     com.fudan.xiaozhong_dianping.groupbuy.repository: DEBUG
-
-jpa:
-  database-platform: org.hibernate.dialect.MySQL8Dialect
-  hibernate:
-    ddl-auto: update
-  show-sql: true
-  properties:
-    hibernate:
-      format_sql: true
 
 # PageHelper配置
 pagehelper:
