@@ -44,7 +44,7 @@
               :class="{ 'coupon-selected': selectedCouponId === null }"
               @click="selectedCouponId = null"
             >
-              <el-radio :label="null" class="coupon-radio">
+              <el-radio :value="null" class="coupon-radio">
                 <div class="coupon-info no-coupon-info">
                   <div class="no-coupon-text">不使用优惠券</div>
                 </div>
@@ -58,7 +58,7 @@
               :class="{ 'coupon-selected': selectedCouponId === coupon.id }"
               @click="selectedCouponId = coupon.id"
             >
-              <el-radio :label="coupon.id" class="coupon-radio">
+              <el-radio :value="coupon.id" class="coupon-radio">
                 <div class="coupon-info">
                   <!-- 根据优惠券类型显示不同的内容 -->
                   <div class="coupon-amount" :class="{ 'discount-type': coupon.type === '折扣券' }">

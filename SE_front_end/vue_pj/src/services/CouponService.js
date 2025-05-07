@@ -144,11 +144,35 @@ class CouponService {
         headers: { 'userId': user.id }
       });
       
-      console.log('获取卡包优惠券成功:', response.data);
+      console.log('===========用户卡包优惠券信息===========');
+      console.log('原始数据:', JSON.stringify(response.data, null, 2));
+      
+      // 格式化打印每个优惠券的详细信息
+      if (Array.isArray(response.data)) {
+        response.data.forEach((coupon, index) => {
+          console.log(`\n优惠券 #${index + 1}:`);
+          console.log('----------------------------------------');
+          console.log(`ID: ${coupon.id}`);
+          console.log(`标题: ${coupon.title}`);
+          console.log(`描述: ${coupon.description}`);
+          console.log(`类型: ${coupon.type}`);
+          console.log(`优惠金额: ${coupon.amount}`);
+          console.log(`使用门槛: ${coupon.useThreshold || '无门槛'}`);
+          console.log(`最大抵扣: ${coupon.maxDeduction || '无限制'}`);
+          console.log(`适用品类: ${coupon.applicableCategory || '全部'}`);
+          console.log(`适用店铺: ${coupon.applicableShop || '全部'}`);
+          console.log(`过期时间: ${coupon.formattedExpirationDate || '无'}`);
+          console.log(`有效天数: ${coupon.validDays || '无限制'}`);
+          console.log(`状态: ${coupon.statusText || '未知'}`);
+          console.log(`是否新人券: ${coupon.isNewUserCoupon ? '是' : '否'}`);
+          console.log(`领取时间: ${coupon.formattedReceivedDate || '未知'}`);
+          console.log('----------------------------------------');
+        });
+      }
+      
       return response.data;
     } catch (error) {
       console.error('获取用户卡包优惠券失败:', error);
-      // 返回空数组作为默认值，避免前端崩溃
       return [];
     }
   }
@@ -166,11 +190,38 @@ class CouponService {
         headers: { 'userId': user.id }
       });
       
-      console.log('获取用户可用优惠券成功:', response.data);
+      console.log('===========用户可用优惠券信息===========');
+      console.log('原始数据:', JSON.stringify(response.data, null, 2));
+      
+      // 格式化打印每个优惠券的详细信息
+      if (Array.isArray(response.data)) {
+        response.data.forEach((coupon, index) => {
+          console.log(`\n可用优惠券 #${index + 1}:`);
+          console.log('----------------------------------------');
+          console.log(`ID: ${coupon.id}`);
+          console.log(`标题: ${coupon.title}`);
+          console.log(`描述: ${coupon.description}`);
+          console.log(`类型: ${coupon.type}`);
+          console.log(`优惠金额: ${coupon.amount}`);
+          console.log(`使用门槛: ${coupon.useThreshold || '无门槛'}`);
+          console.log(`最大抵扣: ${coupon.maxDeduction || '无限制'}`);
+          console.log(`适用品类: ${coupon.applicableCategory || '全部'}`);
+          console.log(`适用店铺: ${coupon.applicableShop || '全部'}`);
+          console.log(`过期时间: ${coupon.formattedExpirationDate || '无'}`);
+          console.log(`有效天数: ${coupon.validDays || '无限制'}`);
+          console.log(`状态: ${coupon.statusText || '未知'}`);
+          console.log(`是否新人券: ${coupon.isNewUserCoupon ? '是' : '否'}`);
+          console.log(`领取时间: ${coupon.formattedReceivedDate || '未知'}`);
+          console.log(`优惠说明: ${coupon.shortDescription || '无'}`);
+          console.log(`详细说明: ${coupon.formattedDescription || '无'}`);
+          console.log('----------------------------------------');
+        });
+      }
+      
       return response.data;
     } catch (error) {
       console.error('获取用户可用优惠券失败:', error);
-      return []; // 返回空数组作为默认值，避免前端崩溃
+      return [];
     }
   }
 

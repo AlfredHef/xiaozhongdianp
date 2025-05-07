@@ -7,6 +7,7 @@ import com.fudan.xiaozhong_dianping.groupbuy.entity.GroupBuyPackage;
 import com.fudan.xiaozhong_dianping.groupbuy.entity.Shop;
 import com.fudan.xiaozhong_dianping.groupbuy.entity.UserCoupon;
 import com.fudan.xiaozhong_dianping.groupbuy.exception.BusinessException;
+import com.fudan.xiaozhong_dianping.groupbuy.factory.CouponFactory;
 import com.fudan.xiaozhong_dianping.groupbuy.repository.CouponCategoryRepository;
 import com.fudan.xiaozhong_dianping.groupbuy.repository.CouponRepository;
 import com.fudan.xiaozhong_dianping.groupbuy.repository.GroupBuyOrderRepository;
@@ -16,6 +17,9 @@ import com.fudan.xiaozhong_dianping.groupbuy.repository.UserCouponRepository;
 import com.fudan.xiaozhong_dianping.groupbuy.service.CouponService;
 import com.fudan.xiaozhong_dianping.shop.entity.Category;
 import com.fudan.xiaozhong_dianping.shop.repository.CategoryRepository;
+import com.fudan.xiaozhong_dianping.groupbuy.validator.CouponValidator;
+import com.fudan.xiaozhong_dianping.groupbuy.validator.CouponValidatorFactory;
+import com.fudan.xiaozhong_dianping.groupbuy.validator.ValidationResult;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -56,6 +60,40 @@ public class CouponServiceImpl implements CouponService {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    @Autowired
+    private CouponValidatorFactory validatorFactory;
+
+    /**
+     * 创建新人优惠券
+     */
+    private Coupon createNewUserCoupon() {
+        return CouponFactory.createNewUserCoupon(
+            "新人专享券",
+            new BigDecimal("20")
+        );
+    }
+
+    /**
+     * 创建满减优惠券
+     */
+    private Coupon createThresholdCoupon() {
+        return CouponFactory.createThresholdCoupon(
+            "满100减10",
+            new BigDecimal("100"),
+            new BigDecimal("10")
+        );
+    }
+
+    /**
+     * 创建折扣券
+     */
+    private Coupon createDiscountCoupon() {
+        return CouponFactory.createDiscountCoupon(
+            "9折优惠",
+            new BigDecimal("0.9")
+        );
+    }
+
     /**
      * 用户领取优惠券
      *
@@ -67,76 +105,33 @@ public class CouponServiceImpl implements CouponService {
     @Override
     public UserCoupon receiveCoupon(Long userId, Long couponId) {
         try {
-            System.out.println("===== 开始领取优惠券 =====");
-            System.out.println("用户ID: " + userId + ", 优惠券ID: " + couponId);
-            
-            // 新人券领取检查
-            if (isNewUser(userId)) {
-                boolean hasReceived = hasReceivedNewUserCoupon(userId);
-                System.out.println("用户是新用户，是否已领取过新人券: " + hasReceived);
-                
-                if (hasReceived) {
-                    throw new BusinessException("您已领取过新人券，不能再领取");
-                }
+            // 验证用户是否为新用户
+            if (!isNewUser(userId)) {
+                throw new BusinessException("只有新用户才能领取新人券");
             }
 
-            // 检查优惠券是否存在
-            System.out.println("尝试查询优惠券，ID: " + couponId);
-            
-            // 先判断ID是否为null
-            if (couponId == null) {
-                throw new BusinessException("优惠券ID不能为空");
-            }
-            
-            Optional<Coupon> couponOpt = couponRepository.findById(couponId);
-            System.out.println("优惠券查询结果: " + (couponOpt.isPresent() ? "存在" : "不存在"));
-            
-            if (!couponOpt.isPresent()) {
-                // 检查数据库中是否有其他优惠券
-                List<Coupon> allCoupons = couponRepository.findAll();
-                System.out.println("数据库中所有优惠券数量: " + allCoupons.size());
-                if (!allCoupons.isEmpty()) {
-                    System.out.println("第一张优惠券ID: " + allCoupons.get(0).getId());
-                }
-                
-                throw new BusinessException("优惠券不存在，ID: " + couponId);
-            }
-            Coupon coupon = couponOpt.get();
-            System.out.println("查询到优惠券: ID=" + coupon.getId() + ", 标题=" + coupon.getTitle());
-
-            // 检查发放总量
-            if (coupon.getTotalQuantity() != null && coupon.getTotalQuantity() <= 0) {
-                throw new BusinessException("优惠券已发放完");
+            // 验证是否已领取过新人券
+            if (hasReceivedNewUserCoupon(userId)) {
+                throw new BusinessException("您已领取过新人券");
             }
 
-            // 检查每人最多领取张数
-            Integer count = userCouponRepository.countByUserIdAndCouponId(userId, couponId);
-            System.out.println("用户已领取该优惠券数量: " + count);
-            
-            if (coupon.getMaxPerUser() != null && count >= coupon.getMaxPerUser()) {
-                throw new BusinessException("您已达到该优惠券的领取上限");
+            // 获取优惠券
+            Coupon coupon = couponRepository.findById(couponId)
+                .orElseThrow(() -> new BusinessException("优惠券不存在"));
+
+            // 验证优惠券是否为新用户券
+            if (!coupon.isNewUserCoupon()) {
+                throw new BusinessException("该优惠券不是新人券");
             }
 
-            // 领取优惠券
+            // 创建用户优惠券关联
             UserCoupon userCoupon = new UserCoupon();
             userCoupon.setUserId(userId);
             userCoupon.setCouponId(couponId);
             userCoupon.setReceivedAt(LocalDateTime.now());
-            userCoupon.setStatus(0);
+            userCoupon.setStatus(0); // 未使用状态
 
-            // 保存到数据库
-            System.out.println("准备保存用户优惠券关联记录...");
-            UserCoupon savedUserCoupon = userCouponRepository.save(userCoupon);
-            System.out.println("用户优惠券关联记录已保存，ID: " + savedUserCoupon.getId());
-
-            // 更新发放总量
-            if (coupon.getTotalQuantity() != null) {
-                coupon.setTotalQuantity(coupon.getTotalQuantity() - 1);
-                couponRepository.save(coupon);
-                System.out.println("优惠券剩余数量已更新，剩余: " + coupon.getTotalQuantity());
-            }
-
-            return savedUserCoupon;
+            return userCouponRepository.save(userCoupon);
         } catch (Exception e) {
             System.out.println("===== 领取优惠券异常 =====");
             System.out.println("异常类型: " + e.getClass().getName());
@@ -199,27 +194,7 @@ public class CouponServiceImpl implements CouponService {
         // 过滤出可用的优惠券
         return userCoupons.stream()
                 .map(UserCoupon::getCoupon)
-                .filter(coupon -> {
-                    // 检查优惠券是否过期
-                    if (coupon.getExpirationDate() != null && 
-                        coupon.getExpirationDate().isBefore(LocalDateTime.now())) {
-                        return false;
-                    }
-
-                    // 检查使用门槛
-                    if (coupon.getUseThreshold() != null && 
-                        orderPrice.compareTo(coupon.getUseThreshold()) < 0) {
-                        return false;
-                    }
-
-                    // 检查适用店铺
-                    if (coupon.getApplicableShop() != null && 
-                        !coupon.getApplicableShop().equals(shop.getId().toString())) {
-                        return false;
-                    }
-
-                    return true;
-                })
+                .filter(coupon -> coupon.isAvailable(orderPrice))
                 .collect(Collectors.toList());
     }
 
@@ -234,8 +209,12 @@ public class CouponServiceImpl implements CouponService {
     @Override
     public Coupon getMaxDiscountCoupon(Long userId, Integer packageId, BigDecimal orderPrice) {
         List<Coupon> availableCoupons = getAvailableCoupons(userId, packageId, orderPrice);
+        if (availableCoupons.isEmpty()) {
+            return null;
+        }
+
         return availableCoupons.stream()
-                .max(Comparator.comparing(coupon -> calculateDiscount(coupon, orderPrice)))
+                .max(Comparator.comparing(coupon -> coupon.calculateDiscount(orderPrice)))
                 .orElse(null);
     }
 
@@ -358,19 +337,8 @@ public class CouponServiceImpl implements CouponService {
                 .filter(userCoupon -> userCoupon.getStatus() == 0) // 只返回未使用的优惠券
                 .map(userCoupon -> {
                     Coupon coupon = couponRepository.findById(userCoupon.getCouponId()).orElse(null);
-                    if (coupon == null) {
+                    if (coupon == null || isExpired(coupon, userCoupon.getReceivedAt())) {
                         return null;
-                    }
-                    
-                    // 检查有效期
-                    if (coupon.getExpirationDate() != null && LocalDateTime.now().isAfter(coupon.getExpirationDate())) {
-                        return null;
-                    }
-                    if (coupon.getValidDays() != null) {
-                        LocalDateTime expiration = userCoupon.getReceivedAt().plusDays(coupon.getValidDays());
-                        if (LocalDateTime.now().isAfter(expiration)) {
-                            return null;
-                        }
                     }
                     
                     CouponDTO dto = new CouponDTO();
@@ -384,39 +352,51 @@ public class CouponServiceImpl implements CouponService {
                 .collect(Collectors.toList());
     }
 
+    private boolean isExpired(Coupon coupon, LocalDateTime receivedAt) {
+        LocalDateTime now = LocalDateTime.now();
+        
+        // 检查固定过期时间
+        if (coupon.getExpirationDate() != null && now.isAfter(coupon.getExpirationDate())) {
+            return true;
+        }
+        
+        // 检查领取后有效天数
+        if (coupon.getValidDays() != null) {
+            LocalDateTime expiration = receivedAt.plusDays(coupon.getValidDays());
+            return now.isAfter(expiration);
+        }
+        
+        return false;
+    }
+
     /**
      * 优惠券过期检查的定时任务方法
      * 每天凌晨0点检查所有未使用的优惠券是否过期
      */
     @Scheduled(cron = "0 0 0 * * ?") // 每天凌晨执行一次
     public void checkCouponExpiration() {
-        // 获取所有未使用的用户优惠券
-        List<UserCoupon> activeCoupons = userCouponRepository.findByStatus(0);
-        LocalDateTime now = LocalDateTime.now();
-        
-        for (UserCoupon userCoupon : activeCoupons) {
-            Coupon coupon = couponRepository.findById(userCoupon.getCouponId()).orElse(null);
-            if (coupon != null) {
-                boolean isExpired = false;
-                
-                // 检查固定过期时间
-                if (coupon.getExpirationDate() != null && now.isAfter(coupon.getExpirationDate())) {
-                    isExpired = true;
-                } 
-                // 检查领取后有效天数
-                else if (coupon.getValidDays() != null) {
-                    LocalDateTime expiration = userCoupon.getReceivedAt().plusDays(coupon.getValidDays());
-                    if (now.isAfter(expiration)) {
-                        isExpired = true;
-                    }
-                }
-                
-                // 如果已过期，更新状态
-                if (isExpired) {
+        userCouponRepository.findByStatus(0).stream()
+                .filter(userCoupon -> {
+                    Coupon coupon = couponRepository.findById(userCoupon.getCouponId()).orElse(null);
+                    return coupon != null && isExpired(coupon, userCoupon.getReceivedAt());
+                })
+                .forEach(userCoupon -> {
                     userCoupon.setStatus(2); // 设置为已过期
                     userCouponRepository.save(userCoupon);
-                }
-            }
-        }
+                });
+    }
+
+    /**
+     * 校验优惠券是否可用
+     * @param coupon 优惠券
+     * @param order 订单
+     * @return 校验结果
+     */
+    public ValidationResult validateCoupon(Coupon coupon, Order order) {
+        // 获取默认的校验器链
+        CouponValidator validator = validatorFactory.createDefaultValidatorChain();
+        
+        // 执行校验
+        return validator.validate(coupon, order);
     }
 }
