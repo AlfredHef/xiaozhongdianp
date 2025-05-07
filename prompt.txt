@@ -1,0 +1,2 @@
+前端项目在：C:\Users\15876\Desktop\2025_se-2\SE_front_end\vue_pj
+后端项目在：C:\Users\15876\Desktop\2025_se-2\xiaozhong_dianping\server

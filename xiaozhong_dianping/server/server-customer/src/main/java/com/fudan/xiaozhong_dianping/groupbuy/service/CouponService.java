@@ -71,12 +71,4 @@ public interface CouponService {
      * @return 新人券列表
      */
     List<Coupon> getNewUserCoupons();
-
-    /**
-     * 计算优惠券折扣金额
-     * @param coupon 优惠券实体
-     * @param orderPrice 订单价格
-     * @return 折扣金额
-     */
-    BigDecimal calculateDiscount(Coupon coupon, BigDecimal orderPrice);
 }
