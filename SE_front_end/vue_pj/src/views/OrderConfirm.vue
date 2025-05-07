@@ -65,6 +65,12 @@
                     <template v-if="coupon.type === '折扣券'">
                       {{ formatDiscount(coupon.amount) }}
                     </template>
+                    <template v-else-if="coupon.type === '秒杀券'">
+                      秒杀价{{ coupon.amount }}元
+                    </template>
+                    <template v-else-if="coupon.type === '免单券'">
+                      最高免{{ coupon.maxDeduction }}元
+                    </template>
                     <template v-else>
                       ¥{{ coupon.discountAmount }}
                     </template>
@@ -108,6 +114,14 @@
           <span>优惠券：</span>
           <span v-if="selectedCoupon.type === '折扣券'">
             {{ formatDiscount(selectedCoupon.amount) }}
+            (优惠¥{{ calculateDiscountAmount(packageDetail.price, selectedCoupon).toFixed(2) }})
+          </span>
+          <span v-else-if="selectedCoupon.type === '秒杀券'">
+            秒杀价{{ selectedCoupon.amount }}元
+            (优惠¥{{ calculateDiscountAmount(packageDetail.price, selectedCoupon).toFixed(2) }})
+          </span>
+          <span v-else-if="selectedCoupon.type === '免单券'">
+            最高免{{ selectedCoupon.maxDeduction }}元
             (优惠¥{{ calculateDiscountAmount(packageDetail.price, selectedCoupon).toFixed(2) }})
           </span>
           <span v-else>-¥{{ selectedCoupon.discountAmount }}</span>
@@ -376,6 +390,7 @@ export default {
       if (selectedCoupon.value) {
         const couponType = selectedCoupon.value.type;
         const amount = parseFloat(selectedCoupon.value.amount) || 0;
+        const maxDeduction = parseFloat(selectedCoupon.value.maxDeduction) || 0;
 
         if (couponType === '折扣券') {
           // 折扣券：原价 * (1 - amount)
@@ -386,6 +401,22 @@ export default {
         } else if (couponType === '减固定金额') {
           // 减固定金额：原价 - amount
           price = price - amount;
+        } else if (couponType === '秒杀券') {
+          // 秒杀券：如果原价大于maxDeduction，则减maxDeduction
+          // 如果原价小于maxDeduction，则减到amount
+          if (price > maxDeduction) {
+            price = price - maxDeduction;
+          } else {
+            price = amount;
+          }
+        } else if (couponType === '免单券') {
+          // 免单券：如果原价大于maxDeduction，则减maxDeduction
+          // 如果原价小于maxDeduction，则全额减免
+          if (price > maxDeduction) {
+            price = price - maxDeduction;
+          } else {
+            price = 0;
+          }
         }
       }
       return price.toFixed(2);
@@ -395,10 +426,28 @@ export default {
     const calculateDiscountAmount = (originalPrice, coupon) => {
       if (!originalPrice || !coupon) return 0;
       
+      const amount = parseFloat(coupon.amount) || 0;
+      const maxDeduction = parseFloat(coupon.maxDeduction) || 0;
+      
       if (coupon.type === '折扣券') {
         // 折扣金额 = 原价 * 折扣率
-        const discountRate = parseFloat(coupon.amount) || 0;
-        return originalPrice * discountRate;
+        return originalPrice * amount;
+      } else if (coupon.type === '秒杀券') {
+        // 秒杀券：如果原价大于maxDeduction，则减maxDeduction
+        // 如果原价小于maxDeduction，则减到amount
+        if (originalPrice > maxDeduction) {
+          return maxDeduction;
+        } else {
+          return originalPrice - amount;
+        }
+      } else if (coupon.type === '免单券') {
+        // 免单券：如果原价大于maxDeduction，则减maxDeduction
+        // 如果原价小于maxDeduction，则全额减免
+        if (originalPrice > maxDeduction) {
+          return maxDeduction;
+        } else {
+          return originalPrice;
+        }
       } else {
         // 减额券直接返回折扣金额
         return parseFloat(coupon.discountAmount) || 0;

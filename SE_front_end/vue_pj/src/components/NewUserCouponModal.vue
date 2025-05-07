@@ -32,6 +32,12 @@
                 <template v-else-if="coupon.type === '折扣券'">
                   {{ Math.round((1-coupon.amount)*10) }}折
                 </template>
+                <template v-else-if="coupon.type === '秒杀券'">
+                  秒杀价{{ coupon.amount }}元
+                </template>
+                <template v-else-if="coupon.type === '免单券'">
+                  最高免{{ coupon.maxDeduction }}元
+                </template>
               </span>
             </div>
             <div class="coupon-body">

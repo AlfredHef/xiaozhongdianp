@@ -272,6 +272,22 @@ public class CouponServiceImpl implements CouponService {
                 return coupon.getMaxDeduction();
             }
             return discount;
+        } else if ("秒杀券".equals(coupon.getType())) {
+            // 秒杀券：如果订单金额大于maxDeduction，则减(maxDeduction - amount)
+            // 如果订单金额小于maxDeduction，则减到amount
+            if (orderPrice.compareTo(coupon.getMaxDeduction()) > 0) {
+                return orderPrice.subtract(coupon.getAmount());
+            } else {
+                return orderPrice.subtract(coupon.getAmount());
+            }
+        } else if ("免单券".equals(coupon.getType())) {
+            // 免单券：如果订单金额大于maxDeduction，则减maxDeduction
+            // 如果订单金额小于maxDeduction，则全额减免
+            if (orderPrice.compareTo(coupon.getMaxDeduction()) > 0) {
+                return coupon.getMaxDeduction();
+            } else {
+                return orderPrice;
+            }
         }
         return BigDecimal.ZERO;
     }
