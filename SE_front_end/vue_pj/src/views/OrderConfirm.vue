@@ -360,8 +360,8 @@ export default {
     const formatDiscount = (discount) => {
       if (!discount) return '不打折';
       
-      // 折扣券的amount存储为减去的部分，例如0.1表示打9折（1-0.1）
-      const discountRate = 1 - parseFloat(discount);
+      // 直接使用discount值计算折扣
+      const discountRate = parseFloat(discount);
       
       // 计算折扣百分比，例如0.9对应9折
       let percentage = Math.round(discountRate * 10);
@@ -393,8 +393,8 @@ export default {
         const maxDeduction = parseFloat(selectedCoupon.value.maxDeduction) || 0;
 
         if (couponType === '折扣券') {
-          // 折扣券：原价 * (1 - amount)
-          price = price * (1 - amount);
+          // 折扣券：原价 * amount
+          price = price * amount;
         } else if (couponType === '减到固定金额') {
           // 减到固定金额：直接等于amount
           price = amount;
@@ -430,8 +430,8 @@ export default {
       const maxDeduction = parseFloat(coupon.maxDeduction) || 0;
       
       if (coupon.type === '折扣券') {
-        // 折扣金额 = 原价 * 折扣率
-        return originalPrice * amount;
+        // 折扣金额 = 原价 * (1 - 折扣率)
+        return originalPrice * (1 - amount);
       } else if (coupon.type === '秒杀券') {
         // 秒杀券：如果原价大于maxDeduction，则减maxDeduction
         // 如果原价小于maxDeduction，则减到amount
