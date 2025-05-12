@@ -45,7 +45,7 @@
                     </template>
                   </template>
                   <template v-else-if="coupon.type === '折扣券'">
-                    <span class="amount">{{ Math.round((1-coupon.amount)*10) }}</span>
+                    <span class="amount">{{ Math.round(coupon.amount*10) }}</span>
                     <span class="symbol">折</span>
                   </template>
                 </div>
@@ -103,7 +103,7 @@
                     </template>
                   </template>
                   <template v-else-if="coupon.type === '折扣券'">
-                    <span class="amount">{{ Math.round((1-coupon.amount)*10) }}</span>
+                    <span class="amount">{{ Math.round(coupon.amount*10) }}</span>
                     <span class="symbol">折</span>
                   </template>
                 </div>
@@ -152,7 +152,7 @@
                     </template>
                   </template>
                   <template v-else-if="coupon.type === '折扣券'">
-                    <span class="amount">{{ Math.round((1-coupon.amount)*10) }}</span>
+                    <span class="amount">{{ Math.round(coupon.amount*10) }}</span>
                     <span class="symbol">折</span>
                   </template>
                 </div>
