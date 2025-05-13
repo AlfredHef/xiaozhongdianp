@@ -30,7 +30,7 @@
                   <template v-else>减至{{ coupon.amount }}元</template>
                 </template>
                 <template v-else-if="coupon.type === '折扣券'">
-                  {{ Math.round((1-coupon.amount)*10) }}折
+                  {{ Math.round((coupon.amount)*10) }}折
                 </template>
                 <template v-else-if="coupon.type === '秒杀券'">
                   秒杀价{{ coupon.amount }}元

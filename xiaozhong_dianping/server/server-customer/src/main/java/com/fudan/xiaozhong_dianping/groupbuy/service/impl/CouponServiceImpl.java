@@ -213,9 +213,21 @@ public class CouponServiceImpl implements CouponService {
                     }
 
                     // 检查适用店铺
-                    if (coupon.getApplicableShop() != null && 
-                        !coupon.getApplicableShop().equals(shop.getId().toString())) {
-                        return false;
+                    if (coupon.getApplicableShop() != null) {
+                        // 尝试将applicableShop解析为店铺ID
+                        try {
+                            Integer shopId = Integer.parseInt(coupon.getApplicableShop());
+                            if (!shopId.equals(shop.getId())) {
+                                System.out.println("优惠券ID:" + coupon.getId() + " 不适用于店铺ID:" + shop.getId() + "，优惠券适用店铺ID:" + shopId);
+                                return false;
+                            }
+                        } catch (NumberFormatException e) {
+                            // 如果不是数字，则认为是店铺名称，与店铺名称比较
+                            if (!coupon.getApplicableShop().equals(shop.getName())) {
+                                System.out.println("优惠券ID:" + coupon.getId() + " 不适用于店铺名称:" + shop.getName() + "，优惠券适用店铺名称:" + coupon.getApplicableShop());
+                                return false;
+                            }
+                        }
                     }
 
                     return true;
