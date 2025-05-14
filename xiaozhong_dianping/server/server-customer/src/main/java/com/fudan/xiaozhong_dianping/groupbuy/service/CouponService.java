@@ -79,4 +79,14 @@ public interface CouponService {
      * @return 折扣金额
      */
     BigDecimal calculateDiscount(Coupon coupon, BigDecimal orderPrice);
+
+    /**
+     * 检查用户是否已获得点评奖励券
+     */
+    boolean hasReceivedReviewReward(Long userId);
+
+    /**
+     * 发放点评奖励券（8折，最高抵扣20元，7天有效）
+     */
+    void grantReviewRewardCoupon(Long userId);
 }

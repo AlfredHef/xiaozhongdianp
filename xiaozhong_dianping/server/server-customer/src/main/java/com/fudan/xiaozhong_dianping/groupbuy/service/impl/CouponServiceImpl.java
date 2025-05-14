@@ -1,5 +1,6 @@
 package com.fudan.xiaozhong_dianping.groupbuy.service.impl;
 
+import com.fudan.xiaozhong_dianping.groupbuy.builder.CouponBuilder;
 import com.fudan.xiaozhong_dianping.groupbuy.dto.CouponDTO;
 import com.fudan.xiaozhong_dianping.groupbuy.entity.Coupon;
 import com.fudan.xiaozhong_dianping.groupbuy.entity.CouponCategory;
@@ -302,6 +303,31 @@ public class CouponServiceImpl implements CouponService {
             }
         }
         return BigDecimal.ZERO;
+    }
+
+    @Override
+    public boolean hasReceivedReviewReward(Long userId) {
+        // 查询用户是否拥有"REVIEW_REWARD"类型的优惠券
+        List<UserCoupon> userCoupons = userCouponRepository.findByUserId(userId);
+        return userCoupons.stream()
+                .map(uc -> couponRepository.findById(uc.getCouponId()).orElse(null))
+                .anyMatch(c -> c != null && "REVIEW_REWARD".equals(c.getType()));
+    }
+
+    @Override
+    public void grantReviewRewardCoupon(Long userId) {
+        // 构建奖励券（8折，最高抵扣20元，7天有效）
+        Coupon rewardCoupon = CouponBuilder.builder("点评奖励8折券", "REVIEW_REWARD", new BigDecimal("0.8"))
+                .description("任意品类通用，最高抵扣20元，7天有效")
+                .maxDeduction(new BigDecimal("20"))
+                .validDays(7)
+                .totalQuantity(1000) // 总库存
+                .maxPerUser(1) // 每人限领1张
+                .build();
+
+        // 保存优惠券并发放
+        Coupon savedCoupon = couponRepository.save(rewardCoupon);
+        receiveCoupon(userId, savedCoupon.getId());
     }
 
     /**
