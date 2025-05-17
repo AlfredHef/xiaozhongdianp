@@ -442,5 +442,140 @@ export default {
             console.error('获取推荐商家失败:', error);
             throw error;
         }
+    },
+
+    /**
+     * 获取商户评论列表
+     * @param {number} shopId - 商户ID
+     * @returns {Promise<Array>} 评论列表
+     */
+    async getReviews(shopId) {
+        try {
+            if (!shopId) {
+                console.error('获取评论失败: 商户ID不能为空');
+                return [];
+            }
+            
+            console.log('获取评论，商户ID:', shopId);
+            const response = await axiosInstance.get(`/api/reviews/${shopId}`);
+            console.log('评论响应:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('获取评论失败:', error);
+            
+            // 提供更详细的错误信息，但不抛出异常
+            if (error.response) {
+                console.error(`服务器返回错误: ${error.response.status}`);
+                return [];
+            } else if (error.request) {
+                console.error('没有收到服务器响应，请检查网络连接');
+                return [];
+            } else {
+                console.error(`请求错误: ${error.message}`);
+                return [];
+            }
+        }
+    },
+    
+    /**
+     * 添加评论
+     * @param {number} shopId - 商户ID
+     * @param {string} content - 评论内容
+     * @returns {Promise<Object>} 添加的评论
+     */
+    async addReview(shopId, content) {
+        try {
+            if (!shopId) {
+                throw new Error('商户ID不能为空');
+            }
+            
+            if (!content || content.length < 15) {
+                throw new Error('评论内容需至少15个字');
+            }
+            
+            // 获取当前登录用户ID
+            let userId;
+            if (window && window.$store) {
+                const user = window.$store.getters['auth/currentUser'];
+                if (user && user.id) {
+                    userId = user.id;
+                }
+            }
+            
+            if (!userId) {
+                throw new Error('请先登录');
+            }
+            
+            // 构建请求参数
+            const params = new URLSearchParams();
+            params.append('merchantId', shopId);
+            params.append('content', content);
+            
+            const response = await axiosInstance.post('/api/reviews', params, {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'userId': userId
+                }
+            });
+            
+            return { review: response.data };
+        } catch (error) {
+            console.error('添加评论失败:', error);
+            throw error;
+        }
+    },
+    
+    /**
+     * 添加回复
+     * @param {number} shopId - 商户ID
+     * @param {number} parentId - 父评论ID
+     * @param {string} content - 回复内容
+     * @returns {Promise<Object>} 添加的回复
+     */
+    async addReply(shopId, parentId, content) {
+        try {
+            if (!shopId) {
+                throw new Error('商户ID不能为空');
+            }
+            
+            if (!parentId) {
+                throw new Error('父评论ID不能为空');
+            }
+            
+            if (!content || content.length < 15) {
+                throw new Error('回复内容需至少15个字');
+            }
+            
+            // 获取当前登录用户ID
+            let userId;
+            if (window && window.$store) {
+                const user = window.$store.getters['auth/currentUser'];
+                if (user && user.id) {
+                    userId = user.id;
+                }
+            }
+            
+            if (!userId) {
+                throw new Error('请先登录');
+            }
+            
+            // 构建请求参数
+            const params = new URLSearchParams();
+            params.append('merchantId', shopId);
+            params.append('content', content);
+            params.append('parentId', parentId);
+            
+            const response = await axiosInstance.post('/api/reviews', params, {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'userId': userId
+                }
+            });
+            
+            return { reply: response.data };
+        } catch (error) {
+            console.error('添加回复失败:', error);
+            throw error;
+        }
     }
 } 

@@ -330,6 +330,11 @@ public class CouponServiceImpl implements CouponService {
         receiveCoupon(userId, savedCoupon.getId());
     }
 
+    @Override
+    public Coupon createCoupon(Coupon coupon) {
+        return couponRepository.save(coupon);
+    }
+
     /**
      * 检查用户是否为新人
      *

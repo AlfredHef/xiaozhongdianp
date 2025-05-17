@@ -161,6 +161,99 @@
           </el-card>
         </div>
       </div>
+      
+      <!-- 评论区域 -->
+      <div class="shop-reviews">
+        <h2>商户评论</h2>
+        
+        <div class="review-form">
+          <h3>发表评论</h3>
+          <el-form @submit.prevent="submitReview">
+            <el-form-item>
+              <el-input
+                v-model="newReview.content"
+                type="textarea"
+                :rows="4"
+                placeholder="请输入您的评论，至少15个字..."
+                maxlength="1000"
+                show-word-limit
+              ></el-input>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="submitReview" :disabled="!isReviewValid">发表评论</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+
+        <div v-if="loadingReviews" class="loading-reviews">
+          <el-skeleton :rows="5" animated />
+        </div>
+        
+        <div v-else-if="!reviews || reviews.length === 0" class="no-reviews">
+          <el-empty description="暂无评论" />
+          <!-- 评论状态提示 -->
+          <div class="review-status" style="margin-top: 10px; padding: 10px; background-color: #f0f9eb; border: 1px solid #e1f3d8; color: #67c23a; border-radius: 4px; font-size: 12px;">
+            <p>当前商户ID: {{ route.params.id }}</p>
+            <p>评论加载状态: {{ loadingReviews ? '加载中' : '加载完成' }}</p>
+            <p>评论数量: {{ reviews.length }}</p>
+          </div>
+        </div>
+        
+        <div v-else class="review-list">
+          <!-- 评论状态提示 -->
+          <div class="review-status" style="margin-bottom: 15px; padding: 10px; background-color: #f0f9eb; border: 1px solid #e1f3d8; color: #67c23a; border-radius: 4px; font-size: 12px;">
+            <p>当前商户ID: {{ route.params.id }}</p>
+            <p>评论加载状态: {{ loadingReviews ? '加载中' : '加载完成' }}</p>
+            <p>评论数量: {{ reviews.length }}</p>
+            <p v-if="reviews[0]">第一条评论ID: {{ reviews[0].id }}，用户: {{ reviews[0].userId }}</p>
+          </div>
+          
+          <!-- 顶层评论列表 -->
+          <template v-for="review in reviews" :key="review.id">
+            <div class="review-item" v-if="review">
+              <div class="review-header">
+                <span class="user-id">用户: {{ review.userId }}</span>
+                <span class="review-time">{{ formatTime(review.createTime) }}</span>
+              </div>
+              <div class="review-content">{{ review.content }}</div>
+              
+              <!-- 回复按钮 -->
+              <div class="review-actions">
+                <el-button type="text" @click="startReply(review.id)">回复</el-button>
+              </div>
+              
+              <!-- 回复表单 -->
+              <div v-if="replyingTo === review.id" class="reply-form">
+                <el-input
+                  v-model="newReply.content"
+                  type="textarea"
+                  :rows="3"
+                  placeholder="请输入您的回复，至少15个字..."
+                  maxlength="1000"
+                  show-word-limit
+                ></el-input>
+                <div class="reply-actions">
+                  <el-button type="primary" size="small" @click="submitReply(review.id)" :disabled="!isReplyValid">提交回复</el-button>
+                  <el-button size="small" @click="cancelReply">取消</el-button>
+                </div>
+              </div>
+              
+              <!-- 子回复(嵌套评论) -->
+              <div v-if="review.replies && review.replies.length > 0" class="nested-replies">
+                <template v-for="reply in review.replies" :key="reply.id">
+                  <div v-if="reply" class="nested-reply-item">
+                    <nested-reply 
+                      :reply="reply" 
+                      :merchant-id="Number(route.params.id)"
+                      @reply-added="loadReviews"
+                    />
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
     </div>
 
     <!-- 图片预览 -->
@@ -175,15 +268,18 @@
 <script>
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ElImageViewer } from 'element-plus';
+import { ElImageViewer, ElMessage } from 'element-plus';
 import ShopService from '@/services/ShopService';
 import GroupBuyService from '@/services/GroupBuyService';
-import { ElMessage } from 'element-plus';
+import ReviewService from '@/services/ReviewService';
+import NestedReply from '@/components/NestedReply.vue';
+import AuthService from '@/services/AuthService';
 
 export default {
   name: 'ShopDetail',
   components: {
-    ElImageViewer
+    ElImageViewer,
+    NestedReply: NestedReply
   },
 
   setup() {
@@ -197,6 +293,30 @@ export default {
     const loadingPackages = ref(true);
     const showViewer = ref(false);
     const previewUrl = ref('');
+    
+    // 评论相关
+    const reviews = ref([]);
+    const loadingReviews = ref(true);
+    const newReview = ref({ content: '' });
+    const newReply = ref({ content: '' });
+    const replyingTo = ref(null);
+    
+    // 计算属性，验证评论是否有效
+    const isReviewValid = computed(() => {
+      return newReview.value.content && newReview.value.content.length >= 15;
+    });
+    
+    // 计算属性，验证回复是否有效
+    const isReplyValid = computed(() => {
+      return newReply.value.content && newReply.value.content.length >= 15;
+    });
+    
+    // 格式化时间
+    const formatTime = (timestamp) => {
+      if (!timestamp) return '';
+      const date = new Date(timestamp);
+      return date.toLocaleString();
+    };
 
     // 获取商家详情
     const loadShopDetails = async () => {
@@ -253,18 +373,16 @@ export default {
         );
       }
 
-      // 返回匹配指定类型的图片
+      // 根据类型返回图片
       return images.value.filter(img =>
         img.description &&
-        typeMap[type].some(keyword =>
-          img.description.includes(keyword)
-        )
+        typeMap[type].some(keyword => img.description.includes(keyword))
       );
     };
 
     // 预览图片
     const previewImage = (url) => {
-      previewUrl.value = url;
+      previewUrl.value = `http://localhost:8088${url}`;
       showViewer.value = true;
     };
 
@@ -273,54 +391,261 @@ export default {
       showViewer.value = false;
     };
 
-    // 加载团购套餐
+    // 获取团购套餐
     const loadPackages = async () => {
-      console.log('开始加载团购套餐，shop.value:', shop.value);
+      if (!shop.value || !shop.value.id) return;
       
-      if (!shop.value || !shop.value.id) {
-        console.log('商家ID无效:', shop.value);
-        return;
-      }
-      
-      const shopId = Number(shop.value.id);
-      console.log('转换后的商家ID:', shopId);
-      
-      if (isNaN(shopId)) {
-        console.error('商家ID不是有效的数字:', shop.value.id);
-        ElMessage.error('商家ID无效');
-        return;
-      }
-      
+      loadingPackages.value = true;
       try {
-        loadingPackages.value = true;
-        console.log('正在调用团购套餐API，商家ID:', shopId);
-        const response = await GroupBuyService.getPackagesByShopId(shopId);
-        console.log('团购套餐API响应:', response);
+        const response = await GroupBuyService.getPackagesByShopId(shop.value.id);
+        console.log('团购套餐响应:', response);
         packages.value = response || [];
-        console.log('更新后的packages:', packages.value);
       } catch (error) {
         console.error('获取团购套餐失败:', error);
-        ElMessage.error('获取团购套餐失败: ' + (error.response?.data?.message || error.message));
       } finally {
         loadingPackages.value = false;
       }
     };
 
-    // 查看团购套餐详情
+    // 查看套餐详情
     const viewPackageDetail = (packageId) => {
       router.push({ name: 'GroupBuyDetail', params: { id: packageId } });
     };
+    
+    // 获取评论列表
+    const loadReviews = async () => {
+      const shopId = route.params.id;
+      if (!shopId) return;
+      
+      loadingReviews.value = true;
+      
+      try {
+        console.log('【评论加载】开始加载商户ID=', shopId, '的评论');
+        
+        // 尝试使用标准API获取评论
+        const reviewsData = await ReviewService.getReviewsByMerchant(shopId);
+        
+        // 检查是否成功获取到评论
+        if (Array.isArray(reviewsData) && reviewsData.length > 0) {
+          console.log(`【评论加载】成功通过标准API获取到${reviewsData.length}条评论`);
+          reviews.value = reviewsData;
+        } else {
+          console.log('【评论加载】标准API未获取到评论，尝试使用测试API');
+          
+          // 如果标准API没有返回评论，尝试使用测试API
+          try {
+            const testReviewsData = await ReviewService.getAllReviewsByMerchant(shopId);
+            if (Array.isArray(testReviewsData) && testReviewsData.length > 0) {
+              console.log(`【评论加载】成功通过测试API获取到${testReviewsData.length}条评论`);
+              reviews.value = testReviewsData;
+            } else {
+              console.log('【评论加载】测试API也未获取到评论');
+              reviews.value = [];
+            }
+          } catch (testError) {
+            console.error('【评论加载】测试API调用失败:', testError);
+            reviews.value = [];
+          }
+        }
+      } catch (error) {
+        console.error('【评论加载】获取评论列表失败:', error);
+        ElMessage.error('获取评论失败: ' + (error.message || '未知错误'));
+        
+        // 失败后尝试使用测试API
+        try {
+          console.log('【评论加载】尝试使用备用测试API');
+          const testReviewsData = await ReviewService.getAllReviewsByMerchant(shopId);
+          if (Array.isArray(testReviewsData)) {
+            console.log(`【评论加载】备用API获取到${testReviewsData.length}条评论`);
+            reviews.value = testReviewsData;
+          } else {
+            reviews.value = [];
+          }
+        } catch (testError) {
+          console.error('【评论加载】备用API也失败:', testError);
+          reviews.value = [];
+        }
+      } finally {
+        loadingReviews.value = false;
+        console.log(`【评论加载】评论加载完成，共${reviews.value.length}条评论`);
+      }
+    };
+    
+    // 提交评论
+    const submitReview = async () => {
+      if (!isReviewValid.value) {
+        ElMessage.error('评论内容至少需要15个字');
+        return;
+      }
+      
+      try {
+        console.log('【评论提交】开始提交新评论');
+        console.log('【评论提交】商户ID:', route.params.id);
+        
+        const response = await ReviewService.createReview({
+          merchantId: Number(route.params.id),
+          content: newReview.value.content
+        });
+        
+        console.log('【评论提交】提交成功，响应:', response);
+        
+        if (response) {
+          ElMessage.success('评论发布成功');
+          newReview.value.content = '';
+          
+          // 使用改进后的loadReviews方法重新加载评论
+          console.log('【评论提交】评论发布成功，重新加载评论');
+          await loadReviews();
+        }
+      } catch (error) {
+        console.error('【评论提交】提交失败:', error);
+        ElMessage.error('发布评论失败: ' + (error.message || '未知错误'));
+      }
+    };
+    
+    // 开始回复
+    const startReply = (reviewId) => {
+      replyingTo.value = reviewId;
+      newReply.value.content = '';
+    };
+    
+    // 提交回复
+    const submitReply = async (reviewId) => {
+      if (!isReplyValid.value) {
+        ElMessage.error('回复内容至少需要15个字');
+        return;
+      }
+      
+      try {
+        console.log('【回复提交】开始提交回复，回复评论ID:', reviewId);
+        
+        const response = await ReviewService.createReview({
+          merchantId: Number(route.params.id),
+          content: newReply.value.content,
+          parentId: reviewId
+        });
+        
+        console.log('【回复提交】提交成功，响应:', response);
+        
+        if (response) {
+          ElMessage.success('回复发布成功');
+          newReply.value.content = '';
+          replyingTo.value = null;
+          
+          // 使用改进后的loadReviews方法重新加载评论
+          console.log('【回复提交】回复发布成功，重新加载评论');
+          await loadReviews();
+        }
+      } catch (error) {
+        console.error('【回复提交】提交失败:', error);
+        ElMessage.error('发布回复失败: ' + (error.message || '未知错误'));
+      }
+    };
+    
+    // 取消回复
+    const cancelReply = () => {
+      replyingTo.value = null;
+      newReply.value.content = '';
+    };
 
-    onMounted(() => {
-      loadShopDetails();
+    // 页面加载时获取数据
+    onMounted(async () => {
+      console.log('【组件生命周期】组件挂载开始');
+      
+      // 1. 加载商家详情
+      await loadShopDetails();
+      console.log('【数据加载】商家详情加载完成');
+      
+      // 2. 加载团购套餐
+      await loadPackages();
+      console.log('【数据加载】团购套餐加载完成');
+      
+      // 3. 手动加载评论 - 不使用loadReviews方法，直接实现
+      console.log('【评论加载】开始手动加载评论数据');
+      try {
+        // 获取商户ID
+        const shopId = route.params.id;
+        if (!shopId) {
+          console.error('【评论加载】错误: 缺少商户ID，无法加载评论');
+          return;
+        }
+        console.log(`【评论加载】当前商户ID: ${shopId}`);
+        
+        // 设置加载状态
+        loadingReviews.value = true;
+        
+        // 直接从ReviewService获取数据
+        console.log('【API调用】调用ReviewService.getReviewsByMerchant');
+        const reviewsData = await ReviewService.getReviewsByMerchant(shopId);
+        console.log('【API调用】评论API调用完成，检查返回数据');
+        
+        // 检查并处理数据
+        if (Array.isArray(reviewsData)) {
+          console.log(`【评论处理】收到${reviewsData.length}条评论数据`);
+          // 为页面数据赋值
+          reviews.value = reviewsData;
+          console.log('【评论处理】数据已赋值给reviews变量');
+        } else {
+          console.error('【评论处理】错误: API返回的不是数组:', reviewsData);
+          reviews.value = [];
+        }
+      } catch (error) {
+        console.error('【评论加载】加载评论出错:', error);
+        reviews.value = [];
+      } finally {
+        // 更新加载状态
+        loadingReviews.value = false;
+        console.log(`【评论加载】评论加载完成，共${reviews.value.length}条评论`);
+      }
+      
+      console.log('【组件生命周期】组件挂载完成');
     });
 
-    // 当商家信息加载完成后，加载团购套餐
-    watch(shop, (newVal) => {
-      console.log('shop值发生变化:', newVal);
-      if (newVal) {
-        console.log('开始调用loadPackages');
-        loadPackages();
+    // 监听店铺ID变化，重新加载数据
+    watch(() => route.params.id, async (newId, oldId) => {
+      if (newId && newId !== oldId) {
+        console.log(`【路由变化】商户ID从 ${oldId} 变为 ${newId}`);
+        
+        // 显示加载状态
+        loading.value = true;
+        
+        // 1. 加载商家详情
+        await loadShopDetails();
+        console.log('【数据加载】商家详情已更新');
+        
+        // 2. 加载团购套餐
+        await loadPackages();
+        console.log('【数据加载】团购套餐已更新');
+        
+        // 3. 手动加载评论 - 不使用loadReviews方法
+        console.log('【评论加载】开始手动加载评论数据');
+        try {
+          // 设置加载状态
+          loadingReviews.value = true;
+          
+          // 直接从ReviewService获取数据
+          console.log('【API调用】调用ReviewService.getReviewsByMerchant');
+          const reviewsData = await ReviewService.getReviewsByMerchant(newId);
+          console.log('【API调用】评论API调用完成');
+          
+          // 检查并处理数据
+          if (Array.isArray(reviewsData)) {
+            console.log(`【评论处理】收到${reviewsData.length}条评论数据`);
+            // 为页面数据赋值
+            reviews.value = reviewsData;
+          } else {
+            console.error('【评论处理】错误: API返回的不是数组:', reviewsData);
+            reviews.value = [];
+          }
+        } catch (error) {
+          console.error('【评论加载】加载评论出错:', error);
+          reviews.value = [];
+        } finally {
+          // 更新加载状态
+          loadingReviews.value = false;
+          loading.value = false;
+          console.log(`【评论加载】评论加载完成，共${reviews.value.length}条评论`);
+        }
       }
     });
 
@@ -332,11 +657,25 @@ export default {
       loadingPackages,
       showViewer,
       previewUrl,
+      reviews,
+      loadingReviews,
+      newReview,
+      newReply,
+      replyingTo,
+      isReviewValid,
+      isReplyValid,
+      route,
       goBack,
       getImagesByType,
       previewImage,
       closeViewer,
-      viewPackageDetail
+      viewPackageDetail,
+      loadReviews,
+      submitReview,
+      startReply,
+      submitReply,
+      cancelReply,
+      formatTime
     };
   }
 };
@@ -628,5 +967,122 @@ export default {
 .loading-packages, .no-packages {
   padding: 30px;
   text-align: center;
+}
+
+.shop-reviews {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.shop-reviews h2 {
+  font-size: 22px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #409EFF;
+  color: #333;
+}
+
+.review-form {
+  margin-bottom: 30px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #e6e6e6;
+}
+
+.review-form h3 {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.review-list {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.review-item {
+  margin-bottom: 25px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border-left: 4px solid #409EFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.user-id {
+  font-size: 14px;
+  color: #606266;
+  font-weight: bold;
+}
+
+.review-time {
+  font-size: 12px;
+  color: #999;
+}
+
+.review-content {
+  margin: 15px 0;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 15px;
+}
+
+.review-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.reply-form {
+  margin-top: 15px;
+  padding: 15px;
+  background-color: #f0f2f5;
+  border-radius: 8px;
+  border: 1px solid #e6e6e6;
+}
+
+.reply-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.nested-replies {
+  margin-top: 15px;
+  margin-left: 20px;
+  padding: 10px;
+  border-left: 2px solid #ddd;
+  background-color: rgba(240, 240, 240, 0.5);
+  border-radius: 0 8px 8px 0;
+}
+
+.nested-reply-item {
+  margin-bottom: 10px;
+}
+
+.loading-reviews, .no-reviews {
+  padding: 30px;
+  text-align: center;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px dashed #ddd;
 }
 </style>

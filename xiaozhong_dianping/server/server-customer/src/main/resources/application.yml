@@ -44,10 +44,10 @@ spring:
     database-platform: org.hibernate.dialect.MySQL8Dialect
     hibernate:
       ddl-auto: none
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
 
 # MyBatis配置
 mybatis:
@@ -85,6 +85,12 @@ logging:
     com.fudan.xiaozhong_dianping.groupbuy.controller.GroupBuyController: DEBUG
     com.fudan.xiaozhong_dianping.groupbuy.service.impl.GroupBuyServiceImpl: DEBUG
     com.fudan.xiaozhong_dianping.groupbuy.repository: DEBUG
+    # 关闭Hibernate和JPA日志
+    org.hibernate: ERROR
+    org.hibernate.SQL: OFF
+    org.hibernate.type.descriptor.sql: OFF
+    org.springframework.orm.jpa: WARN
+    org.springframework.transaction: WARN
 
 # PageHelper配置
 pagehelper:
