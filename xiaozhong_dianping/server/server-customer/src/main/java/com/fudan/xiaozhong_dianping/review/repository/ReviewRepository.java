@@ -30,5 +30,14 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
      */
     @Query("SELECT r FROM Review r WHERE r.merchantId = ?1 AND r.parentId = ?2 ORDER BY r.createTime DESC")
     List<Review> findByMerchantIdAndParentIdOrderByCreateTimeDesc(Long merchantId, Long parentId);
+    
+    /**
+     * 根据商户ID查询所有点评/回复列表（按时间倒序），不过滤parentId
+     *
+     * @param merchantId 商户ID，用于指定查询的点评/回复所属的商户
+     * @return 按时间倒序排列的所有点评/回复列表
+     */
+    @Query("SELECT r FROM Review r WHERE r.merchantId = ?1 ORDER BY r.createTime DESC")
+    List<Review> findByMerchantIdOrderByCreateTimeDesc(Long merchantId);
 }
 

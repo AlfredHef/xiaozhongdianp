@@ -89,4 +89,11 @@ public interface CouponService {
      * 发放点评奖励券（8折，最高抵扣20元，7天有效）
      */
     void grantReviewRewardCoupon(Long userId);
+
+    /**
+     * 创建新的优惠券
+     * @param coupon 优惠券信息
+     * @return 创建的优惠券
+     */
+    Coupon createCoupon(Coupon coupon);
 }

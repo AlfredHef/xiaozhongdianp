@@ -105,6 +105,28 @@
         </div>
       </div>
 
+      <!-- 邀请码输入 -->
+      <div class="invitation-section">
+        <h2>邀请码</h2>
+        <div class="invitation-input">
+          <el-input 
+            v-model="invitationCode" 
+            placeholder="请输入邀请码（选填）" 
+            clearable
+            maxlength="8"
+            :disabled="submitting"
+          >
+            <template #prefix>
+              <i class="el-icon-medal"></i>
+            </template>
+          </el-input>
+          <div class="invitation-tips">
+            <p>首次下单填写邀请码，订单金额满10元即可成功被邀请</p>
+            <p>每被成功邀请一次，您将获得额外优惠券</p>
+          </div>
+        </div>
+      </div>
+
       <div class="order-summary">
         <div class="summary-row">
           <span>套餐原价：</span>
@@ -144,6 +166,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import GroupBuyService from '@/services/GroupBuyService';
+import InvitationService from '@/services/InvitationService';
 
 export default {
   name: 'OrderConfirm',
@@ -157,6 +180,7 @@ export default {
     const loading = ref(true);
     const loadingCoupons = ref(true);
     const submitting = ref(false);
+    const invitationCode = ref('');
 
     // 加载套餐详情
     const loadPackageDetail = async () => {
@@ -288,10 +312,24 @@ export default {
       try {
         submitting.value = true;
         console.log('正在提交订单，套餐ID:', packageDetail.value.id, '优惠券ID:', selectedCouponId.value);
-        const response = await GroupBuyService.createOrder(
-          packageDetail.value.id, 
-          selectedCouponId.value
-        );
+        
+        let response;
+        
+        // 如果有邀请码，则使用带邀请码的API
+        if (invitationCode.value) {
+          console.log('使用邀请码下单:', invitationCode.value);
+          response = await InvitationService.createOrderWithInvitation(
+            packageDetail.value.id,
+            invitationCode.value,
+            selectedCouponId.value
+          );
+        } else {
+          // 使用普通下单API
+          response = await GroupBuyService.createOrder(
+            packageDetail.value.id, 
+            selectedCouponId.value
+          );
+        }
         
         console.log('下单成功，响应数据:', response);
         
@@ -466,6 +504,7 @@ export default {
       loading,
       loadingCoupons,
       submitting,
+      invitationCode,
       goBack,
       submitOrder,
       formatDate,
@@ -750,5 +789,33 @@ export default {
 .coupon-package-info {
   font-size: 14px;
   color: #999;
+}
+
+/* 邀请码部分样式 */
+.invitation-section {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.invitation-section h2 {
+  font-size: 18px;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.invitation-input {
+  margin-top: 15px;
+}
+
+.invitation-tips {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
+}
+
+.invitation-tips p {
+  margin: 5px 0;
 }
 </style> 

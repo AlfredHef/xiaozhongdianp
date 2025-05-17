@@ -2,7 +2,9 @@ package com.fudan.xiaozhong_dianping.groupbuy.controller;
 
 import com.fudan.xiaozhong_dianping.groupbuy.dto.OrderDTO;
 import com.fudan.xiaozhong_dianping.groupbuy.dto.VoucherDTO;
+import com.fudan.xiaozhong_dianping.groupbuy.entity.GroupBuyOrder;
 import com.fudan.xiaozhong_dianping.groupbuy.exception.BusinessException;
+import com.fudan.xiaozhong_dianping.groupbuy.service.GroupBuyService;
 import com.fudan.xiaozhong_dianping.groupbuy.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,9 @@ public class OrderController {
 
     @Autowired
     private OrderService orderService;
+    
+    @Autowired
+    private GroupBuyService groupBuyService;
 
     /**
      * 创建订单
@@ -40,6 +45,34 @@ public class OrderController {
                 : null;
 
         VoucherDTO voucherDTO = orderService.createOrder(userId, packageId, couponId);
+        return ResponseEntity.ok(voucherDTO);
+    }
+    
+    /**
+     * 创建订单并使用邀请码
+     * @param userId 当前登录用户ID
+     * @param requestBody 请求体，包含packageId、couponId和invitationCode
+     * @return 订单信息和券码
+     */
+    @PostMapping("/with-invitation")
+    public ResponseEntity<VoucherDTO> createOrderWithInvitation(
+            @RequestHeader("userId") Long userId,
+            @RequestBody Map<String, Object> requestBody) {
+        if (userId == null) {
+            throw new BusinessException("用户未登录，请先登录");
+        }
+        
+        Integer packageId = (Integer) requestBody.get("packageId");
+        Long couponId = requestBody.get("couponId") != null
+                ? Long.valueOf(requestBody.get("couponId").toString())
+                : null;
+        String invitationCode = (String) requestBody.get("invitationCode");
+        
+        // 创建带邀请码的订单
+        GroupBuyOrder order = groupBuyService.createOrderWithInvitation(userId, packageId, couponId, invitationCode);
+        
+        // 获取订单详情并返回
+        VoucherDTO voucherDTO = orderService.getOrderDetail(order.getId());
         return ResponseEntity.ok(voucherDTO);
     }
 
