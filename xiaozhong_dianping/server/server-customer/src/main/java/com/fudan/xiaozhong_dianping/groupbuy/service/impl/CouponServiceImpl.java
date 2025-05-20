@@ -67,12 +67,26 @@ public class CouponServiceImpl implements CouponService {
      */
     @Override
     public UserCoupon receiveCoupon(Long userId, Long couponId) {
+        return receiveCoupon(userId, couponId, false);
+    }
+    
+    /**
+     * 用户领取优惠券（带跳过新人券检查选项）
+     *
+     * @param userId 用户ID
+     * @param couponId 优惠券ID
+     * @param skipNewUserCheck 是否跳过新人券检查
+     * @return 领取的用户优惠券信息
+     * @throws BusinessException 当用户已领取过新人券、优惠券不存在、优惠券已发完或达到领取上限时抛出
+     */
+    @Override
+    public UserCoupon receiveCoupon(Long userId, Long couponId, boolean skipNewUserCheck) {
         try {
             System.out.println("===== 开始领取优惠券 =====");
             System.out.println("用户ID: " + userId + ", 优惠券ID: " + couponId);
             
-            // 新人券领取检查
-            if (isNewUser(userId)) {
+            // 新人券领取检查（可以跳过）
+            if (!skipNewUserCheck && isNewUser(userId)) {
                 boolean hasReceived = hasReceivedNewUserCoupon(userId);
                 System.out.println("用户是新用户，是否已领取过新人券: " + hasReceived);
                 
@@ -325,9 +339,9 @@ public class CouponServiceImpl implements CouponService {
                 .maxPerUser(1) // 每人限领1张
                 .build();
 
-        // 保存优惠券并发放
+        // 保存优惠券并发放（跳过新人券检查）
         Coupon savedCoupon = couponRepository.save(rewardCoupon);
-        receiveCoupon(userId, savedCoupon.getId());
+        receiveCoupon(userId, savedCoupon.getId(), true);
     }
 
     @Override

@@ -13,12 +13,21 @@ import java.util.List;
 public interface CouponService {
 
     /**
-     * 新用户领取优惠券
+     * 用户领取优惠券
      * @param userId 用户ID
      * @param couponId 优惠券ID
      * @return 用户优惠券实体
      */
     UserCoupon receiveCoupon(Long userId, Long couponId);
+
+    /**
+     * 用户领取优惠券（带跳过新人券检查选项）
+     * @param userId 用户ID
+     * @param couponId 优惠券ID
+     * @param skipNewUserCheck 是否跳过新人券检查
+     * @return 用户优惠券实体
+     */
+    UserCoupon receiveCoupon(Long userId, Long couponId, boolean skipNewUserCheck);
 
     /**
      * 获取用户卡包中的优惠券
