@@ -15,6 +15,7 @@
             <el-dropdown-item @click="viewProfile">个人资料</el-dropdown-item>
             <el-dropdown-item @click="viewOrders">我的订单</el-dropdown-item>
             <el-dropdown-item @click="viewCoupons">我的卡包</el-dropdown-item>
+            <el-dropdown-item @click="viewInvitation">邀请有礼</el-dropdown-item>
             <el-dropdown-item divided @click="logout">退出登录</el-dropdown-item>
           </el-dropdown-menu>
         </template>
@@ -168,6 +169,11 @@ export default {
       router.push('/coupons');
     };
     
+    // 查看邀请有礼
+    const viewInvitation = () => {
+      router.push('/invitation');
+    };
+    
     // 显示新人券弹窗
     const showNewUserCoupon = () => {
       // 触发App.vue中的新人券弹窗显示
@@ -205,6 +211,7 @@ export default {
       viewProfile,
       viewOrders,
       viewCoupons,
+      viewInvitation,
       showNewUserCoupon,
       shouldShow,
       loadUserInfo
