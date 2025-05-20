@@ -24,7 +24,7 @@ public class InvitationRecord {
     private Long orderId;
 
     @Column(nullable = false)
-    private LocalDateTime createTime= LocalDateTime.now();
+    private LocalDateTime createTime = LocalDateTime.now();
 
     @Column(nullable = false)
     private BigDecimal orderAmount;
@@ -32,6 +32,6 @@ public class InvitationRecord {
     @Column(nullable = false)
     private LocalDateTime orderTime;
 
-    @Column(nullable = false)
-    private Boolean isValid=true;
+    @Column(name = "is_valid", nullable = false)
+    private Boolean isValid = true;
 }

@@ -74,43 +74,88 @@ public class InvitationServiceImpl implements InvitationService {
         return invitationCode;
     }
 
+    /**
+     * 根据邀请码查询邀请码实体
+     * @param code 邀请码
+     * @return 邀请码实体，不存在则返回null
+     */
+    public InvitationCode findByCode(String code) {
+        return invitationCodeRepository.findByCode(code);
+    }
+    
+    /**
+     * 检查用户是否已被邀请过
+     * @param userId 用户ID
+     * @return 是否被邀请过
+     */
+    public boolean hasBeenInvited(Long userId) {
+        return invitationRecordRepository.existsByInviteeId(userId);
+    }
+
     @Override
     @Transactional
     public boolean useInvitationCode(Long inviteeId, String invitationCode, GroupBuyOrder order) {
-        // 验证邀请码
-        InvitationCode code = invitationCodeRepository.findByCode(invitationCode);
-        if (code == null) {
-            throw new BusinessException("邀请码不存在");
+        try {
+            // 验证邀请码
+            InvitationCode code = invitationCodeRepository.findByCode(invitationCode);
+            if (code == null) {
+                throw new BusinessException("邀请码不存在");
+            }
+    
+            // 验证不能使用自己的邀请码
+            if (code.getUserId().equals(inviteeId)) {
+                throw new BusinessException("不能使用自己的邀请码");
+            }
+    
+            // 检查被邀请人是否已经被邀请过
+            if (invitationRecordRepository.existsByInviteeId(inviteeId)) {
+                throw new BusinessException("您已经被邀请过，不能重复使用邀请码");
+            }
+    
+            // 验证订单金额
+            if (order.getOrderPrice().compareTo(MIN_ORDER_AMOUNT) < 0) {
+                throw new BusinessException("订单金额需超过10元才能使用邀请码");
+            }
+            
+            // 只有当订单已保存（有ID）时，才创建邀请记录
+            if (order.getId() != null) {
+                // 创建邀请记录
+                InvitationRecord record = new InvitationRecord();
+                record.setInviterId(code.getUserId());
+                record.setInviteeId(inviteeId);
+                record.setOrderId(order.getId());
+                record.setOrderAmount(order.getOrderPrice());
+                record.setOrderTime(order.getCreatedAt());
+                record.setIsValid(true); // 显式设置为有效邀请
+                
+                // 保存邀请记录并确保实际保存到数据库
+                InvitationRecord savedRecord = invitationRecordRepository.save(record);
+                if (savedRecord.getId() == null) {
+                    throw new BusinessException("保存邀请记录失败");
+                }
+                
+                System.out.println("成功创建邀请记录 - ID: " + savedRecord.getId() 
+                    + ", 邀请人: " + savedRecord.getInviterId() 
+                    + ", 被邀请人: " + savedRecord.getInviteeId()
+                    + ", 订单ID: " + savedRecord.getOrderId()
+                    + ", 是否有效: " + savedRecord.getIsValid());
+    
+                // 检查是否需要发放奖励
+                checkAndGrantInvitationReward(code.getUserId());
+            } else {
+                throw new BusinessException("订单ID为空，无法创建邀请记录");
+            }
+    
+            return true;
+        } catch (BusinessException e) {
+            // 重新抛出业务异常，便于上层捕获
+            throw e;
+        } catch (Exception e) {
+            System.err.println("处理邀请关系异常: " + e.getMessage());
+            e.printStackTrace();
+            // 将其他异常转换为业务异常
+            throw new BusinessException("处理邀请关系异常: " + e.getMessage());
         }
-
-        // 验证不能使用自己的邀请码
-        if (code.getUserId().equals(inviteeId)) {
-            throw new BusinessException("不能使用自己的邀请码");
-        }
-
-        // 检查被邀请人是否已经被邀请过
-        if (invitationRecordRepository.existsByInviteeId(inviteeId)) {
-            throw new BusinessException("您已经被邀请过，不能重复使用邀请码");
-        }
-
-        // 验证订单金额
-        if (order.getOrderPrice().compareTo(MIN_ORDER_AMOUNT) < 0) {
-            throw new BusinessException("订单金额需超过10元才能使用邀请码");
-        }
-
-        // 创建邀请记录
-        InvitationRecord record = new InvitationRecord();
-        record.setInviterId(code.getUserId());
-        record.setInviteeId(inviteeId);
-        record.setOrderId(order.getId());
-        record.setOrderAmount(order.getOrderPrice());
-        record.setOrderTime(order.getCreatedAt());
-        invitationRecordRepository.save(record);
-
-        // 检查是否需要发放奖励
-        checkAndGrantInvitationReward(code.getUserId());
-
-        return true;
     }
 
     @Override
@@ -121,6 +166,37 @@ public class InvitationServiceImpl implements InvitationService {
     @Override
     public List<InvitationReward> getUserInvitationRewards(Long userId) {
         return invitationRewardRepository.findByUserIdOrderByCreateTimeDesc(userId);
+    }
+
+    /**
+     * 修复邀请记录中可能存在的问题
+     * 特别是处理isValid字段可能未正确设置的问题
+     * @return 修复的记录数量
+     */
+    @Transactional
+    public int fixInvitationRecords() {
+        int fixedCount = 0;
+        try {
+            // 获取所有邀请记录
+            List<InvitationRecord> allRecords = invitationRecordRepository.findAll();
+            
+            for (InvitationRecord record : allRecords) {
+                // 检查isValid字段值
+                if (record.getIsValid() == null) {
+                    record.setIsValid(true);
+                    invitationRecordRepository.save(record);
+                    fixedCount++;
+                    System.out.println("修复邀请记录 - ID: " + record.getId() + ", 设置isValid=true");
+                }
+            }
+            
+            System.out.println("邀请记录修复完成，共修复 " + fixedCount + " 条记录");
+            return fixedCount;
+        } catch (Exception e) {
+            System.err.println("修复邀请记录失败: " + e.getMessage());
+            e.printStackTrace();
+            throw new BusinessException("修复邀请记录失败: " + e.getMessage());
+        }
     }
 
     @Override

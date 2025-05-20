@@ -21,6 +21,20 @@ public interface InvitationService {
      * @return 用户邀请码
      */
     InvitationCode getUserInvitationCode(Long userId);
+    
+    /**
+     * 根据邀请码查询邀请码实体
+     * @param code 邀请码
+     * @return 邀请码实体，不存在则返回null
+     */
+    InvitationCode findByCode(String code);
+    
+    /**
+     * 检查用户是否已被邀请过
+     * @param userId 用户ID
+     * @return 是否被邀请过
+     */
+    boolean hasBeenInvited(Long userId);
 
     /**
      * 使用邀请码下单
@@ -52,4 +66,11 @@ public interface InvitationService {
      * @return 是否发放了奖励
      */
     boolean checkAndGrantInvitationReward(Long inviterId);
+    
+    /**
+     * 修复邀请记录中可能存在的问题
+     * 特别是处理isValid字段可能未正确设置的问题
+     * @return 修复的记录数量
+     */
+    int fixInvitationRecords();
 }

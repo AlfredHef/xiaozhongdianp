@@ -1,7 +1,7 @@
 <template>
   <div class="invitation-page">
     <div class="page-header">
-      <h1>邀请有礼</h1>
+      <h1>我的邀请</h1>
       <p>邀请好友使用您的专属邀请码下单，即可获得奖励</p>
     </div>
     

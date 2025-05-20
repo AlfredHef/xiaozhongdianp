@@ -15,7 +15,7 @@
             <el-dropdown-item @click="viewProfile">个人资料</el-dropdown-item>
             <el-dropdown-item @click="viewOrders">我的订单</el-dropdown-item>
             <el-dropdown-item @click="viewCoupons">我的卡包</el-dropdown-item>
-            <el-dropdown-item @click="viewInvitation">邀请有礼</el-dropdown-item>
+            <el-dropdown-item @click="viewInvitation">我的邀请</el-dropdown-item>
             <el-dropdown-item divided @click="logout">退出登录</el-dropdown-item>
           </el-dropdown-menu>
         </template>
