@@ -150,22 +150,47 @@ public class GroupBuyServiceImpl implements GroupBuyService {
     @Override
     @Transactional
     public GroupBuyOrder createOrderWithInvitation(Long userId, Integer packageId, Long couponId, String invitationCode) {
-        // 创建基本订单
+        // 如果提供了邀请码，先验证邀请码有效性
+        if (invitationCode != null && !invitationCode.isEmpty()) {
+            // 查询套餐信息，预先计算订单金额用于验证
+            Optional<GroupBuyPackage> packageOpt = packageRepository.findById(packageId);
+            if (!packageOpt.isPresent()) {
+                throw new BusinessException("套餐不存在");
+            }
+            
+            // 预先创建一个订单对象用于验证，但不保存到数据库
+            GroupBuyPackage groupBuyPackage = packageOpt.get();
+            GroupBuyOrder preOrder = new GroupBuyOrder();
+            preOrder.setUserId(userId);
+            preOrder.setPackageId(packageId);
+            preOrder.setOrderPrice(groupBuyPackage.getPrice());
+            preOrder.setCreatedAt(LocalDateTime.now());
+            
+            try {
+                // 验证邀请码，如果无效会抛出异常
+                invitationService.useInvitationCode(userId, invitationCode, preOrder);
+            } catch (BusinessException e) {
+                // 将邀请码异常直接抛出，不再捕获处理
+                throw e;
+            }
+        }
+        
+        // 验证通过后，创建实际订单
         GroupBuyOrder order = createOrder(userId, packageId, couponId);
-
-        // 如果提供了邀请码，则处理邀请关系
+        
+        // 如果提供了邀请码，再次处理邀请关系（使用实际订单）
         if (invitationCode != null && !invitationCode.isEmpty()) {
             try {
                 invitationService.useInvitationCode(userId, invitationCode, order);
             } catch (BusinessException e) {
-                // 邀请码使用失败不影响订单创建，只记录日志
-                logger.error("使用邀请码失败: {}", e.getMessage());
+                // 这里不应该发生异常，因为之前已经验证过了
+                logger.error("处理邀请关系异常（这不应该发生）: {}", e.getMessage());
             }
         }
 
         return order;
     }
-    
+
     /**
      * 将实体转换为DTO
      */

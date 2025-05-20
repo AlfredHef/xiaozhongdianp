@@ -2,6 +2,7 @@ package com.fudan.xiaozhong_dianping.groupbuy.service;
 
 import com.fudan.xiaozhong_dianping.groupbuy.dto.OrderDTO;
 import com.fudan.xiaozhong_dianping.groupbuy.dto.VoucherDTO;
+import com.fudan.xiaozhong_dianping.groupbuy.entity.GroupBuyOrder;
 
 import java.util.List;
 
@@ -32,4 +33,11 @@ public interface OrderService {
      * @return 订单DTO，包含券码信息
      */
     VoucherDTO getOrderDetail(Long orderId);
+    
+    /**
+     * 根据ID获取订单实体
+     * @param orderId 订单ID
+     * @return 订单实体
+     */
+    GroupBuyOrder getOrderById(Long orderId);
 } 

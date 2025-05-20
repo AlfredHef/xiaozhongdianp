@@ -19,10 +19,23 @@ class InvitationService {
         headers: { 'userId': user.id }
       });
       
+      if (!response.data) {
+        throw new Error('服务器返回数据为空');
+      }
+      
       return response.data;
     } catch (error) {
       console.error('获取邀请信息失败:', error);
-      throw error;
+      if (error.response) {
+        // 服务器返回了错误响应
+        throw new Error(`服务器错误: ${error.response.status} - ${error.response.data?.message || '未知错误'}`);
+      } else if (error.request) {
+        // 请求已发送但没有收到响应
+        throw new Error('无法连接到服务器，请检查网络连接');
+      } else {
+        // 请求配置出错
+        throw new Error(error.message || '获取邀请信息失败');
+      }
     }
   }
 

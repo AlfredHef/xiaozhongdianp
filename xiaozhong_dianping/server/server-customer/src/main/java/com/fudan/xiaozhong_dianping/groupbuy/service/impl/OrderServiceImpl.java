@@ -186,6 +186,22 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
+     * 根据ID获取订单实体
+     *
+     * @param orderId 订单ID
+     * @return 订单实体
+     * @throws BusinessException 如果订单不存在，则抛出业务异常
+     */
+    @Override
+    public GroupBuyOrder getOrderById(Long orderId) {
+        Optional<GroupBuyOrder> orderOpt = orderRepository.findById(orderId);
+        if (!orderOpt.isPresent()) {
+            throw new BusinessException("订单不存在");
+        }
+        return orderOpt.get();
+    }
+
+    /**
      * 将订单实体转换为OrderDTO对象。
      *
      * @param order 订单实体对象。
