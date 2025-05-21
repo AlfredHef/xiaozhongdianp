@@ -205,14 +205,14 @@
             <p>当前商户ID: {{ route.params.id }}</p>
             <p>评论加载状态: {{ loadingReviews ? '加载中' : '加载完成' }}</p>
             <p>评论数量: {{ reviews.length }}</p>
-            <p v-if="reviews[0]">第一条评论ID: {{ reviews[0].id }}，用户: {{ reviews[0].userId }}</p>
+            <p v-if="reviews[0]">第一条评论ID: {{ reviews[0].id }}，用户: {{ getUsernameById(reviews[0].userId) }}</p>
           </div>
           
           <!-- 顶层评论列表 -->
           <template v-for="review in reviews" :key="review.id">
             <div class="review-item" v-if="review">
               <div class="review-header">
-                <span class="user-id">用户: {{ review.userId }}</span>
+                <span class="user-id">用户: {{ getUsernameById(review.userId) }}</span>
                 <span class="review-time">{{ formatTime(review.createTime) }}</span>
               </div>
               <div class="review-content">{{ review.content }}</div>
@@ -548,6 +548,23 @@ export default {
       newReply.value.content = '';
     };
 
+    // 根据用户ID获取用户名
+    const getUsernameById = (userId) => {
+      if (!userId) return '未知用户';
+      
+      // 获取当前登录用户
+      const currentUser = AuthService.getUser();
+      
+      // 如果是当前登录用户，显示"我"
+      if (currentUser && currentUser.id === userId) {
+        return currentUser.username || '我';
+      }
+      
+      // 这里应该调用获取用户信息的API，但为简化处理，直接返回用户名
+      // 在实际项目中，可以维护一个用户信息缓存或调用后端API获取用户名
+      return `用户${userId}`;
+    };
+
     // 页面加载时获取数据
     onMounted(async () => {
       console.log('【组件生命周期】组件挂载开始');
@@ -675,7 +692,8 @@ export default {
       startReply,
       submitReply,
       cancelReply,
-      formatTime
+      formatTime,
+      getUsernameById
     };
   }
 };
