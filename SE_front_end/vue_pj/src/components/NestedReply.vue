@@ -1,7 +1,7 @@
 <template>
   <div class="nested-reply">
     <div class="reply-header">
-      <span class="user-id">用户: {{ reply.userId }}</span>
+      <span class="user-id">用户: {{ getUsernameById(reply.userId) }}</span>
       <span class="reply-time">{{ formatTime(reply.createTime) }}</span>
     </div>
     <div class="reply-content">{{ reply.content }}</div>
@@ -44,6 +44,7 @@
 import { ref, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import ReviewService from '../services/ReviewService';
+import AuthService from '../services/AuthService';
 
 export default {
   name: 'NestedReply',
@@ -72,6 +73,22 @@ export default {
       if (!timestamp) return '';
       const date = new Date(timestamp);
       return date.toLocaleString();
+    };
+    
+    // 根据用户ID获取用户名
+    const getUsernameById = (userId) => {
+      if (!userId) return '未知用户';
+      
+      // 获取当前登录用户
+      const currentUser = AuthService.getUser();
+      
+      // 如果是当前登录用户，显示"我"
+      if (currentUser && currentUser.id === userId) {
+        return currentUser.username || '我';
+      }
+      
+      // 这里应该调用获取用户信息的API，但为简化处理，直接返回用户名
+      return `用户${userId}`;
     };
     
     // 开始回复
@@ -135,7 +152,8 @@ export default {
       formatTime,
       startReply,
       submitReply,
-      cancelReply
+      cancelReply,
+      getUsernameById
     };
   }
 };

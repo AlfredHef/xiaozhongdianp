@@ -57,10 +57,10 @@
             <el-table-column
               prop="inviteeId"
               label="被邀请人"
-              width="100"
+              width="120"
             >
               <template #default="scope">
-                <span>用户 {{ scope.row.inviteeId }}</span>
+                <span class="username-display">{{ getUsernameById(scope.row.inviteeId) }}</span>
               </template>
             </el-table-column>
             
@@ -159,6 +159,7 @@
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import InvitationService from '@/services/InvitationService';
+import AuthService from '@/services/AuthService';
 
 export default {
   name: 'InvitationInfo',
@@ -225,6 +226,22 @@ export default {
       }
     };
     
+    // 根据用户ID获取用户名 - 直接模仿评论区的实现
+    const getUsernameById = (userId) => {
+      if (!userId) return '未知用户';
+      
+      // 获取当前登录用户
+      const currentUser = AuthService.getUser();
+      
+      // 如果是当前登录用户，显示"我"
+      if (currentUser && currentUser.id === userId) {
+        return currentUser.username || '我';
+      }
+      
+      // 这里应该调用获取用户信息的API，但为简化处理，直接返回用户名
+      return `用户${userId}`;
+    };
+    
     onMounted(() => {
       loadInvitationInfo();
     });
@@ -235,7 +252,8 @@ export default {
       error,
       loadInvitationInfo,
       copyCode,
-      formatDate
+      formatDate,
+      getUsernameById
     };
   }
 };
@@ -318,5 +336,14 @@ export default {
 .amount {
   color: #f56c6c;
   font-weight: bold;
+}
+
+.username-display {
+  color: #409EFF;
+  font-weight: bold;
+  background-color: #ecf5ff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
 }
 </style> 
