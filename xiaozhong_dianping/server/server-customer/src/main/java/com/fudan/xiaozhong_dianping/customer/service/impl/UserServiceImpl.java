@@ -72,6 +72,11 @@ public class UserServiceImpl implements UserService {
         return null; // 验证失败返回null
     }
 
+    @Override
+    public User getUserById(Long id) {
+        return userMapper.findById(id);
+    }
+
     /**
      * 验证用户名是否符合规则
      * @param username 用户名

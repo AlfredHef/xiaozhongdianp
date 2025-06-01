@@ -19,4 +19,11 @@ public interface UserService {
      * @return 登录是否成功
      */
     User login(String username, String password);
+
+    /**
+     * 根据用户ID获取用户信息
+     * @param id 用户ID
+     * @return 用户信息
+     */
+    User getUserById(Long id);
 }

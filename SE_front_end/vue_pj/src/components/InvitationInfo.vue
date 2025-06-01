@@ -60,7 +60,7 @@
               width="120"
             >
               <template #default="scope">
-                <span class="username-display">{{ getUsernameById(scope.row.inviteeId) }}</span>
+                <span class="username-display">{{ getUsernameDisplay(scope.row.inviteeId) }}</span>
               </template>
             </el-table-column>
             
@@ -111,41 +111,58 @@
             style="width: 100%"
           >
             <el-table-column
-              prop="invitationCount"
-              label="邀请人数"
+              prop="couponInfo"
+              label="奖励内容"
+              width="200"
+            >
+              <template #default="scope">
+                <div class="reward-content">
+                  <div class="coupon-title">邀请奖励无门槛20元券</div>
+                  <div class="coupon-desc">任意品类通用，无门槛使用，7天有效</div>
+                </div>
+              </template>
+            </el-table-column>
+            
+            <el-table-column
+              prop="couponType"
+              label="优惠券类型"
+              width="120"
+            >
+              <template #default="scope">
+                <el-tag type="success">减固定金额</el-tag>
+              </template>
+            </el-table-column>
+            
+            <el-table-column
+              prop="couponAmount"
+              label="优惠金额"
               width="100"
             >
               <template #default="scope">
-                <span>{{ scope.row.invitationCount }}人</span>
-              </template>
-            </el-table-column>
-            
-            <el-table-column
-              prop="rewardType"
-              label="奖励类型"
-              width="120"
-            >
-              <template #default="scope">
-                <span>{{ scope.row.rewardType }}</span>
-              </template>
-            </el-table-column>
-            
-            <el-table-column
-              prop="rewardAmount"
-              label="奖励金额"
-              width="120"
-            >
-              <template #default="scope">
-                <span class="amount">¥{{ scope.row.rewardAmount }}</span>
+                <span class="amount">¥20</span>
               </template>
             </el-table-column>
             
             <el-table-column
               prop="createTime"
-              label="获得时间"
+              label="发放时间"
+              width="160"
             >
               <template #default="scope">
                 {{ formatDate(scope.row.createTime) }}
+              </template>
+            </el-table-column>
+            
+            <el-table-column
+              label="有效期"
+            >
+              <template #default="scope">
+                <div class="validity-info">
+                  <div>自发放起7天内有效</div>
+                  <div class="expire-date">
+                    {{ getExpirationDate(scope.row.createTime) }}
+                  </div>
+                </div>
               </template>
             </el-table-column>
           </el-table>
@@ -156,10 +173,11 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, reactive } from 'vue';
 import { ElMessage } from 'element-plus';
 import InvitationService from '@/services/InvitationService';
 import AuthService from '@/services/AuthService';
+import UserService from '@/services/UserService';
 
 export default {
   name: 'InvitationInfo',
@@ -171,6 +189,9 @@ export default {
     });
     const loading = ref(true);
     const error = ref('');
+    
+    // 使用reactive对象存储用户名缓存，确保响应式更新
+    const usernameCache = reactive({});
     
     // 加载邀请信息
     const loadInvitationInfo = async () => {
@@ -226,20 +247,67 @@ export default {
       }
     };
     
-    // 根据用户ID获取用户名 - 直接模仿评论区的实现
-    const getUsernameById = (userId) => {
+    // 根据用户ID获取用户名显示（同步方法，用于模板）
+    const getUsernameDisplay = (userId) => {
       if (!userId) return '未知用户';
+      
+      // 检查缓存
+      if (usernameCache[userId]) {
+        return usernameCache[userId];
+      }
       
       // 获取当前登录用户
       const currentUser = AuthService.getUser();
-      
-      // 如果是当前登录用户，显示"我"
-      if (currentUser && currentUser.id === userId) {
-        return currentUser.username || '我';
+      if (currentUser && currentUser.id == userId) {
+        const displayName = currentUser.username || '我';
+        usernameCache[userId] = displayName;
+        return displayName;
       }
       
-      // 这里应该调用获取用户信息的API，但为简化处理，直接返回用户名
+      // 异步获取用户名（不阻塞渲染）
+      loadUsernameAsync(userId);
+      
+      // 返回临时显示名
       return `用户${userId}`;
+    };
+    
+    // 异步加载用户名
+    const loadUsernameAsync = async (userId) => {
+      if (usernameCache[userId]) return; // 避免重复请求
+      
+      try {
+        console.log(`开始获取用户${userId}的用户名`);
+        const username = await UserService.getUsernameById(userId);
+        console.log(`用户${userId}的用户名是: ${username}`);
+        
+        // 更新缓存，触发响应式更新
+        usernameCache[userId] = username;
+      } catch (error) {
+        console.error(`获取用户${userId}的用户名失败:`, error);
+        usernameCache[userId] = `用户${userId}`;
+      }
+    };
+    
+    // 计算优惠券到期日期
+    const getExpirationDate = (createTime) => {
+      if (!createTime) return '未知';
+      
+      try {
+        const issueDate = new Date(createTime);
+        const expirationDate = new Date(issueDate);
+        expirationDate.setDate(expirationDate.getDate() + 7); // 7天有效期
+        
+        return '截止到 ' + expirationDate.toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (err) {
+        console.error('计算到期日期错误:', err);
+        return '计算失败';
+      }
     };
     
     onMounted(() => {
@@ -253,7 +321,8 @@ export default {
       loadInvitationInfo,
       copyCode,
       formatDate,
-      getUsernameById
+      getUsernameDisplay,
+      getExpirationDate
     };
   }
 };
@@ -345,5 +414,32 @@ export default {
   padding: 2px 8px;
   border-radius: 4px;
   display: inline-block;
+}
+
+.reward-content {
+  text-align: left;
+}
+
+.coupon-title {
+  font-weight: bold;
+  color: #303133;
+  margin-bottom: 4px;
+}
+
+.coupon-desc {
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.4;
+}
+
+.validity-info {
+  text-align: left;
+}
+
+.expire-date {
+  font-size: 12px;
+  color: #f56c6c;
+  margin-top: 4px;
+  font-weight: bold;
 }
 </style> 

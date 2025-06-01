@@ -66,7 +66,7 @@
                     <span>有效期至：</span>
                     <span v-if="coupon.expirationDate">{{ formatDate(coupon.expirationDate) }}</span>
                     <span v-else-if="coupon.receivedAt && coupon.validDays">
-                      {{ formatDate(new Date(coupon.receivedAt).getTime() + coupon.validDays * 24 * 60 * 60 * 1000) }}
+                      {{ formatDate(calculateExpirationDate(coupon.receivedAt, coupon.validDays)) }}
                     </span>
                     <span v-else>无限期</span>
                   </p>
@@ -259,12 +259,30 @@ export default {
       
       // 检查基于领取时间的有效期
       if (coupon.receivedAt && coupon.validDays) {
-        const expirationDate = new Date(coupon.receivedAt);
-        expirationDate.setDate(expirationDate.getDate() + coupon.validDays);
-        return expirationDate < now;
+        const expirationDate = calculateExpirationDate(coupon.receivedAt, coupon.validDays);
+        return new Date(expirationDate) < now;
       }
       
       return false;
+    };
+    
+    // 计算优惠券过期时间
+    const calculateExpirationDate = (receivedAt, validDays) => {
+      try {
+        const receiveDate = new Date(receivedAt);
+        if (isNaN(receiveDate.getTime())) {
+          console.error('无效的领取时间:', receivedAt);
+          return null;
+        }
+        
+        const expirationDate = new Date(receiveDate);
+        expirationDate.setDate(expirationDate.getDate() + validDays);
+        
+        return expirationDate;
+      } catch (error) {
+        console.error('计算过期时间错误:', error);
+        return null;
+      }
     };
     
     // 刷新按钮点击事件
@@ -288,7 +306,8 @@ export default {
       expiredCoupons,
       formatDate,
       handleRefresh,
-      checkCouponExpiration
+      checkCouponExpiration,
+      calculateExpirationDate
     };
   }
 };

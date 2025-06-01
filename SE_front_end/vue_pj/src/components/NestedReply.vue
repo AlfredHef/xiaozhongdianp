@@ -1,7 +1,7 @@
 <template>
   <div class="nested-reply">
     <div class="reply-header">
-      <span class="user-id">用户: {{ getUsernameById(reply.userId) }}</span>
+      <span class="user-id">用户: {{ getUsernameDisplay(reply.userId) }}</span>
       <span class="reply-time">{{ formatTime(reply.createTime) }}</span>
     </div>
     <div class="reply-content">{{ reply.content }}</div>
@@ -41,10 +41,11 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue';
+import { ref, computed, reactive } from 'vue';
 import { ElMessage } from 'element-plus';
 import ReviewService from '../services/ReviewService';
 import AuthService from '../services/AuthService';
+import UserService from '../services/UserService';
 
 export default {
   name: 'NestedReply',
@@ -63,6 +64,9 @@ export default {
     const isReplying = ref(false);
     const newReplyContent = ref('');
     
+    // 使用reactive对象存储用户名缓存，确保响应式更新
+    const usernameCache = reactive({});
+    
     // 计算属性，验证回复内容是否有效
     const isValid = computed(() => {
       return newReplyContent.value && newReplyContent.value.length >= 15;
@@ -75,20 +79,45 @@ export default {
       return date.toLocaleString();
     };
     
-    // 根据用户ID获取用户名
-    const getUsernameById = (userId) => {
+    // 根据用户ID获取用户名显示（同步方法，用于模板）
+    const getUsernameDisplay = (userId) => {
       if (!userId) return '未知用户';
+      
+      // 检查缓存
+      if (usernameCache[userId]) {
+        return usernameCache[userId];
+      }
       
       // 获取当前登录用户
       const currentUser = AuthService.getUser();
-      
-      // 如果是当前登录用户，显示"我"
-      if (currentUser && currentUser.id === userId) {
-        return currentUser.username || '我';
+      if (currentUser && currentUser.id == userId) {
+        const displayName = currentUser.username || '我';
+        usernameCache[userId] = displayName;
+        return displayName;
       }
       
-      // 这里应该调用获取用户信息的API，但为简化处理，直接返回用户名
+      // 异步获取用户名（不阻塞渲染）
+      loadUsernameAsync(userId);
+      
+      // 返回临时显示名
       return `用户${userId}`;
+    };
+    
+    // 异步加载用户名
+    const loadUsernameAsync = async (userId) => {
+      if (usernameCache[userId]) return; // 避免重复请求
+      
+      try {
+        console.log(`开始获取用户${userId}的用户名`);
+        const username = await UserService.getUsernameById(userId);
+        console.log(`用户${userId}的用户名是: ${username}`);
+        
+        // 更新缓存，触发响应式更新
+        usernameCache[userId] = username;
+      } catch (error) {
+        console.error(`获取用户${userId}的用户名失败:`, error);
+        usernameCache[userId] = `用户${userId}`;
+      }
     };
     
     // 开始回复
@@ -153,7 +182,7 @@ export default {
       startReply,
       submitReply,
       cancelReply,
-      getUsernameById
+      getUsernameDisplay
     };
   }
 };

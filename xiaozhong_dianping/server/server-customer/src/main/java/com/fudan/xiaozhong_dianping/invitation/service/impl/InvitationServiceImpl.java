@@ -95,30 +95,54 @@ public class InvitationServiceImpl implements InvitationService {
     @Override
     @Transactional
     public boolean useInvitationCode(Long inviteeId, String invitationCode, GroupBuyOrder order) {
+        System.out.println("=== 开始处理邀请码使用请求 ===");
+        System.out.println("被邀请人ID: " + inviteeId);
+        System.out.println("邀请码: " + invitationCode);
+        System.out.println("订单ID: " + (order != null ? order.getId() : "null"));
+        System.out.println("订单金额: " + (order != null ? order.getOrderPrice() : "null"));
+        
         try {
             // 验证邀请码
+            System.out.println("步骤1: 验证邀请码是否存在");
             InvitationCode code = invitationCodeRepository.findByCode(invitationCode);
             if (code == null) {
+                System.out.println("❌ 邀请码不存在: " + invitationCode);
                 throw new BusinessException("邀请码不存在");
             }
+            System.out.println("✅ 邀请码存在，邀请人ID: " + code.getUserId());
     
             // 验证不能使用自己的邀请码
+            System.out.println("步骤2: 验证不能使用自己的邀请码");
             if (code.getUserId().equals(inviteeId)) {
+                System.out.println("❌ 用户尝试使用自己的邀请码，用户ID: " + inviteeId);
                 throw new BusinessException("不能使用自己的邀请码");
             }
+            System.out.println("✅ 不是自己的邀请码，验证通过");
     
             // 检查被邀请人是否已经被邀请过
-            if (invitationRecordRepository.existsByInviteeId(inviteeId)) {
+            System.out.println("步骤3: 检查用户是否已被邀请过");
+            boolean hasBeenInvited = invitationRecordRepository.existsByInviteeId(inviteeId);
+            System.out.println("数据库查询结果 - 用户" + inviteeId + "是否已被邀请: " + hasBeenInvited);
+            
+            if (hasBeenInvited) {
+                System.out.println("❌ 用户已经被邀请过，用户ID: " + inviteeId);
                 throw new BusinessException("您已经被邀请过，不能重复使用邀请码");
             }
+            System.out.println("✅ 用户未被邀请过，可以使用邀请码");
     
             // 验证订单金额
+            System.out.println("步骤4: 验证订单金额");
             if (order.getOrderPrice().compareTo(MIN_ORDER_AMOUNT) < 0) {
+                System.out.println("❌ 订单金额不足，当前金额: " + order.getOrderPrice() + "，最低要求: " + MIN_ORDER_AMOUNT);
                 throw new BusinessException("订单金额需超过10元才能使用邀请码");
             }
+            System.out.println("✅ 订单金额验证通过: " + order.getOrderPrice());
             
             // 只有当订单已保存（有ID）时，才创建邀请记录
+            System.out.println("步骤5: 检查订单状态");
             if (order.getId() != null) {
+                System.out.println("✅ 订单已保存，ID: " + order.getId() + "，开始创建邀请记录");
+                
                 // 创建邀请记录
                 InvitationRecord record = new InvitationRecord();
                 record.setInviterId(code.getUserId());
@@ -128,31 +152,49 @@ public class InvitationServiceImpl implements InvitationService {
                 record.setOrderTime(order.getCreatedAt());
                 record.setIsValid(true); // 显式设置为有效邀请
                 
+                System.out.println("准备保存的邀请记录信息:");
+                System.out.println("  - 邀请人ID: " + record.getInviterId());
+                System.out.println("  - 被邀请人ID: " + record.getInviteeId());
+                System.out.println("  - 订单ID: " + record.getOrderId());
+                System.out.println("  - 订单金额: " + record.getOrderAmount());
+                System.out.println("  - 是否有效: " + record.getIsValid());
+                
                 // 保存邀请记录并确保实际保存到数据库
+                System.out.println("步骤6: 保存邀请记录到数据库");
                 InvitationRecord savedRecord = invitationRecordRepository.save(record);
+                
                 if (savedRecord.getId() == null) {
+                    System.out.println("❌ 保存邀请记录失败，返回的记录ID为null");
                     throw new BusinessException("保存邀请记录失败");
                 }
                 
-                System.out.println("成功创建邀请记录 - ID: " + savedRecord.getId() 
+                System.out.println("✅ 成功创建邀请记录 - ID: " + savedRecord.getId() 
                     + ", 邀请人: " + savedRecord.getInviterId() 
                     + ", 被邀请人: " + savedRecord.getInviteeId()
                     + ", 订单ID: " + savedRecord.getOrderId()
                     + ", 是否有效: " + savedRecord.getIsValid());
     
                 // 检查是否需要发放奖励
-                checkAndGrantInvitationReward(code.getUserId());
+                System.out.println("步骤7: 检查是否需要发放奖励");
+                boolean rewardGranted = checkAndGrantInvitationReward(code.getUserId());
+                System.out.println("奖励检查结果: " + (rewardGranted ? "发放了奖励" : "暂未达到奖励条件"));
             } else {
+                System.out.println("❌ 订单ID为空，无法创建邀请记录");
                 throw new BusinessException("订单ID为空，无法创建邀请记录");
             }
     
+            System.out.println("=== 邀请码使用处理完成，返回成功 ===");
             return true;
         } catch (BusinessException e) {
+            System.out.println("❌ 业务异常: " + e.getMessage());
+            System.out.println("=== 邀请码使用处理失败 ===");
             // 重新抛出业务异常，便于上层捕获
             throw e;
         } catch (Exception e) {
-            System.err.println("处理邀请关系异常: " + e.getMessage());
+            System.err.println("❌ 系统异常: " + e.getMessage());
+            System.err.println("异常堆栈:");
             e.printStackTrace();
+            System.out.println("=== 邀请码使用处理异常 ===");
             // 将其他异常转换为业务异常
             throw new BusinessException("处理邀请关系异常: " + e.getMessage());
         }
@@ -236,7 +278,8 @@ public class InvitationServiceImpl implements InvitationService {
     // 发放邀请奖励
     private void grantInvitationReward(Long userId, int invitationCount) {
         // 创建奖励券（无门槛20元优惠券，7天有效）
-        Coupon rewardCoupon = CouponBuilder.builder("邀请奖励无门槛20元券", "INVITATION_REWARD", new BigDecimal("20"))
+        // 使用"减固定金额"类型，amount设为20表示减免20元
+        Coupon rewardCoupon = CouponBuilder.builder("邀请奖励无门槛20元券", "减固定金额", new BigDecimal("20"))
                 .description("任意品类通用，无门槛使用，7天有效")
                 .validDays(7)
                 .totalQuantity(1000)
@@ -253,5 +296,60 @@ public class InvitationServiceImpl implements InvitationService {
         reward.setCouponId(savedCoupon.getId());
         reward.setInvitationCount(invitationCount);
         invitationRewardRepository.save(reward);
+    }
+
+    /**
+     * 调试方法：输出指定邀请人的所有邀请记录
+     * @param inviterId 邀请人ID
+     */
+    public void debugPrintInvitationRecords(Long inviterId) {
+        System.out.println("=== 调试：查询邀请人" + inviterId + "的所有邀请记录 ===");
+        try {
+            List<InvitationRecord> records = invitationRecordRepository.findByInviterIdOrderByCreateTimeDesc(inviterId);
+            System.out.println("查询结果：共找到 " + records.size() + " 条记录");
+            
+            for (int i = 0; i < records.size(); i++) {
+                InvitationRecord record = records.get(i);
+                System.out.println("记录" + (i+1) + ":");
+                System.out.println("  - 记录ID: " + record.getId());
+                System.out.println("  - 邀请人ID: " + record.getInviterId());
+                System.out.println("  - 被邀请人ID: " + record.getInviteeId());
+                System.out.println("  - 订单ID: " + record.getOrderId());
+                System.out.println("  - 订单金额: " + record.getOrderAmount());
+                System.out.println("  - 是否有效: " + record.getIsValid());
+                System.out.println("  - 创建时间: " + record.getCreateTime());
+            }
+        } catch (Exception e) {
+            System.out.println("查询邀请记录时发生异常: " + e.getMessage());
+            e.printStackTrace();
+        }
+        System.out.println("=== 调试查询完成 ===");
+    }
+
+    /**
+     * 调试方法：检查指定用户是否已被邀请
+     * @param userId 用户ID
+     */
+    public void debugCheckUserInvitationStatus(Long userId) {
+        System.out.println("=== 调试：检查用户" + userId + "的邀请状态 ===");
+        try {
+            boolean exists = invitationRecordRepository.existsByInviteeId(userId);
+            System.out.println("用户" + userId + "是否已被邀请: " + exists);
+            
+            // 查询具体记录
+            List<InvitationRecord> records = invitationRecordRepository.findAll()
+                .stream()
+                .filter(r -> r.getInviteeId().equals(userId))
+                .collect(java.util.stream.Collectors.toList());
+            
+            System.out.println("具体记录数量: " + records.size());
+            for (InvitationRecord record : records) {
+                System.out.println("  - 记录ID: " + record.getId() + ", 邀请人: " + record.getInviterId());
+            }
+        } catch (Exception e) {
+            System.out.println("检查用户邀请状态时发生异常: " + e.getMessage());
+            e.printStackTrace();
+        }
+        System.out.println("=== 调试检查完成 ===");
     }
 }
