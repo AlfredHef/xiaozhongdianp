@@ -205,14 +205,14 @@
             <p>当前商户ID: {{ route.params.id }}</p>
             <p>评论加载状态: {{ loadingReviews ? '加载中' : '加载完成' }}</p>
             <p>评论数量: {{ reviews.length }}</p>
-            <p v-if="reviews[0]">第一条评论ID: {{ reviews[0].id }}，用户: {{ getUsernameById(reviews[0].userId) }}</p>
+            <p v-if="reviews[0]">第一条评论ID: {{ reviews[0].id }}，用户: {{ getUsernameDisplay(reviews[0].userId) }}</p>
           </div>
           
           <!-- 顶层评论列表 -->
           <template v-for="review in reviews" :key="review.id">
             <div class="review-item" v-if="review">
               <div class="review-header">
-                <span class="user-id">用户: {{ getUsernameById(review.userId) }}</span>
+                <span class="user-id">用户: {{ getUsernameDisplay(review.userId) }}</span>
                 <span class="review-time">{{ formatTime(review.createTime) }}</span>
               </div>
               <div class="review-content">{{ review.content }}</div>
@@ -266,7 +266,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, reactive } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElImageViewer, ElMessage } from 'element-plus';
 import ShopService from '@/services/ShopService';
@@ -274,6 +274,7 @@ import GroupBuyService from '@/services/GroupBuyService';
 import ReviewService from '@/services/ReviewService';
 import NestedReply from '@/components/NestedReply.vue';
 import AuthService from '@/services/AuthService';
+import UserService from '@/services/UserService';
 
 export default {
   name: 'ShopDetail',
@@ -300,6 +301,9 @@ export default {
     const newReview = ref({ content: '' });
     const newReply = ref({ content: '' });
     const replyingTo = ref(null);
+    
+    // 使用reactive对象存储用户名缓存，确保响应式更新
+    const usernameCache = reactive({});
     
     // 计算属性，验证评论是否有效
     const isReviewValid = computed(() => {
@@ -548,21 +552,45 @@ export default {
       newReply.value.content = '';
     };
 
-    // 根据用户ID获取用户名
-    const getUsernameById = (userId) => {
+    // 根据用户ID获取用户名显示（同步方法，用于模板）
+    const getUsernameDisplay = (userId) => {
       if (!userId) return '未知用户';
+      
+      // 检查缓存
+      if (usernameCache[userId]) {
+        return usernameCache[userId];
+      }
       
       // 获取当前登录用户
       const currentUser = AuthService.getUser();
-      
-      // 如果是当前登录用户，显示"我"
-      if (currentUser && currentUser.id === userId) {
-        return currentUser.username || '我';
+      if (currentUser && currentUser.id == userId) {
+        const displayName = currentUser.username || '我';
+        usernameCache[userId] = displayName;
+        return displayName;
       }
       
-      // 这里应该调用获取用户信息的API，但为简化处理，直接返回用户名
-      // 在实际项目中，可以维护一个用户信息缓存或调用后端API获取用户名
+      // 异步获取用户名（不阻塞渲染）
+      loadUsernameAsync(userId);
+      
+      // 返回临时显示名
       return `用户${userId}`;
+    };
+    
+    // 异步加载用户名
+    const loadUsernameAsync = async (userId) => {
+      if (usernameCache[userId]) return; // 避免重复请求
+      
+      try {
+        console.log(`开始获取用户${userId}的用户名`);
+        const username = await UserService.getUsernameById(userId);
+        console.log(`用户${userId}的用户名是: ${username}`);
+        
+        // 更新缓存，触发响应式更新
+        usernameCache[userId] = username;
+      } catch (error) {
+        console.error(`获取用户${userId}的用户名失败:`, error);
+        usernameCache[userId] = `用户${userId}`;
+      }
     };
 
     // 页面加载时获取数据
@@ -693,7 +721,7 @@ export default {
       submitReply,
       cancelReply,
       formatTime,
-      getUsernameById
+      getUsernameDisplay
     };
   }
 };
