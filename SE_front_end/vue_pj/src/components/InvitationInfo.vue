@@ -111,41 +111,58 @@
             style="width: 100%"
           >
             <el-table-column
-              prop="invitationCount"
-              label="邀请人数"
+              prop="couponInfo"
+              label="奖励内容"
+              width="200"
+            >
+              <template #default="scope">
+                <div class="reward-content">
+                  <div class="coupon-title">邀请奖励无门槛20元券</div>
+                  <div class="coupon-desc">任意品类通用，无门槛使用，7天有效</div>
+                </div>
+              </template>
+            </el-table-column>
+            
+            <el-table-column
+              prop="couponType"
+              label="优惠券类型"
+              width="120"
+            >
+              <template #default="scope">
+                <el-tag type="success">减固定金额</el-tag>
+              </template>
+            </el-table-column>
+            
+            <el-table-column
+              prop="couponAmount"
+              label="优惠金额"
               width="100"
             >
               <template #default="scope">
-                <span>{{ scope.row.invitationCount }}人</span>
-              </template>
-            </el-table-column>
-            
-            <el-table-column
-              prop="rewardType"
-              label="奖励类型"
-              width="120"
-            >
-              <template #default="scope">
-                <span>{{ scope.row.rewardType }}</span>
-              </template>
-            </el-table-column>
-            
-            <el-table-column
-              prop="rewardAmount"
-              label="奖励金额"
-              width="120"
-            >
-              <template #default="scope">
-                <span class="amount">¥{{ scope.row.rewardAmount }}</span>
+                <span class="amount">¥20</span>
               </template>
             </el-table-column>
             
             <el-table-column
               prop="createTime"
-              label="获得时间"
+              label="发放时间"
+              width="160"
             >
               <template #default="scope">
                 {{ formatDate(scope.row.createTime) }}
+              </template>
+            </el-table-column>
+            
+            <el-table-column
+              label="有效期"
+            >
+              <template #default="scope">
+                <div class="validity-info">
+                  <div>自发放起7天内有效</div>
+                  <div class="expire-date">
+                    {{ getExpirationDate(scope.row.createTime) }}
+                  </div>
+                </div>
               </template>
             </el-table-column>
           </el-table>
@@ -271,6 +288,28 @@ export default {
       }
     };
     
+    // 计算优惠券到期日期
+    const getExpirationDate = (createTime) => {
+      if (!createTime) return '未知';
+      
+      try {
+        const issueDate = new Date(createTime);
+        const expirationDate = new Date(issueDate);
+        expirationDate.setDate(expirationDate.getDate() + 7); // 7天有效期
+        
+        return '截止到 ' + expirationDate.toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (err) {
+        console.error('计算到期日期错误:', err);
+        return '计算失败';
+      }
+    };
+    
     onMounted(() => {
       loadInvitationInfo();
     });
@@ -282,7 +321,8 @@ export default {
       loadInvitationInfo,
       copyCode,
       formatDate,
-      getUsernameDisplay
+      getUsernameDisplay,
+      getExpirationDate
     };
   }
 };
@@ -374,5 +414,32 @@ export default {
   padding: 2px 8px;
   border-radius: 4px;
   display: inline-block;
+}
+
+.reward-content {
+  text-align: left;
+}
+
+.coupon-title {
+  font-weight: bold;
+  color: #303133;
+  margin-bottom: 4px;
+}
+
+.coupon-desc {
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.4;
+}
+
+.validity-info {
+  text-align: left;
+}
+
+.expire-date {
+  font-size: 12px;
+  color: #f56c6c;
+  margin-top: 4px;
+  font-weight: bold;
 }
 </style> 

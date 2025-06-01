@@ -292,7 +292,7 @@ public class CouponServiceImpl implements CouponService {
             }
             return BigDecimal.ZERO; // 如果固定金额大于订单金额，则无法使用
         } else if ("折扣券".equals(coupon.getType())) {
-            // 折扣券的amount存储的是折扣率，如9折券存储的是0.9
+            // 折扣券的amount存储的是折扣率，如8折券存储的是0.8
             // 折扣金额 = 订单金额 * (1 - 折扣率)
             BigDecimal discount = orderPrice.multiply(BigDecimal.ONE.subtract(coupon.getAmount()));
             if (coupon.getMaxDeduction() != null && discount.compareTo(coupon.getMaxDeduction()) > 0) {
@@ -310,7 +310,7 @@ public class CouponServiceImpl implements CouponService {
         } else if ("免单券".equals(coupon.getType())) {
             // 免单券：如果订单金额大于maxDeduction，则减maxDeduction
             // 如果订单金额小于maxDeduction，则全额减免
-            if (orderPrice.compareTo(coupon.getMaxDeduction()) > 0) {
+            if (coupon.getMaxDeduction() != null && orderPrice.compareTo(coupon.getMaxDeduction()) > 0) {
                 return coupon.getMaxDeduction();
             } else {
                 return orderPrice;
@@ -321,17 +321,17 @@ public class CouponServiceImpl implements CouponService {
 
     @Override
     public boolean hasReceivedReviewReward(Long userId) {
-        // 查询用户是否拥有"REVIEW_REWARD"类型的优惠券
+        // 查询用户是否拥有点评奖励券（通过标题识别）
         List<UserCoupon> userCoupons = userCouponRepository.findByUserId(userId);
         return userCoupons.stream()
                 .map(uc -> couponRepository.findById(uc.getCouponId()).orElse(null))
-                .anyMatch(c -> c != null && "REVIEW_REWARD".equals(c.getType()));
+                .anyMatch(c -> c != null && c.getTitle() != null && c.getTitle().contains("点评奖励"));
     }
 
     @Override
     public void grantReviewRewardCoupon(Long userId) {
         // 构建奖励券（8折，最高抵扣20元，7天有效）
-        Coupon rewardCoupon = CouponBuilder.builder("点评奖励8折券", "REVIEW_REWARD", new BigDecimal("0.8"))
+        Coupon rewardCoupon = CouponBuilder.builder("点评奖励8折券", "折扣券", new BigDecimal("0.8"))
                 .description("任意品类通用，最高抵扣20元，7天有效")
                 .maxDeduction(new BigDecimal("20"))
                 .validDays(7)

@@ -44,4 +44,48 @@ public class InvitationController {
 
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * 调试接口：查看指定用户的邀请记录详情
+     * @param userId 邀请人的用户ID
+     * @return 成功消息
+     */
+    @GetMapping("/debug/records/{userId}")
+    public ResponseEntity<Map<String, String>> debugInvitationRecords(@PathVariable Long userId) {
+        System.out.println("=== 调试接口被调用：查看用户" + userId + "的邀请记录 ===");
+        
+        // 调用调试方法（需要先转换为实现类）
+        if (invitationService instanceof com.fudan.xiaozhong_dianping.invitation.service.impl.InvitationServiceImpl) {
+            com.fudan.xiaozhong_dianping.invitation.service.impl.InvitationServiceImpl impl = 
+                (com.fudan.xiaozhong_dianping.invitation.service.impl.InvitationServiceImpl) invitationService;
+            impl.debugPrintInvitationRecords(userId);
+        }
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "调试信息已输出到控制台，请查看服务器日志");
+        response.put("userId", userId.toString());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 调试接口：检查指定用户的邀请状态
+     * @param userId 被邀请人的用户ID
+     * @return 成功消息
+     */
+    @GetMapping("/debug/status/{userId}")
+    public ResponseEntity<Map<String, String>> debugUserInvitationStatus(@PathVariable Long userId) {
+        System.out.println("=== 调试接口被调用：检查用户" + userId + "的邀请状态 ===");
+        
+        // 调用调试方法
+        if (invitationService instanceof com.fudan.xiaozhong_dianping.invitation.service.impl.InvitationServiceImpl) {
+            com.fudan.xiaozhong_dianping.invitation.service.impl.InvitationServiceImpl impl = 
+                (com.fudan.xiaozhong_dianping.invitation.service.impl.InvitationServiceImpl) invitationService;
+            impl.debugCheckUserInvitationStatus(userId);
+        }
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "调试信息已输出到控制台，请查看服务器日志");
+        response.put("userId", userId.toString());
+        return ResponseEntity.ok(response);
+    }
 }
