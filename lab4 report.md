@@ -60,7 +60,7 @@ by：第3小组
 
 ### 接口设计说明
 
-本次Lab4新增的邀请功能严格按照RESTful风格设计，遵循以下原则：
+本次Lab4新增的邀请功能和评论功能严格按照RESTful风格设计，遵循以下原则：
 - 使用复数名词作为资源名称
 - 动词+宾语的URL结构
 - 避免多级URL嵌套
@@ -149,7 +149,75 @@ Content-Type: application/json
 | 401 | UNAUTHORIZED | 用户未登录 | `{"error": "用户未登录，请先登录", "code": 401}` |
 | 500 | INTERNAL_ERROR | 服务器内部错误 | `{"error": "服务器内部错误", "code": 500}` |
 
-### 2. 使用邀请码创建订单
+### 2. 普通订单创建
+
+#### 接口基本信息
+- **接口地址**: `POST /api/orders`
+- **接口名称**: 创建普通订单
+- **功能描述**: 创建团购订单，生成券码
+
+#### 请求参数
+| 参数名 | 参数位置 | 数据类型 | 是否必填 | 参数说明 |
+|--------|----------|----------|----------|----------|
+| userId | Header | Long | 是 | 当前登录用户ID |
+| packageId | Body | Integer | 是 | 团购套餐ID |
+| couponId | Body | Long | 否 | 优惠券ID（可选） |
+
+#### 请求体结构
+```json
+{
+  "packageId": 1001,
+  "couponId": 2001
+}
+```
+
+#### 请求示例
+```http
+POST /api/orders HTTP/1.1
+Host: localhost:8088
+userId: 12345
+Content-Type: application/json
+
+{
+  "packageId": 1001,
+  "couponId": 2001
+}
+```
+
+#### 响应体结构（VoucherDTO）
+| 字段名 | 数据类型 | 字段说明 |
+|--------|----------|----------|
+| orderId | Long | 订单ID |
+| code | String | 券码 |
+| packageName | String | 套餐名称 |
+| shopName | String | 商家名称 |
+| originalPrice | BigDecimal | 原价 |
+| discountPrice | BigDecimal | 折扣价 |
+| expiryDate | LocalDateTime | 过期时间 |
+| status | String | 券码状态 |
+
+#### 成功响应示例
+```json
+{
+  "orderId": 100001,
+  "code": "VOUCHER123",
+  "packageName": "精品套餐A",
+  "shopName": "美味餐厅",
+  "originalPrice": 50.00,
+  "discountPrice": 45.00,
+  "expiryDate": "2024-02-15T23:59:59",
+  "status": "UNUSED"
+}
+```
+
+#### 异常响应
+| HTTP状态码 | 错误码 | 错误信息 | 响应示例 |
+|------------|--------|----------|----------|
+| 400 | PACKAGE_NOT_FOUND | 套餐不存在 | `{"error": "套餐不存在", "code": 400}` |
+| 401 | UNAUTHORIZED | 用户未登录 | `{"error": "用户未登录，请先登录", "code": 401}` |
+| 500 | INTERNAL_ERROR | 创建订单失败 | `{"error": "创建订单失败: 具体错误信息", "code": 500}` |
+
+### 3. 使用邀请码创建订单
 
 #### 接口基本信息
 - **接口地址**: `POST /api/orders/with-invitation`
@@ -191,7 +259,7 @@ Content-Type: application/json
 | 字段名 | 数据类型 | 字段说明 |
 |--------|----------|----------|
 | orderId | Long | 订单ID |
-| voucherCode | String | 券码 |
+| code | String | 券码 |
 | packageName | String | 套餐名称 |
 | shopName | String | 商家名称 |
 | originalPrice | BigDecimal | 原价 |
@@ -203,7 +271,7 @@ Content-Type: application/json
 ```json
 {
   "orderId": 100002,
-  "voucherCode": "VOUCHER789",
+  "code": "VOUCHER789",
   "packageName": "精品套餐A",
   "shopName": "美味餐厅",
   "originalPrice": 50.00,
@@ -231,7 +299,237 @@ Content-Type: application/json
 | 401 | UNAUTHORIZED | 用户未登录 | `{"error": "用户未登录，请先登录", "code": 401}` |
 | 500 | INTERNAL_ERROR | 创建订单失败 | `{"error": "创建订单失败: 具体错误信息", "code": 500}` |
 
-### 3. 接口设计特点
+### 4. 获取用户订单列表
+
+#### 接口基本信息
+- **接口地址**: `GET /api/orders`
+- **接口名称**: 获取用户订单列表
+- **功能描述**: 获取当前用户的所有订单
+
+#### 请求参数
+| 参数名 | 参数位置 | 数据类型 | 是否必填 | 参数说明 |
+|--------|----------|----------|----------|----------|
+| userId | Header | Long | 是 | 当前登录用户ID |
+
+#### 请求示例
+```http
+GET /api/orders HTTP/1.1
+Host: localhost:8088
+userId: 12345
+Content-Type: application/json
+```
+
+#### 响应体结构（Array of OrderDTO）
+| 字段名 | 数据类型 | 字段说明 |
+|--------|----------|----------|
+| orderId | Long | 订单ID |
+| packageName | String | 套餐名称 |
+| shopName | String | 商家名称 |
+| orderPrice | BigDecimal | 订单价格 |
+| status | Integer | 订单状态 |
+| createdAt | LocalDateTime | 创建时间 |
+
+#### 成功响应示例
+```json
+[
+  {
+    "orderId": 100001,
+    "packageName": "精品套餐A",
+    "shopName": "美味餐厅",
+    "orderPrice": 45.00,
+    "status": 1,
+    "createdAt": "2024-01-15T14:30:00"
+  },
+  {
+    "orderId": 100002,
+    "packageName": "经典套餐B",
+    "shopName": "优质餐厅",
+    "orderPrice": 35.00,
+    "status": 1,
+    "createdAt": "2024-01-14T10:15:00"
+  }
+]
+```
+
+#### 异常响应
+| HTTP状态码 | 错误码 | 错误信息 | 响应示例 |
+|------------|--------|----------|----------|
+| 401 | UNAUTHORIZED | 用户未登录 | `{"error": "用户未登录，请先登录", "code": 401}` |
+| 500 | INTERNAL_ERROR | 服务器内部错误 | `{"error": "服务器内部错误", "code": 500}` |
+
+### 5. 获取订单详情
+
+#### 接口基本信息
+- **接口地址**: `GET /api/orders/{orderId}`
+- **接口名称**: 获取订单详情
+- **功能描述**: 获取指定订单的详细信息，包含券码
+
+#### 请求参数
+| 参数名 | 参数位置 | 数据类型 | 是否必填 | 参数说明 |
+|--------|----------|----------|----------|----------|
+| orderId | Path | Long | 是 | 订单ID |
+
+#### 请求示例
+```http
+GET /api/orders/100001 HTTP/1.1
+Host: localhost:8088
+Content-Type: application/json
+```
+
+#### 响应体结构（VoucherDTO）
+| 字段名 | 数据类型 | 字段说明 |
+|--------|----------|----------|
+| orderId | Long | 订单ID |
+| code | String | 券码 |
+| packageName | String | 套餐名称 |
+| shopName | String | 商家名称 |
+| originalPrice | BigDecimal | 原价 |
+| discountPrice | BigDecimal | 折扣价 |
+| expiryDate | LocalDateTime | 过期时间 |
+| status | String | 券码状态 |
+
+#### 成功响应示例
+```json
+{
+  "orderId": 100001,
+  "code": "VOUCHER123",
+  "packageName": "精品套餐A",
+  "shopName": "美味餐厅",
+  "originalPrice": 50.00,
+  "discountPrice": 45.00,
+  "expiryDate": "2024-02-15T23:59:59",
+  "status": "UNUSED"
+}
+```
+
+#### 异常响应
+| HTTP状态码 | 错误码 | 错误信息 | 响应示例 |
+|------------|--------|----------|----------|
+| 404 | ORDER_NOT_FOUND | 订单不存在 | `{"error": "订单不存在", "code": 404}` |
+| 500 | INTERNAL_ERROR | 服务器内部错误 | `{"error": "服务器内部错误", "code": 500}` |
+
+### 6. 创建点评/回复
+
+#### 接口基本信息
+- **接口地址**: `POST /api/reviews`
+- **接口名称**: 提交点评/回复
+- **功能描述**: 创建商户点评或对已有点评进行回复
+
+#### 请求参数
+| 参数名 | 参数位置 | 数据类型 | 是否必填 | 参数说明 |
+|--------|----------|----------|----------|----------|
+| userId | Header | Long | 是 | 用户ID（从请求头获取） |
+| merchantId | Query | Long | 是 | 商户ID，标识被点评的商户 |
+| content | Query | String | 是 | 点评内容（≥15字） |
+| parentId | Query | Long | 否 | 父级ID（可选，顶级点评无需填写） |
+
+#### 请求示例
+```http
+POST /api/reviews?merchantId=100&content=这是一个非常好的商户，服务很棒，推荐大家来这里消费！&parentId=null HTTP/1.1
+Host: localhost:8088
+userId: 12345
+Content-Type: application/json
+```
+
+#### 响应体结构（Review）
+| 字段名 | 数据类型 | 字段说明 |
+|--------|----------|----------|
+| id | Long | 点评ID |
+| userId | Long | 用户ID |
+| merchantId | Long | 商户ID |
+| content | String | 点评内容 |
+| parentId | Long | 父级ID（顶级点评为null） |
+| createTime | LocalDateTime | 创建时间 |
+| replies | Array | 子回复列表（非数据库字段） |
+
+#### 成功响应示例
+```json
+{
+  "id": 1,
+  "userId": 12345,
+  "merchantId": 100,
+  "content": "这是一个非常好的商户，服务很棒，推荐大家来这里消费！",
+  "parentId": null,
+  "createTime": "2024-01-15T14:30:00",
+  "replies": []
+}
+```
+
+#### 业务规则验证
+1. **内容长度验证**：点评内容必须至少15字
+2. **奖励机制**：用户达到3条有效点评时自动发放奖励券
+3. **层级关系**：支持对点评进行回复，建立父子关系
+
+#### 异常响应
+| HTTP状态码 | 错误码 | 错误信息 | 响应示例 |
+|------------|--------|----------|----------|
+| 400 | CONTENT_TOO_SHORT | 点评内容需至少15字 | `{"error": "点评内容需至少15字", "code": 400}` |
+| 400 | INVALID_MERCHANT | 商户不存在 | `{"error": "商户不存在", "code": 400}` |
+| 401 | UNAUTHORIZED | 用户未登录 | `{"error": "用户未登录，请先登录", "code": 401}` |
+| 500 | INTERNAL_ERROR | 创建点评失败 | `{"error": "创建点评失败: 具体错误信息", "code": 500}` |
+
+### 7. 获取商户点评列表
+
+#### 接口基本信息
+- **接口地址**: `GET /api/reviews/{merchantId}`
+- **接口名称**: 获取商户点评列表
+- **功能描述**: 获取指定商户的点评列表，包含嵌套回复
+
+#### 请求参数
+| 参数名 | 参数位置 | 数据类型 | 是否必填 | 参数说明 |
+|--------|----------|----------|----------|----------|
+| merchantId | Path | Long | 是 | 商户ID |
+
+#### 请求示例
+```http
+GET /api/reviews/100 HTTP/1.1
+Host: localhost:8088
+Content-Type: application/json
+```
+
+#### 响应体结构（Array of Review）
+| 字段名 | 数据类型 | 字段说明 |
+|--------|----------|----------|
+| id | Long | 点评ID |
+| userId | Long | 用户ID |
+| merchantId | Long | 商户ID |
+| content | String | 点评内容 |
+| parentId | Long | 父级ID（顶级点评为null） |
+| createTime | LocalDateTime | 创建时间 |
+| replies | Array | 子回复列表 |
+
+#### 成功响应示例
+```json
+[
+  {
+    "id": 1,
+    "userId": 12345,
+    "merchantId": 100,
+    "content": "这是一个非常好的商户，服务很棒，推荐大家来这里消费！",
+    "parentId": null,
+    "createTime": "2024-01-15T14:30:00",
+    "replies": [
+      {
+        "id": 2,
+        "userId": 67890,
+        "merchantId": 100,
+        "content": "我也觉得这家店不错，经常来吃！",
+        "parentId": 1,
+        "createTime": "2024-01-15T15:00:00",
+        "replies": []
+      }
+    ]
+  }
+]
+```
+
+#### 异常响应
+| HTTP状态码 | 错误码 | 错误信息 | 响应示例 |
+|------------|--------|----------|----------|
+| 400 | INVALID_MERCHANT | 商户不存在 | `{"error": "商户不存在", "code": 400}` |
+| 500 | INTERNAL_ERROR | 服务器内部错误 | `{"error": "服务器内部错误", "code": 500}` |
+
+### 8. 接口设计特点
 
 #### RESTful 设计原则遵循情况
 
@@ -243,20 +541,25 @@ Content-Type: application/json
 2. **2.2 动词+宾语**：
    - `GET /api/invitation/info` - 获取邀请信息
    - `POST /api/orders/with-invitation` - 创建带邀请的订单
+   - `POST /api/reviews` - 创建点评
+   - `GET /api/reviews/{merchantId}` - 获取商户点评
 
 3. **2.4 宾语必须是名词**：
    - `invitation` - 邀请资源
    - `orders` - 订单资源
+   - `reviews` - 点评资源
 
 4. **2.5 使用复数做资源名称**：
    - `/api/orders` - 订单资源使用复数形式
+   - `/api/reviews` - 点评资源使用复数形式
 
 5. **2.6 避免多级URL**：
    - 避免了深层嵌套，最多两级路径结构
 
 6. **2.7 搜索、排序、筛选和分页**：
    - 邀请记录和奖励记录通过用户ID进行筛选
-   - 支持按时间排序（通过数据库查询实现）
+   - 点评按时间倒序排列
+   - 支持按商户ID筛选点评
 
 7. **3.1 始终使用精确的状态码**：
    - 200：成功响应
@@ -272,7 +575,7 @@ Content-Type: application/json
    - 错误情况下返回对应的4xx或5xx状态码
    - 错误响应包含具体的错误信息和错误码
 
-### 4. 数据模型设计
+### 9. 数据模型设计
 
 #### 邀请码表（invitation_code）
 ```sql
@@ -318,22 +621,47 @@ CREATE TABLE `invitation_reward` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT '邀请奖励表';
 ```
 
-### 5. 接口安全性设计
+#### 点评表（review）
+```sql
+CREATE TABLE `review` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `user_id` BIGINT UNSIGNED NOT NULL COMMENT '用户ID',
+  `merchant_id` BIGINT UNSIGNED NOT NULL COMMENT '商户ID',
+  `content` VARCHAR(1000) NOT NULL COMMENT '点评内容（≥15字）',
+  `parent_id` BIGINT UNSIGNED NULL COMMENT '父级ID（顶级点评为null）',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_merchant_id` (`merchant_id`),
+  KEY `idx_parent_id` (`parent_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT '商户点评表';
+```
+
+### 10. 接口安全性设计
 
 1. **身份验证**：通过Header中的userId进行用户身份验证
 2. **业务逻辑校验**：
    - 防止用户使用自己的邀请码
    - 防止重复邀请
    - 订单金额门槛验证
+   - 点评内容长度验证
 3. **数据完整性**：通过数据库约束保证数据一致性
 4. **事务处理**：使用@Transactional确保数据操作的原子性
 
-### 6. 接口性能优化
+### 11. 接口性能优化
 
 1. **数据库索引**：在关键查询字段上建立索引
 2. **批量查询**：一次接口调用获取完整的邀请信息
 3. **异常处理**：完善的异常捕获和处理机制
 4. **日志记录**：关键业务操作的日志记录
+5. **层级数据优化**：点评回复采用递归查询优化
+
+### 12. 系统集成特点
+
+1. **模块间解耦**：各功能模块通过接口进行交互
+2. **统一异常处理**：所有接口采用一致的异常响应格式
+3. **业务流程串联**：订单、邀请、奖励形成完整的业务闭环
+4. **数据一致性**：通过事务保证跨模块操作的数据一致性
 
 ## Q3. 四个模块关系的UML类图
 
@@ -351,7 +679,6 @@ classDiagram
         -String content
         -Long parentId
         -LocalDateTime createTime
-        -List~Review~ replies
         +getId() Long
         +setContent(String) void
     }
@@ -371,8 +698,8 @@ classDiagram
     
     class ReviewController {
         -ReviewService reviewService
-        +createReview(Long, Long, String, Long) ResponseEntity~Review~
-        +getReviewsByMerchant(Long) ResponseEntity~List~Review~~
+        +createReview() ResponseEntity
+        +getReviewsByMerchant() ResponseEntity
     }
     
     %% 邀请机制模块
@@ -409,7 +736,7 @@ classDiagram
         +generateInvitationCode(Long) InvitationCode
         +getUserInvitationCode(Long) InvitationCode
         +findByCode(String) InvitationCode
-        +useInvitationCode(Long, String, GroupBuyOrder) boolean
+        +useInvitationCode() boolean
         +checkAndGrantInvitationReward(Long) boolean
     }
     
@@ -419,13 +746,13 @@ classDiagram
         -InvitationRewardRepository invitationRewardRepository
         -CouponService couponService
         +generateInvitationCode(Long) InvitationCode
-        +useInvitationCode(Long, String, GroupBuyOrder) boolean
+        +useInvitationCode() boolean
         +checkAndGrantInvitationReward(Long) boolean
     }
     
     class InvitationController {
         -InvitationService invitationService
-        +getInvitationInfo(Long) ResponseEntity~InvitationInfoDTO~
+        +getInvitationInfo() ResponseEntity
     }
     
     %% 优惠券发放模块
@@ -438,7 +765,6 @@ classDiagram
         -BigDecimal maxDeduction
         -BigDecimal useThreshold
         -LocalDateTime expirationDate
-        -Integer validDays
         -Integer totalQuantity
         -Integer maxPerUser
         -boolean isNewUserCoupon
@@ -451,14 +777,13 @@ classDiagram
         -LocalDateTime receivedAt
         -LocalDateTime usedAt
         -Integer status
-        -Coupon coupon
     }
     
     class CouponService {
         <<interface>>
         +receiveCoupon(Long, Long) UserCoupon
-        +getAvailableCoupons(Long, Integer, BigDecimal) List~Coupon~
-        +calculateDiscount(Coupon, BigDecimal) BigDecimal
+        +getAvailableCoupons() List~Coupon~
+        +calculateDiscount() BigDecimal
         +hasReceivedReviewReward(Long) boolean
         +grantReviewRewardCoupon(Long) void
         +createCoupon(Coupon) Coupon
@@ -470,14 +795,14 @@ classDiagram
         -GroupBuyOrderRepository orderRepository
         +receiveCoupon(Long, Long) UserCoupon
         +grantReviewRewardCoupon(Long) void
-        +calculateDiscount(Coupon, BigDecimal) BigDecimal
+        +calculateDiscount() BigDecimal
     }
     
     class CouponBuilder {
         -String title
         -String type
         -BigDecimal amount
-        +builder(String, String, BigDecimal) CouponBuilder
+        +builder() CouponBuilder
         +description(String) CouponBuilder
         +maxDeduction(BigDecimal) CouponBuilder
         +build() Coupon
@@ -485,8 +810,8 @@ classDiagram
     
     class CouponController {
         -CouponService couponService
-        +receiveCoupon(Long, Long) ResponseEntity~UserCoupon~
-        +getCouponsInUserWallet(Long) ResponseEntity~List~CouponDTO~~
+        +receiveCoupon() ResponseEntity
+        +getCouponsInUserWallet() ResponseEntity
     }
     
     %% 订单结算模块
@@ -498,8 +823,6 @@ classDiagram
         -BigDecimal orderPrice
         -Integer status
         -LocalDateTime createdAt
-        -GroupBuyPackage groupBuyPackage
-        -VoucherCode voucherCode
     }
     
     class GroupBuyPackage {
@@ -519,12 +842,11 @@ classDiagram
         -String qrCodeUrl
         -Integer status
         -LocalDateTime expiryDate
-        -GroupBuyOrder order
     }
     
     class OrderService {
         <<interface>>
-        +createOrder(Long, Integer, Long) VoucherDTO
+        +createOrder() VoucherDTO
         +getOrdersByUserId(Long) List~OrderDTO~
         +getOrderById(Long) GroupBuyOrder
     }
@@ -534,17 +856,15 @@ classDiagram
         -GroupBuyPackageRepository packageRepository
         -VoucherCodeRepository voucherCodeRepository
         -CouponService couponService
-        -QRCodeGenerator qrCodeGenerator
-        -VoucherCodeGenerator voucherCodeGenerator
-        +createOrder(Long, Integer, Long) VoucherDTO
+        +createOrder() VoucherDTO
         +getOrderById(Long) GroupBuyOrder
     }
     
     class OrderController {
         -OrderService orderService
         -InvitationService invitationService
-        +createOrder(Long, Map) ResponseEntity~VoucherDTO~
-        +createOrderWithInvitation(Long, Map) ResponseEntity~VoucherDTO~
+        +createOrder() ResponseEntity
+        +createOrderWithInvitation() ResponseEntity
     }
     
     %% 共享实体
@@ -558,42 +878,40 @@ classDiagram
         -BigDecimal averageCost
     }
     
-    %% 关系定义
-    ReviewService <|.. ReviewServiceImpl : implements
-    ReviewController --> ReviewService : uses
-    ReviewServiceImpl --> CouponService : uses
+    %% 继承关系
+    ReviewService <|.. ReviewServiceImpl
+    InvitationService <|.. InvitationServiceImpl
+    CouponService <|.. CouponServiceImpl
+    OrderService <|.. OrderServiceImpl
     
-    InvitationService <|.. InvitationServiceImpl : implements
-    InvitationController --> InvitationService : uses
-    InvitationServiceImpl --> CouponService : uses
-    InvitationServiceImpl --> InvitationCode : manages
-    InvitationServiceImpl --> InvitationRecord : manages
-    InvitationServiceImpl --> InvitationReward : manages
+    %% 依赖关系
+    ReviewController --> ReviewService
+    ReviewServiceImpl --> CouponService
     
-    CouponService <|.. CouponServiceImpl : implements
-    CouponController --> CouponService : uses
-    CouponBuilder --> Coupon : creates
-    UserCoupon --> Coupon : references
+    InvitationController --> InvitationService
+    InvitationServiceImpl --> CouponService
+    InvitationServiceImpl --> InvitationCode
+    InvitationServiceImpl --> InvitationRecord
+    InvitationServiceImpl --> InvitationReward
     
-    OrderService <|.. OrderServiceImpl : implements
-    OrderController --> OrderService : uses
-    OrderController --> InvitationService : uses
-    OrderServiceImpl --> CouponService : uses
-    GroupBuyOrder --> GroupBuyPackage : references
-    GroupBuyOrder --> VoucherCode : has
-    VoucherCode --> GroupBuyOrder : belongs to
+    CouponController --> CouponService
+    CouponBuilder --> Coupon
+    UserCoupon --> Coupon
+    
+    OrderController --> OrderService
+    OrderController --> InvitationService
+    OrderServiceImpl --> CouponService
+    GroupBuyOrder --> GroupBuyPackage
+    GroupBuyOrder --> VoucherCode
+    VoucherCode --> GroupBuyOrder
     
     %% 跨模块关系
-    InvitationRecord --> GroupBuyOrder : references
-    InvitationReward --> Coupon : references
-    Review --> Shop : reviews
-    GroupBuyPackage --> Shop : belongs to
-    
-    %% 业务流程关系
-    ReviewServiceImpl -.-> CouponServiceImpl : "3条点评触发奖励券"
-    InvitationServiceImpl -.-> CouponServiceImpl : "2个邀请触发奖励券"
-    OrderServiceImpl -.-> CouponServiceImpl : "订单使用优惠券"
+    InvitationRecord --> GroupBuyOrder
+    InvitationReward --> Coupon
+    Review --> Shop
+    GroupBuyPackage --> Shop
 ```
+
 
 ### 类图关键说明
 
@@ -1163,19 +1481,6 @@ PS D:\2025_se\xiaozhong_dianping\server\server-customer> mvn test '-Dtest=Review
 
 服务层开始查询商户ID: 100 的评论
 查询顶级评论（parentId为null）
-查询评论时发生错误: 数据库连接失败
-java.lang.RuntimeException: 数据库连接失败
-        at com.fudan.xiaozhong_dianping.review.service.impl.ReviewServiceImpl.getReviewsByMerchant(ReviewServiceImpl.java:59)
-        at ReviewServiceImplTest.testGetReviewsByMerchant_DatabaseException(ReviewServiceImplTest.java:338)
-        at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
-        at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-        at org.junit.platform.commons.util.ReflectionUtils.invokeMethod(ReflectionUtils.java:767)
-        at org.junit.jupiter.engine.execution.MethodInvocation.proceed(MethodInvocation.java:60)
-        at org.junit.jupiter.engine.execution.InvocationInterceptorChain$ValidatingInvocation.proceed(InvocationInterceptorChain.java:131)
-        at org.junit.jupiter.engine.extension.TimeoutExtension.intercept(TimeoutExtension.java:156)
-        at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestableMethod(TimeoutExtension.java:147)
-        at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestMethod(TimeoutExtension.java:86)
-        ...
 
 服务层开始查询商户ID: 999 的评论
 查询顶级评论（parentId为null）
@@ -1268,6 +1573,9 @@ java.lang.RuntimeException: 数据库连接失败
    - ✅ 构建成功：BUILD SUCCESS
    - ✅ 运行稳定：总耗时4.242秒，测试结果一致
 
+![](image.png)
+
+![](image1.png)
 #### 📈 测试价值体现
 
 - **质量保障**：确保评论功能在各种情况下的稳定性和可靠性
