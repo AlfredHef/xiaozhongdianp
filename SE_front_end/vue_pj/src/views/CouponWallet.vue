@@ -68,6 +68,9 @@
                     <span v-else-if="coupon.receivedAt && coupon.validDays">
                       {{ formatDate(calculateExpirationDate(coupon.receivedAt, coupon.validDays)) }}
                     </span>
+                    <span v-else-if="coupon.validDays">
+                      {{ coupon.validDays }}天有效期
+                    </span>
                     <span v-else>无限期</span>
                   </p>
                 </div>
@@ -200,16 +203,55 @@ export default {
     const expiredCoupons = computed(() => coupons.value.filter(coupon => coupon.status === 2 || checkCouponExpiration(coupon)));
     
     // 格式化日期
-    const formatDate = (dateStr) => {
+    const formatDate = (dateInput) => {
       try {
-        const date = new Date(dateStr);
-        if (isNaN(date.getTime())) {
-          console.error('无效的日期格式:', dateStr);
+        if (!dateInput) {
+          console.error('formatDate接收到空值:', dateInput);
           return '无效日期';
         }
+        
+        let date;
+        
+        // 如果已经是Date对象
+        if (dateInput instanceof Date) {
+          date = dateInput;
+        }
+        // 如果是数字（时间戳）
+        else if (typeof dateInput === 'number') {
+          date = new Date(dateInput);
+        }
+        // 如果是字符串
+        else if (typeof dateInput === 'string') {
+          // 尝试直接解析
+          date = new Date(dateInput);
+          
+          // 如果解析失败，尝试其他格式
+          if (isNaN(date.getTime())) {
+            console.log('标准解析失败，尝试其他格式:', dateInput);
+            // 尝试yyyy-MM-dd或yyyy/MM/dd格式
+            const parts = dateInput.split(/[-\/]/);
+            if (parts.length === 3) {
+              date = new Date(
+                parseInt(parts[0]), 
+                parseInt(parts[1]) - 1, 
+                parseInt(parts[2])
+              );
+            }
+          }
+        }
+        else {
+          console.error('无法识别的日期格式类型:', typeof dateInput, dateInput);
+          return '无效日期';
+        }
+        
+        if (isNaN(date.getTime())) {
+          console.error('无效的日期格式:', dateInput);
+          return '无效日期';
+        }
+        
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       } catch (error) {
-        console.error('日期格式化错误:', error);
+        console.error('日期格式化错误:', error, '输入值:', dateInput);
         return '无效日期';
       }
     };

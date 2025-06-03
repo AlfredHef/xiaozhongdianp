@@ -183,6 +183,8 @@ public class CouponServiceImpl implements CouponService {
                     CouponDTO dto = new CouponDTO();
                     BeanUtils.copyProperties(coupon, dto);
                     dto.setStatus(userCoupon.getStatus());
+                    dto.setReceivedAt(userCoupon.getReceivedAt()); // 添加领取时间
+                    dto.setDiscountAmount(coupon.getAmount()); // 设置折扣金额
                     return dto;
                 })
                 .filter(dto -> dto != null)

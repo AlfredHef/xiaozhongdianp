@@ -122,7 +122,6 @@
           </el-input>
           <div class="invitation-tips">
             <p>首次下单填写邀请码，订单金额满10元即可成功被邀请</p>
-            <p>每被成功邀请一次，您将获得额外优惠券</p>
           </div>
         </div>
       </div>
