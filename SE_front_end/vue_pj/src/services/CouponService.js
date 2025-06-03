@@ -145,6 +145,56 @@ class CouponService {
       });
       
       console.log('获取卡包优惠券成功:', response.data);
+      
+      // 处理优惠券数据，确保有效期计算正确
+      if (Array.isArray(response.data)) {
+        const processedCoupons = response.data.map(coupon => {
+          // 处理有效期
+          let calculatedExpirationDate = coupon.expirationDate;
+          
+          console.log(`处理优惠券 ${coupon.id}: ${coupon.title}`);
+          console.log(`- 原始过期时间: ${coupon.expirationDate}`);
+          console.log(`- validDays: ${coupon.validDays}`);
+          console.log(`- receivedAt: ${coupon.receivedAt}`);
+          
+          // 如果有validDays和receivedAt，计算实际的过期时间
+          if (coupon.validDays && coupon.receivedAt) {
+            try {
+              const receivedDate = new Date(coupon.receivedAt);
+              if (!isNaN(receivedDate.getTime())) {
+                const expirationDate = new Date(receivedDate);
+                expirationDate.setDate(receivedDate.getDate() + coupon.validDays);
+                calculatedExpirationDate = expirationDate.toISOString();
+                console.log(`- 计算出的过期时间: ${calculatedExpirationDate}`);
+              }
+            } catch (err) {
+              console.error('计算有效期出错:', err);
+            }
+          }
+          // 如果只有validDays没有receivedAt，使用当前时间作为基准
+          else if (coupon.validDays && !coupon.receivedAt) {
+            console.log('- 缺少领取时间，使用当前时间计算有效期');
+            const now = new Date();
+            const expirationDate = new Date(now);
+            expirationDate.setDate(now.getDate() + coupon.validDays);
+            calculatedExpirationDate = expirationDate.toISOString();
+            console.log(`- 基于当前时间计算的过期时间: ${calculatedExpirationDate}`);
+          }
+          
+          return {
+            ...coupon,
+            expirationDate: calculatedExpirationDate,
+            // 确保必要字段存在
+            title: coupon.title || '优惠券',
+            description: coupon.description || '',
+            discountAmount: coupon.discountAmount || coupon.amount || 0
+          };
+        });
+        
+        console.log('处理后的优惠券数据:', processedCoupons);
+        return processedCoupons;
+      }
+      
       return response.data;
     } catch (error) {
       console.error('获取用户卡包优惠券失败:', error);
