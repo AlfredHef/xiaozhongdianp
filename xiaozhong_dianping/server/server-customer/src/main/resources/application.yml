@@ -2,10 +2,15 @@ spring:
   application:
     name: customerApplication
   datasource:
-    url: jdbc:mysql://139.129.37.84:3306/xiaozhong_dianping
+    url: jdbc:mysql://139.129.37.84:3306/xiaozhong_dianping?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8&allowPublicKeyRetrieval=true
     username: budouer
     password: 'BuDou&123'
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      maximum-pool-size: 10
   data:
     redis:
       database: 0
@@ -73,8 +78,30 @@ fudan:
 logging:
   level:
     root: INFO
-    com.fudan.xiaozhong_dianping.shop: DEBUG  # 提高shop相关包的日志级别为DEBUG
+    com.fudan.xiaozhong_dianping: DEBUG  # 设置整个项目的日志级别为DEBUG
+    com.fudan.xiaozhong_dianping.shop: DEBUG
     com.fudan.xiaozhong_dianping.shop.controller.ShopController: DEBUG
     com.fudan.xiaozhong_dianping.shop.service.impl.ShopServiceImpl: DEBUG
-    com.fudan.xiaozhong_dianping.shop.mapper: DEBUG  # 设置Mapper层的日志级别，可以查看SQL执行
+    com.fudan.xiaozhong_dianping.shop.mapper: DEBUG
+    com.fudan.xiaozhong_dianping.groupbuy: DEBUG
+    com.fudan.xiaozhong_dianping.groupbuy.controller.GroupBuyController: DEBUG
+    com.fudan.xiaozhong_dianping.groupbuy.service.impl.GroupBuyServiceImpl: DEBUG
+    com.fudan.xiaozhong_dianping.groupbuy.repository: DEBUG
+
+jpa:
+  database-platform: org.hibernate.dialect.MySQL8Dialect
+  hibernate:
+    ddl-auto: update
+  show-sql: true
+  properties:
+    hibernate:
+      format_sql: true
+
+# PageHelper配置
+pagehelper:
+  helper-dialect: mysql
+  reasonable: true
+  support-methods-arguments: true
+  params: count=countSql
+  return-pageinfo: check
 

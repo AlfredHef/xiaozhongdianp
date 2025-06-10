@@ -74,7 +74,7 @@
     <!-- 搜索结果统计 -->
     <div class="search-summary" v-if="!loading && searchQuery.trim() !== ''">
       <div class="result-count">
-        找到 <strong>{{ shops.length }}</strong> 条结果
+        找到 <strong>{{ total }}</strong> 条结果，共 <strong>{{ totalPages }}</strong> 页
       </div>
       <div class="active-filters">
         <span v-if="selectedRating">评分：{{ selectedRating }}分以上</span>
@@ -263,6 +263,15 @@ import { useStore } from 'vuex';
 export default {
   name: 'ShopSearch',
   
+  components: {
+    Search,
+    Delete,
+    Clock,
+    Loading,
+    ArrowDown,
+    ArrowUp
+  },
+  
   setup() {
     const router = useRouter();
     const store = useStore();
@@ -300,7 +309,10 @@ export default {
     const currentPage = ref(1);
     const pageSize = ref(6);
     const total = ref(0);
-    const totalPages = computed(() => Math.ceil(total.value / pageSize.value) || 1);
+    const totalPages = computed(() => {
+      const pages = Math.ceil(total.value / pageSize.value);
+      return pages > 0 ? pages : 1;
+    });
     
     // 组件卸载标志
     const isUnmounted = ref(false);
@@ -362,14 +374,14 @@ export default {
       
       loading.value = true;
       try {
-        // 如果已有全部商家数据缓存，直接使用缓存数据
-        if (originalShopsCache.value.length > 0) {
-          allShopsCache.value = [...originalShopsCache.value];
-          total.value = allShopsCache.value.length;
-          updatePagedShops();
-          loading.value = false;
-          return;
-        }
+        // // 如果已有全部商家数据缓存，直接使用缓存数据
+        // if (originalShopsCache.value.length > 0) {
+        //   allShopsCache.value = [...originalShopsCache.value];
+        //   total.value = allShopsCache.value.length;
+        //   updatePagedShops();
+        //   loading.value = false;
+        //   return;
+        // }
         
         // 获取较大数量的商家数据
         const response = await ShopService.getShops(1, 100);
@@ -428,18 +440,23 @@ export default {
     const updatePagedShops = () => {
       if (allShopsCache.value.length === 0) return;
       
+      console.log('更新分页数据 - 当前页:', currentPage.value, '每页显示:', pageSize.value, '总条数:', total.value);
+      
       const startIndex = (currentPage.value - 1) * pageSize.value;
       const endIndex = startIndex + pageSize.value;
       
       // 确保startIndex在有效范围内
       if (startIndex >= allShopsCache.value.length) {
         // 如果超出范围，调整到最后一页
-        currentPage.value = Math.ceil(allShopsCache.value.length / pageSize.value);
+        const maxPage = Math.max(1, Math.ceil(allShopsCache.value.length / pageSize.value));
+        console.log('页码超出范围，调整为最后一页:', maxPage);
+        currentPage.value = maxPage;
         // 重新计算索引
         const newStartIndex = (currentPage.value - 1) * pageSize.value;
         shops.value = allShopsCache.value.slice(newStartIndex, newStartIndex + pageSize.value);
       } else {
         shops.value = allShopsCache.value.slice(startIndex, endIndex);
+        console.log('当前页显示商家数:', shops.value.length, '(', startIndex, '-', Math.min(endIndex, allShopsCache.value.length)-1, ')');
       }
     };
     
@@ -482,6 +499,8 @@ export default {
       errorMessage.value = ''; // 清空之前的错误
       
       if (!searchQuery.value.trim()) {
+        // 重置筛选条件（可选：根据需求决定是否保留筛选，这里假设清空筛选）
+        resetFilters(); // 调用重置筛选函数
         loadShops();
         return;
       }
@@ -517,65 +536,7 @@ export default {
           queryParams.minRating = Number(selectedRating.value);
         }
         
-        // 添加价格筛选
-        if (selectedPrice.value) {
-          // 检查是否是"200+"这种格式（表示200以上）
-          if (selectedPrice.value.includes('+')) {
-            const minPrice = Number(selectedPrice.value.replace('+', ''));
-            filteredShops = filteredShops.filter(shop => {
-              // 处理两种可能的数据结构
-              const shopObj = shop.shop || shop;
-              const shopMaxPrice = Number(shopObj.priceMax) || 0;
-              
-              // 对于"200+"筛选，要求商家最高价>=200（即价格区间与200以上有交集）
-              return shopMaxPrice >= minPrice;
-            });
-          } else if (selectedPrice.value.includes('-')) {
-            // 普通范围筛选（如0-50、50-100等）- 只要有交集即可
-            const [min, max] = selectedPrice.value.split('-');
-            const minPrice = Number(min);
-            const maxPrice = max ? Number(max) : Infinity;
-            
-            filteredShops = filteredShops.filter(shop => {
-              // 处理两种可能的数据结构
-              const shopObj = shop.shop || shop;
-              const shopMaxPrice = Number(shopObj.priceMax) || 0;
-              
-              // 对于"200+"筛选，要求商家最高价>=200（即价格区间与200以上有交集）
-              return shopMaxPrice >= minPrice;
-            });
-          }
-        } else {
-          // 清除以前可能设置的价格筛选参数
-          delete queryParams.minPrice;
-          delete queryParams.maxPrice;
-          delete queryParams.maxPriceMin;
-        }
-        
-        // 添加人均消费筛选
-        if (selectedAverageCost.value) {
-          // 检查是否是"200+"这种格式（表示200以上的人均消费）
-          if (selectedAverageCost.value.includes('+')) {
-            const minCost = Number(selectedAverageCost.value.replace('+', ''));
-            
-            // 设置人均消费区间
-            queryParams.minAverageCost = minCost;
-            queryParams.maxAverageCost = 9999;
-          } else if (selectedAverageCost.value.includes('-')) {
-            // 普通范围筛选
-            const [min, max] = selectedAverageCost.value.split('-');
-            const minCost = Number(min);
-            const maxCost = Number(max);
-            
-            queryParams.minAverageCost = minCost;
-            queryParams.maxAverageCost = maxCost;
-          }
-        } else {
-          // 清除以前可能设置的人均消费筛选参数
-          delete queryParams.minAverageCost;
-          delete queryParams.maxAverageCost;
-        }
-        
+        // 调用API进行搜索
         const response = await ShopService.searchShops(queryParams);
         
         // 检查组件是否已卸载
@@ -591,22 +552,39 @@ export default {
           // 重置当前页为第一页
           currentPage.value = 1;
           
+          // 解析API返回的商家数据
           if (response.data && Array.isArray(response.data)) {
             // 直接返回数组的情况
             allShopsCache.value = response.data;
+            originalShopsCache.value = [...response.data]; // 保存原始数据
             total.value = response.data.length;
           } else if (response.data && response.data.records) {
             // 返回包含records字段的分页对象
             allShopsCache.value = response.data.records;
+            originalShopsCache.value = [...response.data.records]; // 保存原始数据
             total.value = response.data.total || response.data.records.length;
           } else if (response.data) {
             // 其他情况，尝试适配
             allShopsCache.value = response.data || [];
+            originalShopsCache.value = [...allShopsCache.value]; // 保存原始数据
             total.value = allShopsCache.value.length;
           } else {
             allShopsCache.value = [];
             shops.value = [];
             total.value = 0;
+          }
+          
+          // 搜索成功后，应用当前的筛选条件
+          if (allShopsCache.value.length > 0 && (selectedPrice.value || selectedAverageCost.value || selectedRating.value)) {
+            console.log('搜索成功，应用当前筛选条件');
+            // 使用前端筛选逻辑筛选搜索结果
+            const filteredData = filterCachedShops();
+            allShopsCache.value = filteredData;
+            total.value = filteredData.length;
+          } else {
+            // 没有筛选条件，保存原始结果总数
+            total.value = allShopsCache.value.length;
+            console.log('搜索结果总数:', total.value);
           }
           
           // 更新显示的分页数据
@@ -644,18 +622,14 @@ export default {
     const handlePageChange = (page) => {
       if (isUnmounted.value) return;
       
-      console.log('页码变化，新页码:', page);
+      console.log('页码变化，新页码:', page, '总页数:', Math.ceil(total.value / pageSize.value));
       currentPage.value = page;
       
-      if (searchQuery.value.trim()) {
-        // 有搜索关键词时，重新搜索
-        searchShops();
-      } else if (allShopsCache.value.length > 0) {
-        // 没有搜索关键词且有缓存数据时，直接使用缓存数据分页
-        updatePagedShops();
-        // 滚动到页面顶部
-        window.scrollTo(0, 0);
-      }
+      // 更新页面显示的商家数据
+      updatePagedShops();
+      
+      // 滚动到页面顶部
+      window.scrollTo(0, 0);
     };
     
     // 使用历史记录项
@@ -696,59 +670,97 @@ export default {
       if (isUnmounted.value) return [];
       
       // 如果没有缓存数据，返回空数组
-      if (allShopsCache.value.length === 0) {
+      if (originalShopsCache.value.length === 0) {
+        console.warn('没有原始缓存数据可供筛选');
         return [];
       }
       
+      console.log('开始筛选，原始数据大小:', originalShopsCache.value.length);
+      
       // 对缓存数据进行深拷贝，避免影响原始数据
-      let filteredShops = [...allShopsCache.value];
+      let filteredShops = [...originalShopsCache.value];
+      
+      // 调试信息：记录筛选前样本数据
+      if (filteredShops.length > 0) {
+        const sample = filteredShops[0];
+        console.log('筛选前样本数据:', {
+          结构: sample.shop ? '嵌套shop对象' : '直接shop对象',
+          数据: sample.shop || sample
+        });
+      }
       
       // 应用评分筛选
       if (selectedRating.value) {
         const minRating = Number(selectedRating.value);
         if (!isNaN(minRating)) {
+          const beforeCount = filteredShops.length;
           filteredShops = filteredShops.filter(shop => {
             // 处理两种可能的数据结构
             const shopObj = shop.shop || shop;
             const rating = Number(shopObj.rating);
-            return !isNaN(rating) && rating >= minRating;
+            const result = !isNaN(rating) && rating >= minRating;
+            return result;
           });
+          console.log(`评分筛选 ${minRating}+ 后: ${beforeCount} -> ${filteredShops.length}`);
         }
       }
       
       // 应用价格筛选
       if (selectedPrice.value) {
+        const beforeCount = filteredShops.length;
         // 检查是否是"200+"这种格式（表示200以上）
         if (selectedPrice.value.includes('+')) {
           const minPrice = Number(selectedPrice.value.replace('+', ''));
           filteredShops = filteredShops.filter(shop => {
             // 处理两种可能的数据结构
             const shopObj = shop.shop || shop;
+            const shopMinPrice = Number(shopObj.priceMin) || 0;
             const shopMaxPrice = Number(shopObj.priceMax) || 0;
             
-            // 对于"200+"筛选，要求商家最高价>=200（即价格区间与200以上有交集）
-            return shopMaxPrice >= minPrice;
+            if (isNaN(shopMaxPrice)) {
+              console.warn('无效的商家最高价:', shopObj);
+              return false;
+            }
+            
+            // 对于"200+"筛选，要求商家价格区间与200以上有交集
+            const result = shopMaxPrice >= minPrice;
+            return result;
           });
         } else if (selectedPrice.value.includes('-')) {
-          // 普通范围筛选（如0-50、50-100等）- 只要有交集即可
+          // 普通范围筛选 - 使用交集判断
           const [min, max] = selectedPrice.value.split('-');
           const minPrice = Number(min);
-          const maxPrice = max ? Number(max) : Infinity;
+          const maxPrice = Number(max);
           
-          filteredShops = filteredShops.filter(shop => {
-            // 处理两种可能的数据结构
-            const shopObj = shop.shop || shop;
-            const shopMaxPrice = Number(shopObj.priceMax) || 0;
-            
-            // 对于"200+"筛选，要求商家最高价>=200（即价格区间与200以上有交集）
-            return shopMaxPrice >= minPrice;
-          });
+          if (isNaN(minPrice) || isNaN(maxPrice)) {
+            console.error('无效的价格区间:', selectedPrice.value);
+          } else {
+            filteredShops = filteredShops.filter(shop => {
+              // 处理两种可能的数据结构
+              const shopObj = shop.shop || shop;
+              const shopMinPrice = Number(shopObj.priceMin) || 0;
+              const shopMaxPrice = Number(shopObj.priceMax) || 0;
+              
+              if (isNaN(shopMinPrice) || isNaN(shopMaxPrice)) {
+                console.warn('无效的商家价格:', shopObj);
+                return false;
+              }
+              
+              // 价格区间交集判断：
+              // 只有当商家最高价小于筛选最低价，或者商家最低价大于筛选最高价时，才没有交集
+              // 取反后就是有交集的条件
+              const result = !(shopMaxPrice < minPrice || shopMinPrice > maxPrice);
+              return result;
+            });
+          }
         }
+        console.log(`价格筛选 ${selectedPrice.value} 后: ${beforeCount} -> ${filteredShops.length}`);
       }
       
       // 应用人均消费筛选
       if (selectedAverageCost.value) {
-        // 检查是否是"200+"这种格式（表示200以上）
+        const beforeCount = filteredShops.length;
+        // 检查是否是"200+"这种格式（表示200以上的人均消费）
         if (selectedAverageCost.value.includes('+')) {
           const minCost = Number(selectedAverageCost.value.replace('+', ''));
           filteredShops = filteredShops.filter(shop => {
@@ -774,6 +786,7 @@ export default {
             return averageCost >= minCost && averageCost <= maxCost;
           });
         }
+        console.log(`人均消费筛选 ${selectedAverageCost.value} 后: ${beforeCount} -> ${filteredShops.length}`);
       }
       
       // 应用排序
@@ -795,6 +808,7 @@ export default {
             return costA - costB;
           });
         }
+        console.log(`应用排序 ${sortBy.value}`);
       }
       
       return filteredShops;
@@ -807,12 +821,15 @@ export default {
       // 重置页码到第一页
       currentPage.value = 1;
       
-      if (searchQuery.value.trim()) {
-        // 如果有搜索关键词，通过API查询
-        searchShops();
-      } else if (originalShopsCache.value.length > 0) {
-        // 没有搜索关键词但有缓存数据，在前端筛选
-        console.log('使用前端筛选，基于原始缓存数据');
+      console.log('应用筛选:', {
+        searchQuery: searchQuery.value,
+        rating: selectedRating.value,
+        price: selectedPrice.value,
+        averageCost: selectedAverageCost.value
+      });
+      
+      if (originalShopsCache.value.length > 0) {
+        console.log('使用前端筛选，基于原始缓存数据，缓存大小:', originalShopsCache.value.length);
         
         // 复制原始数据，然后应用筛选
         allShopsCache.value = [...originalShopsCache.value];
@@ -821,20 +838,22 @@ export default {
         if (selectedRating.value || selectedPrice.value || selectedAverageCost.value || sortBy.value !== 'default') {
           // 过滤缓存数据
           const filteredData = filterCachedShops();
+          console.log('筛选后数据大小:', filteredData.length);
+          
           // 更新数据
           allShopsCache.value = filteredData;
         }
         
+        // 设置总数为筛选后的实际总数，而不是当前页显示的数量
         total.value = allShopsCache.value.length;
+        console.log('筛选后总数:', total.value, '总页数:', Math.ceil(total.value / pageSize.value));
         
-        // 清空当前显示的商家，确保不显示旧数据
-        if (total.value === 0) {
-          shops.value = [];
-          console.log('筛选结果为空，已清空商家显示');
-        } else {
-          // 更新当前页显示的数据
-          updatePagedShops();
-        }
+        // 更新当前页显示的数据
+        updatePagedShops();
+      } else if (searchQuery.value.trim()) {
+        // 如果有搜索关键词但没有缓存数据，重新执行搜索
+        console.log('无缓存数据，重新执行搜索');
+        searchShops();
       } else {
         console.warn('既没有搜索关键词也没有缓存数据，无法应用筛选');
       }
@@ -846,8 +865,11 @@ export default {
       
       try {
         if (!shopData) {
+          console.error('商家数据为空');
           return;
         }
+        
+        console.log('查看商家详情:', shopData);
         
         let shopId;
         // 处理两种可能的数据结构
@@ -858,12 +880,13 @@ export default {
           // 第二种数据结构：直接是商家对象
           shopId = shopData.id;
         } else {
+          console.error('无法获取商家ID');
           return;
         }
         
         router.push({ name: 'ShopDetail', params: { id: shopId } });
       } catch (error) {
-        // 错误处理
+        console.error('查看商家详情出错:', error);
       }
     };
     
@@ -987,15 +1010,16 @@ export default {
     const handlePageSizeChange = () => {
       if (isUnmounted.value) return;
       
-      currentPage.value = 1;
+      // 记录当前显示的第一条记录的索引
+      const currentStartIndex = (currentPage.value - 1) * pageSize.value;
+      console.log('每页条数变化 -', pageSize.value, '当前起始索引:', currentStartIndex);
       
-      if (searchQuery.value.trim()) {
-        // 有搜索关键词时，重新搜索
-        searchShops();
-      } else if (allShopsCache.value.length > 0) {
-        // 没有搜索关键词且有缓存数据时，直接使用缓存数据分页
-        updatePagedShops();
-      }
+      // 根据新的每页条数计算新的页码
+      currentPage.value = Math.floor(currentStartIndex / pageSize.value) + 1;
+      console.log('调整为新页码:', currentPage.value);
+      
+      // 更新分页数据
+      updatePagedShops();
     };
     
     // 在 setup 函数中添加以下内容

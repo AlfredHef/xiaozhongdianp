@@ -5,6 +5,10 @@ import RegisterPage from '../views/RegisterPage.vue';
 import ShopSearch from '../views/ShopSearch.vue';
 import ShopDetail from '../views/ShopDetail.vue';
 import ShopList from '../views/ShopList.vue';
+import GroupBuyDetail from '../views/GroupBuyDetail.vue';
+import OrderConfirm from '../views/OrderConfirm.vue';
+import VoucherDetail from '../views/VoucherDetail.vue';
+import MyOrders from '../views/MyOrders.vue';
 import AuthService from '../services/AuthService';
 
 const routes = [
@@ -13,7 +17,11 @@ const routes = [
   { path: '/register', name: 'Register', component: RegisterPage },
   { path: '/shop/search', name: 'ShopSearch', component: ShopSearch, meta: { requiresAuth: true } },
   { path: '/shop/detail/:id', name: 'ShopDetail', component: ShopDetail, meta: { requiresAuth: true } },
-  { path: '/shop/list', name: 'ShopList', component: ShopList, meta: { requiresAuth: true } }
+  { path: '/shop/list', name: 'ShopList', component: ShopList, meta: { requiresAuth: true } },
+  { path: '/groupbuy/:id', name: 'GroupBuyDetail', component: GroupBuyDetail, meta: { requiresAuth: true } },
+  { path: '/order/confirm/:id', name: 'OrderConfirm', component: OrderConfirm, meta: { requiresAuth: true } },
+  { path: '/voucher/:id', name: 'VoucherDetail', component: VoucherDetail, meta: { requiresAuth: true } },
+  { path: '/orders', name: 'MyOrders', component: MyOrders, meta: { requiresAuth: true } }
 ];
 
 const router = createRouter({
