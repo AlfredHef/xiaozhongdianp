@@ -14,6 +14,8 @@ import com.fudan.xiaozhong_dianping.groupbuy.service.CouponService;
 import com.fudan.xiaozhong_dianping.groupbuy.service.OrderService;
 import com.fudan.xiaozhong_dianping.groupbuy.utils.QRCodeGenerator;
 import com.fudan.xiaozhong_dianping.groupbuy.utils.VoucherCodeGenerator;
+import com.fudan.xiaozhong_dianping.shop.entity.Shop;
+import com.fudan.xiaozhong_dianping.shop.mapper.ShopMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -48,6 +50,12 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private CouponService couponService;
+    
+    @Autowired
+    private ShopMapper shopMapper;
+    
+    @Autowired
+    private com.fudan.xiaozhong_dianping.groupbuy.repository.UserCouponRepository userCouponRepository;
 
     /**
      * 创建订单并生成券码。
@@ -58,6 +66,8 @@ public class OrderServiceImpl implements OrderService {
      * @return 返回包含券码信息的VoucherDTO对象。
      * @throws BusinessException 如果套餐不存在或券码生成失败，则抛出业务异常。
      */
+
+
     @Override
     @Transactional
     public VoucherDTO createOrder(Long userId, Integer packageId, Long couponId) {
@@ -87,6 +97,15 @@ public class OrderServiceImpl implements OrderService {
                     .orElse(null);
             if (selectedCoupon != null) {
                 orderPrice = orderPrice.subtract(couponService.calculateDiscount(selectedCoupon, orderPrice));
+                
+                // 更新优惠券状态为已使用
+                com.fudan.xiaozhong_dianping.groupbuy.entity.UserCoupon userCoupon = 
+                    userCouponRepository.findByUserIdAndCouponId(userId, couponId);
+                if (userCoupon != null) {
+                    userCoupon.setStatus(1); // 已使用
+                    userCoupon.setUsedAt(LocalDateTime.now());
+                    userCouponRepository.save(userCoupon);
+                }
             }
         }
 
@@ -167,6 +186,22 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
+     * 根据ID获取订单实体
+     *
+     * @param orderId 订单ID
+     * @return 订单实体
+     * @throws BusinessException 如果订单不存在，则抛出业务异常
+     */
+    @Override
+    public GroupBuyOrder getOrderById(Long orderId) {
+        Optional<GroupBuyOrder> orderOpt = orderRepository.findById(orderId);
+        if (!orderOpt.isPresent()) {
+            throw new BusinessException("订单不存在");
+        }
+        return orderOpt.get();
+    }
+
+    /**
      * 将订单实体转换为OrderDTO对象。
      *
      * @param order 订单实体对象。
@@ -180,6 +215,14 @@ public class OrderServiceImpl implements OrderService {
         Optional<GroupBuyPackage> packageOpt = packageRepository.findById(order.getPackageId());
         if (packageOpt.isPresent()) {
             dto.setPackageTitle(packageOpt.get().getTitle());
+        }
+        
+        // 查询商家名称
+        if (order.getShopId() != null) {
+            Shop shop = shopMapper.findShopById(order.getShopId().longValue());
+            if (shop != null) {
+                dto.setShopName(shop.getName());
+            }
         }
 
         return dto;
@@ -203,6 +246,14 @@ public class OrderServiceImpl implements OrderService {
         dto.setPackageId(groupBuyPackage.getId());
         dto.setPackageTitle(groupBuyPackage.getTitle());
         dto.setShopId(groupBuyPackage.getShopId());
+        
+        // 查询商家名称
+        if (groupBuyPackage.getShopId() != null) {
+            Shop shop = shopMapper.findShopById(groupBuyPackage.getShopId().longValue());
+            if (shop != null) {
+                dto.setShopName(shop.getName());
+            }
+        }
 
         return dto;
     }

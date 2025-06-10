@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 优惠券实体类
@@ -56,4 +57,8 @@ public class Coupon {
 
     @Column
     private boolean isNewUserCoupon; // 是否为新人券
+    
+    // 关联的品类
+    @OneToMany(mappedBy = "coupon", cascade = CascadeType.ALL)
+    private List<CouponCategory> categories;
 }

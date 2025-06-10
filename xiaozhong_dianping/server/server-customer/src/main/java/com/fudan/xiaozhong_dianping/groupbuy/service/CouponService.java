@@ -13,7 +13,7 @@ import java.util.List;
 public interface CouponService {
 
     /**
-     * 新用户领取优惠券
+     * 用户领取优惠券
      * @param userId 用户ID
      * @param couponId 优惠券ID
      * @return 用户优惠券实体
@@ -21,11 +21,27 @@ public interface CouponService {
     UserCoupon receiveCoupon(Long userId, Long couponId);
 
     /**
+     * 用户领取优惠券（带跳过新人券检查选项）
+     * @param userId 用户ID
+     * @param couponId 优惠券ID
+     * @param skipNewUserCheck 是否跳过新人券检查
+     * @return 用户优惠券实体
+     */
+    UserCoupon receiveCoupon(Long userId, Long couponId, boolean skipNewUserCheck);
+
+    /**
      * 获取用户卡包中的优惠券
      * @param userId 用户ID
      * @return 优惠券DTO列表
      */
     List<CouponDTO> getCouponsInUserWallet(Long userId);
+
+    /**
+     * 获取用户所有可用的优惠券
+     * @param userId 用户ID
+     * @return 优惠券DTO列表
+     */
+    List<CouponDTO> getUserAvailableCoupons(Long userId);
 
     /**
      * 获取可用的优惠券
@@ -72,4 +88,21 @@ public interface CouponService {
      * @return 折扣金额
      */
     BigDecimal calculateDiscount(Coupon coupon, BigDecimal orderPrice);
+
+    /**
+     * 检查用户是否已获得点评奖励券
+     */
+    boolean hasReceivedReviewReward(Long userId);
+
+    /**
+     * 发放点评奖励券（8折，最高抵扣20元，7天有效）
+     */
+    void grantReviewRewardCoupon(Long userId);
+
+    /**
+     * 创建新的优惠券
+     * @param coupon 优惠券信息
+     * @return 创建的优惠券
+     */
+    Coupon createCoupon(Coupon coupon);
 }

@@ -15,6 +15,14 @@ public interface UserMapper {
     User findByUsername(String username);
 
     /**
+     * 通过用户ID查询用户信息
+     * @param id 用户ID
+     * @return 用户信息
+     */
+    @Select("SELECT id, username, password, created_at AS createdAt FROM user WHERE id = #{id}")
+    User findById(Long id);
+
+    /**
      * 检查用户名是否已存在
      * @param username 用户名
      * @return 用户数量（0 表示可用，1 及以上表示已存在）

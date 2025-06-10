@@ -12,8 +12,18 @@ import java.util.List;
  */
 @Repository
 public interface UserCouponRepository extends JpaRepository<UserCoupon, Long> {
-@Select("select * from user_coupon where user_id=#{userId}")
+    @Select("select * from user_coupon where user_id=#{userId}")
     List<UserCoupon> findByUserId(Long userId);
-  @Select("select count(*) from user_coupon where user_id=#{userId} and coupon_id=#{couponId}")
+    
+    @Select("select * from user_coupon where user_id=#{userId} and status=#{status}")
+    List<UserCoupon> findByUserIdAndStatus(Long userId, Integer status);
+    
+    @Select("select count(*) from user_coupon where user_id=#{userId} and coupon_id=#{couponId}")
     Integer countByUserIdAndCouponId(Long userId, Long couponId);
+    
+    @Select("select * from user_coupon where user_id=#{userId} and coupon_id=#{couponId} limit 1")
+    UserCoupon findByUserIdAndCouponId(Long userId, Long couponId);
+    
+    @Select("select * from user_coupon where status=#{status}")
+    List<UserCoupon> findByStatus(Integer status);
 }

@@ -122,4 +122,30 @@ public class UserController {
             return new ResponseDTO<>(400, "无效Token", null);
         }
     }
+
+    /**
+     * 根据用户ID获取用户信息（不包含密码）
+     *
+     * @param userId 用户ID
+     * @return 返回用户信息的DTO对象
+     */
+    @GetMapping("/{userId}")
+    public ResponseDTO<User> getUserById(@PathVariable Long userId) {
+        try {
+            User user = userService.getUserById(userId);
+            if (user != null) {
+                // 创建一个新的User对象，不包含密码信息
+                User safeUser = new User();
+                safeUser.setId(user.getId());
+                safeUser.setUsername(user.getUsername());
+                safeUser.setCreatedAt(user.getCreatedAt());
+                return new ResponseDTO<>(200, "获取用户信息成功", safeUser);
+            } else {
+                return new ResponseDTO<>(404, "用户不存在", null);
+            }
+        } catch (Exception e) {
+            log.error("获取用户信息异常: " + e.getMessage(), e);
+            return new ResponseDTO<>(500, "服务器错误", null);
+        }
+    }
 }

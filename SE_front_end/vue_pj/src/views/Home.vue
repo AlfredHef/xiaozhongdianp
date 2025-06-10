@@ -12,7 +12,7 @@
       登录框容器，使用类名 "login-box"。
       包含欢迎标题和登录、注册链接。
     -->
-    <div class="login-box">
+    <div v-if="!isLoggedIn" class="login-box">
       <!-- 显示欢迎信息，告知用户欢迎来到 "软旦餐厅" -->
       <h1>欢迎来到"软旦餐厅"</h1>
       <!-- 段落元素，用于包裹登录和注册链接 -->
@@ -30,14 +30,90 @@
         
       </p>
     </div>
+    
+    <!-- 登录后显示 -->
+    <div v-else class="home-menu">
+      <h1>软旦餐厅</h1>
+      <p class="welcome-text">欢迎回来，{{ currentUser?.username || '用户' }}</p>
+      
+      <div class="menu-grid">
+        <router-link to="/shop/list" class="menu-item">
+          <div class="menu-icon">
+            <i class="el-icon-s-shop"></i>
+          </div>
+          <div class="menu-title">餐厅列表</div>
+        </router-link>
+        
+        <router-link to="/shop/search" class="menu-item">
+          <div class="menu-icon">
+            <i class="el-icon-search"></i>
+          </div>
+          <div class="menu-title">搜索餐厅</div>
+        </router-link>
+        
+        <router-link to="/orders" class="menu-item">
+          <div class="menu-icon">
+            <i class="el-icon-s-order"></i>
+          </div>
+          <div class="menu-title">我的订单</div>
+        </router-link>
+        
+        <router-link to="/coupons" class="menu-item">
+          <div class="menu-icon">
+            <i class="el-icon-s-ticket"></i>
+          </div>
+          <div class="menu-title">优惠券</div>
+        </router-link>
+        
+        <router-link to="/invitation" class="menu-item">
+          <div class="menu-icon">
+            <i class="el-icon-present"></i>
+          </div>
+          <div class="menu-title">邀请有礼</div>
+        </router-link>
+      </div>
+      
+      <div class="logout-section">
+        <button @click="handleLogout" class="logout-button">退出登录</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+import AuthService from '@/services/AuthService';
+
 // 导出一个默认的Vue组件对象
 export default {
   // 组件的名称，用于在其他地方引用和调试
-  name: 'HomePage'
+  name: 'HomePage',
+  setup() {
+    const router = useRouter();
+    
+    // 计算用户是否已登录
+    const isLoggedIn = computed(() => {
+      return !!AuthService.getUser();
+    });
+    
+    // 获取当前登录用户信息
+    const currentUser = computed(() => {
+      return AuthService.getUser();
+    });
+    
+    // 处理登出逻辑
+    const handleLogout = () => {
+      AuthService.logout();
+      router.push('/login');
+    };
+    
+    return {
+      isLoggedIn,
+      currentUser,
+      handleLogout
+    };
+  }
 }
 </script>
 
@@ -139,5 +215,82 @@ body {
 
 .button:hover {
   background-color: #66b1ff;
+}
+
+/* 登录后的样式 */
+.home-menu {
+  border-radius: 20px;
+  padding: 40px;
+  text-align: center;
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  width: 80%;
+  max-width: 800px;
+}
+
+.home-menu h1 {
+  color: #409eff;
+  margin-bottom: 10px;
+}
+
+.welcome-text {
+  font-size: 18px;
+  color: #666;
+  margin-bottom: 30px;
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  background-color: #f2f6fc;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #333;
+  transition: all 0.3s;
+}
+
+.menu-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  background-color: #ecf5ff;
+}
+
+.menu-icon {
+  font-size: 36px;
+  color: #409eff;
+  margin-bottom: 10px;
+}
+
+.menu-title {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.logout-section {
+  margin-top: 20px;
+}
+
+.logout-button {
+  background-color: #f56c6c;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.logout-button:hover {
+  background-color: #f78989;
 }
 </style>

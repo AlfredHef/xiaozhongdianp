@@ -1,12 +1,18 @@
 package com.fudan.xiaozhong_dianping.groupbuy.entity;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import jakarta.persistence.*;
 
 /**
  * 套餐菜品关联实体类
  */
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@ToString(exclude = {"groupBuyPackage", "dish"}) // 排除关联对象以避免循环引用
 @Entity
 @Table(name = "package_dish_relation")
 public class PackageDishRelation {

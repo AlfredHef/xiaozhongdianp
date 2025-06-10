@@ -1,0 +1,445 @@
+<template>
+  <div class="invitation-info-container">
+    <el-card class="invitation-card">
+      <template #header>
+        <div class="invitation-header">
+          <h2>我的邀请码</h2>
+        </div>
+      </template>
+      
+      <div v-if="loading" class="loading">
+        <el-skeleton :rows="3" animated />
+      </div>
+      
+      <div v-else-if="error" class="error-state">
+        <el-empty description="获取邀请信息失败" :image-size="100">
+          <template #description>
+            <p>{{ error }}</p>
+          </template>
+          <el-button type="primary" @click="loadInvitationInfo">重试</el-button>
+        </el-empty>
+      </div>
+      
+      <div v-else class="invitation-content">
+        <!-- 邀请码展示 -->
+        <div class="code-section">
+          <h3>您的专属邀请码</h3>
+          <div class="code-display">
+            <span class="invitation-code">{{ invitationInfo.invitationCode }}</span>
+            <el-button 
+              type="primary" 
+              size="small" 
+              icon="el-icon-copy-document"
+              @click="copyCode"
+            >
+              复制
+            </el-button>
+          </div>
+          <div class="invitation-tips">
+            <p>邀请好友使用您的邀请码下单，好友首单满10元即可成功邀请</p>
+            <p>每成功邀请2位好友，您将获得无门槛20元优惠券奖励</p>
+          </div>
+        </div>
+        
+        <!-- 邀请记录 -->
+        <div class="records-section">
+          <h3>邀请记录 ({{ invitationInfo.invitationRecords?.length || 0 }})</h3>
+          
+          <div v-if="!invitationInfo.invitationRecords || invitationInfo.invitationRecords.length === 0" class="no-records">
+            <el-empty description="暂无邀请记录" :image-size="80" />
+          </div>
+          
+          <el-table
+            v-else
+            :data="invitationInfo.invitationRecords"
+            style="width: 100%"
+          >
+            <el-table-column
+              prop="inviteeId"
+              label="被邀请人"
+              width="120"
+            >
+              <template #default="scope">
+                <span class="username-display">{{ getUsernameDisplay(scope.row.inviteeId) }}</span>
+              </template>
+            </el-table-column>
+            
+            <el-table-column
+              prop="orderTime"
+              label="下单时间"
+              width="160"
+            >
+              <template #default="scope">
+                {{ formatDate(scope.row.orderTime) }}
+              </template>
+            </el-table-column>
+            
+            <el-table-column
+              prop="orderAmount"
+              label="订单金额"
+              width="120"
+            >
+              <template #default="scope">
+                <span class="amount">¥{{ scope.row.orderAmount }}</span>
+              </template>
+            </el-table-column>
+            
+            <el-table-column
+              prop="isValid"
+              label="状态"
+            >
+              <template #default="scope">
+                <el-tag :type="scope.row.isValid ? 'success' : 'danger'">
+                  {{ scope.row.isValid ? '有效' : '无效' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+        
+        <!-- 奖励记录 -->
+        <div class="rewards-section">
+          <h3>奖励记录 ({{ invitationInfo.invitationRewards?.length || 0 }})</h3>
+          
+          <div v-if="!invitationInfo.invitationRewards || invitationInfo.invitationRewards.length === 0" class="no-rewards">
+            <el-empty description="暂无奖励记录" :image-size="80" />
+          </div>
+          
+          <el-table
+            v-else
+            :data="invitationInfo.invitationRewards"
+            style="width: 100%"
+          >
+            <el-table-column
+              prop="couponInfo"
+              label="奖励内容"
+              width="200"
+            >
+              <template #default="scope">
+                <div class="reward-content">
+                  <div class="coupon-title">邀请奖励无门槛20元券</div>
+                  <div class="coupon-desc">任意品类通用，无门槛使用，7天有效</div>
+                </div>
+              </template>
+            </el-table-column>
+            
+            <el-table-column
+              prop="couponType"
+              label="优惠券类型"
+              width="120"
+            >
+              <template #default="scope">
+                <el-tag type="success">减固定金额</el-tag>
+              </template>
+            </el-table-column>
+            
+            <el-table-column
+              prop="couponAmount"
+              label="优惠金额"
+              width="100"
+            >
+              <template #default="scope">
+                <span class="amount">¥20</span>
+              </template>
+            </el-table-column>
+            
+            <el-table-column
+              prop="createTime"
+              label="发放时间"
+              width="160"
+            >
+              <template #default="scope">
+                {{ formatDate(scope.row.createTime) }}
+              </template>
+            </el-table-column>
+            
+            <el-table-column
+              label="有效期"
+            >
+              <template #default="scope">
+                <div class="validity-info">
+                  <div>自发放起7天内有效</div>
+                  <div class="expire-date">
+                    {{ getExpirationDate(scope.row.createTime) }}
+                  </div>
+                </div>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </div>
+    </el-card>
+  </div>
+</template>
+
+<script>
+import { ref, onMounted, reactive } from 'vue';
+import { ElMessage } from 'element-plus';
+import InvitationService from '@/services/InvitationService';
+import AuthService from '@/services/AuthService';
+import UserService from '@/services/UserService';
+
+export default {
+  name: 'InvitationInfo',
+  setup() {
+    const invitationInfo = ref({
+      invitationCode: '',
+      invitationRecords: [],
+      invitationRewards: []
+    });
+    const loading = ref(true);
+    const error = ref('');
+    
+    // 使用reactive对象存储用户名缓存，确保响应式更新
+    const usernameCache = reactive({});
+    
+    // 加载邀请信息
+    const loadInvitationInfo = async () => {
+      loading.value = true;
+      error.value = '';
+      
+      try {
+        const response = await InvitationService.getInvitationInfo();
+        invitationInfo.value = response;
+      } catch (err) {
+        console.error('获取邀请信息失败:', err);
+        error.value = err.message || '获取邀请信息失败，请稍后重试';
+      } finally {
+        loading.value = false;
+      }
+    };
+    
+    // 复制邀请码
+    const copyCode = () => {
+      const code = invitationInfo.value.invitationCode;
+      if (!code) {
+        ElMessage.warning('邀请码不存在');
+        return;
+      }
+      
+      // 使用 Clipboard API 复制
+      navigator.clipboard.writeText(code)
+        .then(() => {
+          ElMessage.success('邀请码已复制到剪贴板');
+        })
+        .catch(err => {
+          console.error('复制失败:', err);
+          ElMessage.error('复制失败，请手动复制');
+        });
+    };
+    
+    // 格式化日期
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '';
+      
+      try {
+        const date = new Date(dateStr);
+        return date.toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (err) {
+        console.error('日期格式化错误:', err);
+        return dateStr;
+      }
+    };
+    
+    // 根据用户ID获取用户名显示（同步方法，用于模板）
+    const getUsernameDisplay = (userId) => {
+      if (!userId) return '未知用户';
+      
+      // 检查缓存
+      if (usernameCache[userId]) {
+        return usernameCache[userId];
+      }
+      
+      // 获取当前登录用户
+      const currentUser = AuthService.getUser();
+      if (currentUser && currentUser.id == userId) {
+        const displayName = currentUser.username || '我';
+        usernameCache[userId] = displayName;
+        return displayName;
+      }
+      
+      // 异步获取用户名（不阻塞渲染）
+      loadUsernameAsync(userId);
+      
+      // 返回临时显示名
+      return `用户${userId}`;
+    };
+    
+    // 异步加载用户名
+    const loadUsernameAsync = async (userId) => {
+      if (usernameCache[userId]) return; // 避免重复请求
+      
+      try {
+        console.log(`开始获取用户${userId}的用户名`);
+        const username = await UserService.getUsernameById(userId);
+        console.log(`用户${userId}的用户名是: ${username}`);
+        
+        // 更新缓存，触发响应式更新
+        usernameCache[userId] = username;
+      } catch (error) {
+        console.error(`获取用户${userId}的用户名失败:`, error);
+        usernameCache[userId] = `用户${userId}`;
+      }
+    };
+    
+    // 计算优惠券到期日期
+    const getExpirationDate = (createTime) => {
+      if (!createTime) return '未知';
+      
+      try {
+        const issueDate = new Date(createTime);
+        const expirationDate = new Date(issueDate);
+        expirationDate.setDate(expirationDate.getDate() + 7); // 7天有效期
+        
+        return '截止到 ' + expirationDate.toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (err) {
+        console.error('计算到期日期错误:', err);
+        return '计算失败';
+      }
+    };
+    
+    onMounted(() => {
+      loadInvitationInfo();
+    });
+    
+    return {
+      invitationInfo,
+      loading,
+      error,
+      loadInvitationInfo,
+      copyCode,
+      formatDate,
+      getUsernameDisplay,
+      getExpirationDate
+    };
+  }
+};
+</script>
+
+<style scoped>
+.invitation-info-container {
+  margin: 20px auto;
+  max-width: 800px;
+}
+
+.invitation-card {
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.invitation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.invitation-header h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #303133;
+}
+
+.loading, .error-state {
+  padding: 30px 0;
+  text-align: center;
+}
+
+.code-section, .records-section, .rewards-section {
+  margin-bottom: 30px;
+}
+
+.code-section h3, .records-section h3, .rewards-section h3 {
+  font-size: 18px;
+  margin-bottom: 15px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.code-display {
+  display: flex;
+  align-items: center;
+  margin: 15px 0;
+}
+
+.invitation-code {
+  font-size: 24px;
+  font-weight: bold;
+  color: #409EFF;
+  letter-spacing: 2px;
+  margin-right: 15px;
+  background-color: #ecf5ff;
+  padding: 8px 15px;
+  border-radius: 4px;
+}
+
+.invitation-tips {
+  font-size: 14px;
+  color: #909399;
+  line-height: 1.6;
+  margin: 15px 0;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.invitation-tips p {
+  margin: 5px 0;
+}
+
+.no-records, .no-rewards {
+  padding: 20px 0;
+}
+
+.amount {
+  color: #f56c6c;
+  font-weight: bold;
+}
+
+.username-display {
+  color: #409EFF;
+  font-weight: bold;
+  background-color: #ecf5ff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.reward-content {
+  text-align: left;
+}
+
+.coupon-title {
+  font-weight: bold;
+  color: #303133;
+  margin-bottom: 4px;
+}
+
+.coupon-desc {
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.4;
+}
+
+.validity-info {
+  text-align: left;
+}
+
+.expire-date {
+  font-size: 12px;
+  color: #f56c6c;
+  margin-top: 4px;
+  font-weight: bold;
+}
+</style> 
